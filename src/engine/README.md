@@ -1,96 +1,75 @@
-# Engine
+# Engine (Aku)
 
-Game rules and meter balance. Owner: Aku (`engine` branch).
+Game rules and meter balance for Payload Pets. It's Java with no libraries, like the story branch. It runs entirely on your computer: the server only listens on `localhost` and never contacts any website.
 
-- `config.js` holds every tunable number: meters, decay, thresholds, actions and moods. Balance the game here.
-- `engine.js` holds the rules. Every function is pure: you pass in a state and get back `{ state, events, error }`. The engine has no timers and doesn't touch the DOM.
-- `samples.js` has placeholder sites and missions until the `data` branch lands.
+```bash
+./run-engine.sh      # play it: http://localhost:8081
+./test-engine.sh     # 15 tests + balance report
+```
 
-## Running it (offline, no website)
+The only requirement is a JDK (Java 17 or newer). In VS Code you can also open `EngineServer.java` or `EngineTest.java` and press **Run** or **Debug** ([guide](https://code.visualstudio.com/docs/java/java-debugging)).
 
-Everything runs locally with Node. There are no dependencies and no network calls.
+## The game
 
-| Command | What it does |
+You pick a payload pet (a real CLPS instrument) and a landing site, then keep the pet alive from sunrise, through the 346-hour lunar day, and into the night.
+
+| Meter | What changes it |
 |---|---|
-| `npm start` | Play the pet in the terminal: `feed`, `play`, `mission ice-survey`, `wait 60`, `help` |
-| `npm run balance` | Simulates every site for 3 hours and reports when a neglected pet faints and how often a player has to act. Re-run after editing `config.js` |
-| `npm test` | Runs the engine tests |
+| Power | Solar charges it in daylight (less with dust, the sunshade or a tipped lander); staying awake and the heater drain it |
+| Temperature | Drifts toward the ground temperature. Heater +130 K, sunshade −130 K. Outside the pet's safe range it takes damage |
+| Dust | Builds up from landing and over time. Blocks solar power and LRA laser returns |
+| Data | Science collected. LISTER and EDS must **send** it home; LRA pings are recorded by the orbiter |
+| Health | Drops outside the safe temperature range; slowly heals inside it |
 
-## Using it (ui branch)
+| Pet | Real instrument | Science action |
+|---|---|---|
+| LISTER | Heat-flow drill, Blue Ghost 1 | Drill 8 stops down to 1 m |
+| LRA | Passive retroreflector, IM-1 and IM-2. Needs no power | Catch a laser ping every LRO pass (2 h) |
+| EDS | Dust shield, Blue Ghost 1 | Dust test (also cleans) |
 
-```js
-import { createGame, tick, performAction, getMood } from './src/engine/index.js';
+Milestones to beat: IM-2 (1 day), IM-1 (7 days), sunset (346 h), Blue Ghost 1 (5 h into night).
 
-let game = createGame({ pet: { name: 'Luna', species: 'rover-cat' }, site });
-let last = performance.now();
+## Files
 
-function loop(now) {
-  const { state, events } = tick(game, (now - last) / 1000);
-  game = state; last = now;
-  handle(events);            // story / pets react here
-  render(game, getMood(game));
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
-
-// On a button press:
-const r = performAction(game, 'feed');
-if (r.error) showToast(r.error); else { game = r.state; handle(r.events); }
-```
-
-## State
-
-```js
-{
-  time, alive, health,                 // seconds; health 0–100
-  pet: { name, species },
-  site: { id, name, decayMultipliers },
-  meters: { oxygen, power, food, happiness },   // each 0–100
-  mission: null | { id, name, duration, elapsed, reward },
-  completedMissions: [missionId],
-  cooldowns: { actionId: secondsLeft },
-}
-```
-
-## Events (story and pets branches)
-
-| type | extra fields |
+| File | What's in it |
 |---|---|
-| `meterLow` / `meterCritical` / `meterRecovered` | `meter` |
-| `moodChanged` | `from`, `to` |
-| `actionPerformed` | `action` |
-| `missionStarted` / `missionComplete` | `missionId` |
-| `siteChanged` | `siteId` |
-| `petFainted` | none |
+| `Rules.java` | **Every tunable number.** `[REAL]` = sourced, `[GAME]` = chosen for play. Balance here |
+| `Sources.java` | All sources and the facts taken from them (shown on the website) |
+| `Sites.java` / `Pet.java` | Landing sites (real temperatures) and payload pets |
+| `Game.java` | The rules: `tick(hours)`, `act(actionId)`, `mood()`, `toJson()` |
+| `EngineServer.java` | Local web server and JSON API |
+| `web/engine.html`, `engine.js`, `engine.css` | The engine's page |
+| `test/engine/EngineTest.java` | Tests + balance report |
 
-Every event also has `time`.
+## Hooks for the other branches
 
-## Moods (pets branch)
+- **story:** call `storyEngine.advance(game.dayProgress())` every tick (0.0 at sunrise to 1.0 at sunset). `game.earthDays()` feeds the Pet Passport. Site and pet ids match story's (`MARE_CRISIUM`, `MALAPERT_A`, `MONS_MOUTON`, `REINER_GAMMA`, `LRA`, `LISTER`, `EDS`).
+- **pets:** draw one face or animation per mood: `happy`, `night`, `dusty`, `sleepy`, `freezing`, `overheating`, `fainted`, `proud`.
+- **data:** replace `Sites.ALL` and add facts to `Sources.java`. Each fact must cite a source id; a test checks this.
+- **map:** `GET /api/engine/sites` lists every site with its temperatures and sunlight.
+- **ui:** restyle `web/engine.css`. All events are listed in `Event.java`.
 
-`fainted`, `critical`, `suffocating`, `hungry`, `tired`, `sad`, `exploring`, `happy`, `content`. Each one needs art.
+## API (all GET, JSON)
 
-## Saving (ui branch)
+| Path | Returns |
+|---|---|
+| `/api/engine/sites`, `/pets`, `/facts` | Data lists |
+| `/api/engine/new?site=&pet=&name=&tipped=` | `{id, state}` |
+| `/api/engine/tick?id=&hours=` | `{events, state}` (max 48 h per call) |
+| `/api/engine/act?id=&action=` | `{result:{ok,error,events}, state}`. Actions: `work`, `send`, `clean`, `heater`, `shade` |
+| `/api/engine/state?id=` | state |
 
-```js
-localStorage.setItem('save', serialize(game));
-game = deserialize(localStorage.getItem('save'));
-game = tick(game, secondsSinceLastVisit).state;   // catch up while away
-```
+## Where the real numbers come from
 
-## Data shapes (data branch)
+- 346 h daylight, 5 h into night, 119 GB / 51 GB data: [Firefly](https://fireflyspace.com/news/firefly-aerospace-successfully-completes-14-days-of-surface-operations-on-the-moon)
+- ~400 K equator noon, <100 K night, 220 K polar rims, 25 K shadowed craters: [Diviner](https://www.diviner.ucla.edu/science)
+- Polar max 40–360 K, min 20–100 K: [NASA LRO fact sheet](https://science.nasa.gov/wp-content/uploads/2024/01/lrolitho7temperaturevariation27may2014.pdf)
+- Polar peaks lit >80% of the time, LRO passes every ~2 h: [LROC](https://lroc.im-ldi.com/visit/exhibits/1/gallery/41)
+- LISTER 1 m, 8 depths: [PDS LISTER](https://pds-geosciences.wustl.edu/missions/clps/to19d_lister.htm)
+- LRA passive, 8 reflectors, 20 g: [PDS LRA](https://pds-geosciences.wustl.edu/missions/clps/lra.htm)
+- IM-1 seven days; IM-2 tipped and died the next day: [Scientific American](https://www.scientificamerican.com/article/blue-ghost-lander-successfully-completes-historic-lunar-mission/)
+- CLPS instrument list: [PDS CLPS archive](https://pds-geosciences.wustl.edu/missions/clps/index.htm)
 
-Check your files with `validateSite(site)` / `validateMission(mission)`. Each returns a list of problems, and an empty list means the data is valid.
+Safe temperature ranges, power drain and charge rates are game values: none of the sources publish them.
 
-
-```js
-// Site
-{ id: 'shackleton-rim', name: 'Shackleton Crater Rim',
-  decayMultipliers: { power: 0.6 } }        // 1 = normal, missing = 1
-
-// Mission
-{ id: 'ice-survey', name: 'Water Ice Survey', siteId: 'shackleton-psr',
-  duration: 60,                              // seconds
-  requires: { power: 40 },                   // minimum meters to start
-  cost:     { power: -20 },                  // applied at start
-  reward:   { happiness: +25 } }             // applied on completion
-```
+Java help: [dev.java tutorials](https://dev.java/learn/) · [records](https://dev.java/learn/records/)

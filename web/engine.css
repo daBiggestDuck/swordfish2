@@ -1,0 +1,108 @@
+:root {
+  --bg: #0b1020;
+  --card: #141b31;
+  --line: #26304f;
+  --text: #e8ecf8;
+  --muted: #9aa5c4;
+  --accent: #7cc4ff;
+  --ok: #4cd18a;
+  --warn: #ffc24b;
+  --bad: #ff6b6b;
+  --sun: #ffd76a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+header, main { max-width: 960px; margin: 0 auto; padding: 16px; }
+header h1 { margin: 8px 0 0; }
+header h1 span { color: var(--accent); font-weight: 400; }
+header p, .muted { color: var(--muted); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.card h2 { margin-top: 0; }
+
+label { display: block; margin: 8px 0; }
+label.check { display: flex; gap: 8px; align-items: center; }
+input, select, button {
+  font: inherit;
+  color: var(--text);
+  background: #0f1528;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+input:not([type=checkbox]), select { width: 100%; max-width: 360px; display: block; margin-top: 4px; }
+button { cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.primary { background: var(--accent); color: #06101f; border: none; font-weight: 600; padding: 8px 18px; }
+
+.top { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; }
+.pet { display: flex; gap: 12px; align-items: center; }
+.pet h2 { margin: 0; }
+.pet p { margin: 0; }
+#face { font-size: 56px; line-height: 1; }
+
+.clock { min-width: 260px; flex: 1; max-width: 360px; }
+#clock { font-weight: 600; }
+.sky { position: relative; height: 10px; background: #0f1528; border-radius: 5px; margin: 6px 0 10px; overflow: hidden; }
+#sun { position: absolute; top: 0; bottom: 0; left: 0; background: var(--sun); border-radius: 5px; }
+.controls { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
+.controls label { margin: 0; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 16px 0; }
+.meter { display: grid; grid-template-columns: 90px 1fr 44px; gap: 8px; align-items: center; }
+.meter span { color: var(--muted); font-size: 14px; }
+.meter b { text-align: right; font-variant-numeric: tabular-nums; }
+.bar { height: 12px; background: #0f1528; border-radius: 6px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .2s; }
+.bar i.warn { background: var(--warn); }
+.bar i.bad { background: var(--bad); }
+.bar.dust i { background: #b9a07a; }
+.bar.data i { background: var(--accent); }
+
+.temps { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.temps div { background: #0f1528; border-radius: 8px; padding: 8px 10px; }
+.temps span { display: block; color: var(--muted); font-size: 13px; }
+.temps b { font-variant-numeric: tabular-nums; }
+.temps b.hot { color: var(--bad); }
+.temps b.cold { color: var(--accent); }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 4px; }
+.actions button.on { border-color: var(--ok); color: var(--ok); }
+.error { color: var(--warn); min-height: 1.5em; margin: 4px 0; }
+
+.over { border: 1px solid var(--accent); border-radius: 10px; padding: 12px 16px; margin: 12px 0; }
+.over h3 { margin-top: 0; }
+
+#log { max-height: 220px; overflow-y: auto; padding-left: 20px; color: var(--muted); font-size: 14px; }
+#log li.big { color: var(--text); }
+#log li.bad { color: var(--bad); }
+
+.milestones { list-style: none; padding: 0; margin: 0; }
+.milestones li { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.milestones li.done::before { content: "✅ "; }
+.milestones li:not(.done)::before { content: "⬜ "; }
+
+#facts h3 { margin: 14px 0 4px; font-size: 15px; color: var(--accent); }
+#facts ul { margin: 0; padding-left: 20px; }
+#facts sup a, .sources a { color: var(--accent); }
+.sources { font-size: 14px; word-break: break-word; }
+
+@media (max-width: 520px) {
+  .meter { grid-template-columns: 80px 1fr 40px; }
+  #face { font-size: 44px; }
+}

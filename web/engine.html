@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payload Pets Engine</title>
+  <link rel="stylesheet" href="engine.css">
+</head>
+<body>
+  <header>
+    <h1>Payload Pets <span>engine</span></h1>
+    <p>Keep a real NASA instrument alive through a lunar day and night. Every real number has a source below.</p>
+  </header>
+
+  <main>
+    <section id="setup" class="card">
+      <h2>Land your pet</h2>
+      <label>Name <input id="name" maxlength="24" value="Pip"></label>
+      <label>Pet <select id="pet"></select></label>
+      <label>Landing site <select id="site"></select></label>
+      <label class="check"><input type="checkbox" id="tipped"> Tipped landing (like IM-2)</label>
+      <p id="site-note" class="muted"></p>
+      <button id="start" class="primary">Land</button>
+    </section>
+
+    <section id="game" class="card" hidden>
+      <div class="top">
+        <div class="pet">
+          <div id="face" aria-hidden="true">🙂</div>
+          <div>
+            <h2 id="title"></h2>
+            <p id="mood" class="muted"></p>
+          </div>
+        </div>
+        <div class="clock">
+          <div id="clock"></div>
+          <div class="sky"><div id="sun"></div></div>
+          <div class="controls">
+            <button id="play">▶ Play</button>
+            <label>Speed
+              <select id="speed">
+                <option value="1">1 h / sec</option>
+                <option value="4" selected>4 h / sec</option>
+                <option value="12">12 h / sec</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="meter"><span>Health</span><div class="bar"><i id="m-health"></i></div><b id="v-health"></b></div>
+        <div class="meter"><span>Power</span><div class="bar"><i id="m-power"></i></div><b id="v-power"></b></div>
+        <div class="meter"><span>Dust</span><div class="bar dust"><i id="m-dust"></i></div><b id="v-dust"></b></div>
+        <div class="meter"><span>Data stored</span><div class="bar data"><i id="m-data"></i></div><b id="v-data"></b></div>
+      </div>
+
+      <div class="temps">
+        <div><span>Ground</span><b id="t-ground"></b></div>
+        <div><span id="t-pet-label">Pet</span><b id="t-pet"></b></div>
+        <div><span>Safe range</span><b id="t-safe"></b></div>
+        <div><span>Solar</span><b id="t-solar"></b></div>
+        <div><span>Data sent home</span><b id="t-sent"></b></div>
+        <div><span id="t-extra-label"></span><b id="t-extra"></b></div>
+      </div>
+
+      <div id="actions" class="actions"></div>
+      <p id="error" class="error" role="status"></p>
+
+      <div id="over" class="over" hidden></div>
+
+      <h3>Mission log</h3>
+      <ol id="log"></ol>
+      <button id="restart">New game</button>
+    </section>
+
+    <section class="card">
+      <h2>Beat the real missions</h2>
+      <ul id="milestones" class="milestones"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Real data used in the game</h2>
+      <div id="facts"></div>
+      <h3>Sources</h3>
+      <ol id="sources" class="sources"></ol>
+    </section>
+  </main>
+
+  <script src="engine.js"></script>
+</body>
+</html>
