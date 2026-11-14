@@ -1,4 +1,5 @@
 import { LunarGlobeGL } from './globe_gl.js';
+import { handleClientApi } from './map_engine_client.js';
 
 const $ = (sel) => document.querySelector(sel);
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -35,10 +36,22 @@ function svgEl(tag, attrs = {}, parent = null) {
   return el;
 }
 
+let clientFallbackMode = false;
+
 async function api(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`${url} returned ${res.status}`);
-  return res.json();
+  if (clientFallbackMode) return handleClientApi(url);
+  try {
+    const res = await fetch(url);
+    const ct = (res.headers?.get('content-type') || '').toLowerCase();
+    if (!res.ok || (ct && !ct.includes('json'))) {
+      clientFallbackMode = true;
+      return handleClientApi(url);
+    }
+    return await res.json();
+  } catch {
+    clientFallbackMode = true;
+    return handleClientApi(url);
+  }
 }
 
 function parseHorizonsRows(horizonsJson) {
@@ -1026,16 +1039,25 @@ function renderSources() {
   const rawLinks = document.createElement('div');
   rawLinks.className = 'source-card';
   rawLinks.innerHTML = `
-    <h4>Raw NASA Payloads Served by Java Backend</h4>
+    <h4>Raw NASA Payloads (${clientFallbackMode ? 'Client Bundle / Static' : 'Served by Backend'})</h4>
     <p>Inspect unmodified NASA JSON files stored under <code>data/maps/raw/</code>:</p>
     <div style="display:grid;gap:.25rem">
-      <a href="/api/map/raw/trek_sites" target="_blank">/api/map/raw/trek_sites</a>
-      <a href="/api/map/raw/trek_psr" target="_blank">/api/map/raw/trek_psr</a>
-      <a href="/api/map/raw/lola" target="_blank">/api/map/raw/lola</a>
-      <a href="/api/map/raw/horizons" target="_blank">/api/map/raw/horizons</a>
-      <a href="/api/map/raw/quickmap" target="_blank">/api/map/raw/quickmap</a>
+      <a class="raw-payload-link" href="/api/map/raw/trek_sites" target="_blank">/api/map/raw/trek_sites</a>
+      <a class="raw-payload-link" href="/api/map/raw/trek_psr" target="_blank">/api/map/raw/trek_psr</a>
+      <a class="raw-payload-link" href="/api/map/raw/lola" target="_blank">/api/map/raw/lola</a>
+      <a class="raw-payload-link" href="/api/map/raw/horizons" target="_blank">/api/map/raw/horizons</a>
+      <a class="raw-payload-link" href="/api/map/raw/quickmap" target="_blank">/api/map/raw/quickmap</a>
     </div>
   `;
+  rawLinks.querySelectorAll('.raw-payload-link').forEach((link) => {
+    link.addEventListener('click', async (ev) => {
+      if (!clientFallbackMode) return;
+      ev.preventDefault();
+      const json = await handleClientApi(link.getAttribute('href'));
+      const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+      window.open(URL.createObjectURL(blob), '_blank', 'noopener');
+    });
+  });
   grid.appendChild(rawLinks);
 }
 

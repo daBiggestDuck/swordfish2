@@ -15,6 +15,7 @@ import {
   recommendRecipe,
   createMapRequestHandler,
 } from '../tools/serve_map.mjs';
+import { handleClientApi } from '../web/map_engine_client.js';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..');
 const MAPS_ROOT = path.join(REPO_ROOT, 'data', 'maps');
@@ -212,4 +213,30 @@ test('evaluateDropPoint provides pre-drop environmental context for arbitrary lu
   assert.ok(southPoleCustom.nearestPsrKm >= 0);
   assert.ok(southPoleCustom.warnings.length >= 1);
   assert.equal(southPoleCustom.sky.sun.length, 178);
+});
+
+test('handleClientApi serves static Live Server fallback routes matching backend output', async () => {
+  const data = await handleClientApi('/api/map/data');
+  assert.equal(data.ephemerisCount, 178);
+  assert.ok(data.sites.length >= 8);
+  assert.ok(data.missions.length >= 11);
+
+  const sky = await handleClientApi('/api/map/sky?site=SHACKLETON_RIM&sample=141');
+  assert.equal(sky.id, 'SHACKLETON_RIM');
+  assert.equal(sky.sampleCount, 178);
+  assert.ok(sky.windows.computedSunlitTerrainPct > 70);
+
+  const evalFar = await handleClientApi('/api/map/evaluate?lat=-75.0&lon=140.0&sample=141');
+  assert.equal(evalFar.region, 'FAR_SIDE');
+  assert.equal(evalFar.sky.earthVisible, false);
+  assert.ok(evalFar.warnings.some((w) => /relay/i.test(w)));
+
+  const cascade = await handleClientApi('/api/map/cascade?mission=blue-ghost-2');
+  assert.ok(cascade.impactCount >= 1);
+  assert.ok(cascade.impactedMissions.some((m) => m.id === 'draper-1'));
+
+  const horizonsRaw = await handleClientApi('/api/map/raw/horizons');
+  assert.match(horizonsRaw.result, /\$\$SOE/);
+
+  await assert.rejects(() => handleClientApi('/api/map/sky?site=NONEXISTENT'), /404/);
 });
