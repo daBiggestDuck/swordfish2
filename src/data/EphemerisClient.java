@@ -2,7 +2,7 @@ package data;
 
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,7 +76,7 @@ public class EphemerisClient {
         System.out.println("[EphemerisClient] Fetching: " + startDate + " → " + stopDate
                            + " step=" + stepSize);
 
-        HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
+        HttpURLConnection conn = (HttpURLConnection) URI.create(urlStr).toURL().openConnection();
         conn.setConnectTimeout(30_000);
         conn.setReadTimeout(120_000);
         conn.setRequestProperty("User-Agent", "LunarPets-DataPipeline/1.0");

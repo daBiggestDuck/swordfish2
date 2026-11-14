@@ -2,11 +2,7 @@ package data;
 
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.URL;
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
-import java.awt.image.Raster;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -120,7 +116,7 @@ public class MoonTrekClient {
 
         // Parse IFD entries
         int nEntries = buf.getShort(ifdOff) & 0xFFFF;
-        int width = 0, height = 0, stripOffset = 0, stripByteCount = 0;
+        int width = 0, height = 0;
         int rowsPerStrip = 0;
         int[] stripOffsets = null;
         int[] stripByteCounts = null;
@@ -213,7 +209,7 @@ public class MoonTrekClient {
     }
 
     private static byte[] httpGet(String urlStr) throws IOException {
-        HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
+        HttpURLConnection conn = (HttpURLConnection) URI.create(urlStr).toURL().openConnection();
         conn.setConnectTimeout(30_000);
         conn.setReadTimeout(180_000);
         conn.setRequestProperty("User-Agent", "LunarPets-DataPipeline/1.0");

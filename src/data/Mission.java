@@ -10,7 +10,7 @@ import java.util.List;
  * CLPS timeline PDF (Jul 2025 rev).
  */
 public class Mission {
-    public final String id;           // task-order slug
+    public final String id;           // stable id shared with the story branch (e.g. "blue-ghost-1")
     public final String taskOrder;    // official TO name
     public final String vendor;
     public final String lander;
@@ -78,111 +78,115 @@ public class Mission {
         return Collections.unmodifiableList(Arrays.asList(
 
             // ── 2024 ──
-            new Mission("to2-ab", "TO2-AB", "Astrobotic", "Peregrine",
-                "sinus-viscositatis", "2024-01-08", null,
+            // Ids follow the story branch's Missions.java, which says
+            // "keep the ids stable" — story, engine and map consumers
+            // key on these. The official task order lives in `taskOrder`.
+            new Mission("peregrine-1", "TO2-AB", "Astrobotic", "Peregrine",
+                "SINUS_VISCOSITATIS", "2024-01-08", null,
                 "failed", "2026-11-14", 2024,
                 ids("nss","lets","nirvss","pitms","lra-peregrine"),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/to2-astrobotic/",
                 TIMELINE),
 
-            new Mission("to2-im", "TO2-IM", "Intuitive Machines", "Nova-C (Odysseus)",
-                "malapert-a", "2024-02-15", "2024-02-22",
+            new Mission("im-1", "TO2-IM", "Intuitive Machines", "Nova-C (Odysseus)",
+                "MALAPERT_A", "2024-02-15", "2024-02-22",
                 "landed", "2026-11-14", 2024,
                 ids("ln-1","scalpss-im1","rolses","ndl","rfmg","lra-im1"),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/to2-im/",
                 TIMELINE),
 
             // ── 2025 ──
-            new Mission("to19d", "TO19D", "Firefly Aerospace", "Blue Ghost 1",
-                "mare-crisium", "2025-01-15", "2025-03-02",
+            new Mission("blue-ghost-1", "TO19D", "Firefly Aerospace", "Blue Ghost 1",
+                "MARE_CRISIUM", "2025-01-15", "2025-03-02",
                 "landed", "2026-11-14", 2025,
                 ids("scalpss-bg1","rac","lms","radpc","lpv","lister",
-                    "lexi","moonlight","lra-bg1","stereo-bg1"),
+                    "lexi","nglr","lra-bg1","stereo-bg1"),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/to19d-firefly/",
                 TIMELINE),
 
-            new Mission("to-prime1", "TO-PRIME1", "Intuitive Machines", "Nova-C (Athena)",
-                "shackleton-ridge", "2025-02-27", "2025-03-06",
+            new Mission("im-2", "TO-PRIME1", "Intuitive Machines", "Nova-C (Athena)",
+                "SHACKLETON_RIDGE", "2025-02-27", "2025-03-06",
                 "landed", "2026-11-14", 2025,
                 ids("msolo","lra-im2","micro-nova"),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/prime-1-im/",
                 TIMELINE),
 
             // ── 2026 (planned per timeline) ──
-            new Mission("to20a", "TO20A", "Astrobotic", "Griffin 1",
-                "nobile-region", null, null,
+            new Mission("griffin-1", "TO20A", "Astrobotic", "Griffin 1",
+                "NOBILE_REGION", null, null,
                 "planned", "2026-11-14", 2026,
                 ids("trident","msolo-griffin","lra-griffin","nss-griffin"),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/to20a-astrobotic/",
                 TIMELINE),
 
-            new Mission("ct-3", "CT-3", "Blue Origin", "Blue Moon MK1",
-                "south-pole-bo", null, null,
+            new Mission("blue-moon-1", "CT-3", "Blue Origin", "Blue Moon MK1",
+                "SOUTH_POLE_BO", null, null,
                 "planned", "2026-11-14", 2026,
-                ids("ct3-payload-1","ct3-payload-2"),
+                ids(),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/ct-3-science/",
                 TIMELINE),
 
-            new Mission("cp-21", "CP-21", "Firefly Aerospace", "Blue Ghost 3",
-                "gruithuisen-domes", null, null,
+            new Mission("blue-ghost-3", "CP-21", "Firefly Aerospace", "Blue Ghost 3",
+                "GRUITHUISEN_DOMES", null, null,
                 "planned", "2026-11-14", 2026,
-                ids("cp21-p1","cp21-p2","cp21-p3","cp21-p4","cp21-p5","cp21-p6"),
+                ids(),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/cp-21-science/",
                 TIMELINE),
 
-            new Mission("cp-11", "CP-11", "Intuitive Machines", "Nova-C (IM-3)",
-                "reiner-gamma", null, null,
+            new Mission("im-3", "CP-11", "Intuitive Machines", "Nova-C (IM-3)",
+                "REINER_GAMMA", null, null,
                 "planned", "2026-11-14", 2026,
-                ids("lusee-night","lra-im3","scalpss-im3","mag-im3"),
+                ids("lvx","cadre","mpac","lusem"),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/cp-11/",
                 TIMELINE),
 
             // ── 2027 (planned per timeline) ──
-            new Mission("cs-3", "CS-3/4", "Firefly Aerospace", "Blue Ghost 2",
-                "lunar-farside", null, null,
+            new Mission("blue-ghost-2", "CS-3/4", "Firefly Aerospace", "Blue Ghost 2",
+                "FAR_SIDE", null, null,
                 "planned", "2026-11-14", 2027,
-                ids("lusee-night-bg2","lra-bg2","relay-bg2"),
+                ids("lusee-night"),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/cs-3/",
                 TIMELINE),
 
-            new Mission("cs-11", "CS-11", "TBD (Draper)", "SERIES-2",
-                "schrodinger-basin", null, null,
+            new Mission("draper-1", "CS-11", "Draper", "SERIES-2",
+                "SCHRODINGER_BASIN", null, null,
                 "planned", "2026-11-14", 2027,
-                ids("cs11-p1","cs11-p2","cs11-p3"),
+                ids(),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/cs-11/",
                 TIMELINE),
 
-            new Mission("cp-22", "CP-22", "Intuitive Machines", "Nova-C (IM-4)",
-                "mons-mouton", null, null,
+            new Mission("im-4", "CP-22", "Intuitive Machines", "Nova-C (IM-4)",
+                "MONS_MOUTON", null, null,
                 "planned", "2026-11-14", 2027,
-                ids("cp22-p1","cp22-p2","cp22-p3","cp22-p4","cp22-p5","cp22-p6"),
+                ids(),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/cp-22-science/",
                 TIMELINE),
 
             // ── 2028 (planned per timeline) ──
+            // Not on the story branch's list yet; task-order ids kept.
             new Mission("cs-6", "CS-6", "Firefly Aerospace", "Blue Ghost 4",
-                "south-pole-bg4", null, null,
+                "SOUTH_POLE_BG4", null, null,
                 "planned", "2026-11-14", 2028,
-                ids("cs6-p1","cs6-p2","cs6-p3","cs6-p4"),
+                ids(),
                 "https://science.nasa.gov/lunar-science/programs/clps/cs-6-science/",
                 TIMELINE),
 
             new Mission("ct-4", "CT-4", "Intuitive Machines", "Nova-D",
-                "south-pole-novad", null, null,
+                "SOUTH_POLE_NOVAD", null, null,
                 "planned", "2026-11-14", 2028,
-                ids("ct4-p1","ct4-p2","ct4-p3","ct4-p4","ct4-p5","ct4-p6"),
+                ids(),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/",
                 TIMELINE),
 
             new Mission("cs-8", "CS-8", "TBD", "TBD",
-                "south-pole-bo", null, null,
+                "SOUTH_POLE_BO", null, null,
                 "planned", "2026-11-14", 2028,
                 ids(),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/",
                 TIMELINE),
 
             new Mission("cx-2", "CX-2", "TBD", "TBD",
-                "south-pole-bo", null, null,
+                "SOUTH_POLE_BO", null, null,
                 "planned", "2026-11-14", 2028,
                 ids(),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/",

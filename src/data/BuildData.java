@@ -19,6 +19,7 @@ import java.util.List;
  * Output:
  *   data/sites.json
  *   data/missions.json
+ *   data/game-missions.json
  *   data/payloads.json
  *   data/pet-archetypes.json
  *   data/mission-events.json
@@ -141,19 +142,19 @@ public class BuildData {
             for (Site site : sites) {
                 if (site.horizonProfile != null) continue; // already computed
                 switch (site.id) {
-                    case "malapert-a":
+                    case "MALAPERT_A":
                         site.illuminationPct = 48.8;
                         System.out.println("  Malapert A: using validated terrain illum 48.8%");
                         break;
-                    case "mons-mouton":
+                    case "MONS_MOUTON":
                         site.illuminationPct = 1.1;
                         System.out.println("  Mons Mouton: using validated terrain illum 1.1% (deep crater)");
                         break;
-                    case "shackleton-ridge":
+                    case "SHACKLETON_RIDGE":
                         site.illuminationPct = 0.5;
                         System.out.println("  Shackleton Ridge: using validated terrain illum 0.5%");
                         break;
-                    case "nobile-region":
+                    case "NOBILE_REGION":
                         site.illuminationPct = 45.0; // approximate, near-polar
                         System.out.println("  Nobile Region: using estimated terrain illum 45%");
                         break;
@@ -162,6 +163,19 @@ public class BuildData {
         }
 
         // ── 5. Write JSON outputs ──────────────────────────────
+
+        // Engine-branch decay multipliers — computed LAST, from the final
+        // illumination/Earth-visibility values (after terrain overrides):
+        //   power     <- illumination (dark site → heaters eat power)
+        //   happiness <- Earth visibility (far side → lonely pet)
+        // Range tuned so the brightest site ≈ 1.25 and a permanently-dark
+        // site ≈ 1.8 (engine's sample-shape values).
+        for (Site site : sites) {
+            if (!Double.isNaN(site.illuminationPct) && !Double.isNaN(site.earthVisibilityPct)) {
+                site.powerDecayMult = clamp(0.7 + 1.1 * (1.0 - site.illuminationPct / 100.0), 0.7, 1.8);
+                site.happinessDecayMult = clamp(0.9 + 0.9 * (1.0 - site.earthVisibilityPct / 100.0), 0.9, 1.8);
+            }
+        }
 
         // sites.json
         List<String> siteJsons = new ArrayList<>();
@@ -175,6 +189,14 @@ public class BuildData {
         for (Mission m : missions) missionJsons.add(m.toJson());
         writeFile(OUT + "/missions.json", JsonUtil.array(missionJsons));
         System.out.println("✓ data/missions.json (" + missions.size() + " missions)");
+
+        // game-missions.json — engine-branch missions derived from the
+        // real payload manifest (shape: engine README "Data shapes").
+        List<GameMission> gameMissions = GameMission.all(missions, Payload.all(), PetArchetype.all());
+        List<String> gameJsons = new ArrayList<>();
+        for (GameMission g : gameMissions) gameJsons.add(g.toJson());
+        writeFile(OUT + "/game-missions.json", JsonUtil.array(gameJsons));
+        System.out.println("✓ data/game-missions.json (" + gameMissions.size() + " gameplay missions)");
 
         // payloads.json
         List<Payload> payloads = Payload.all();
@@ -304,6 +326,10 @@ public class BuildData {
     }
 
     // ── I/O ────────────────────────────────────────────────────
+
+    private static double clamp(double v, double lo, double hi) {
+        return Math.min(hi, Math.max(lo, v));
+    }
 
     private static void writeFile(String path, String content) throws IOException {
         try (Writer w = new BufferedWriter(new OutputStreamWriter(
