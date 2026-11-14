@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payload Pets: Story</title>
+  <link rel="stylesheet" href="story.css">
+</head>
+<body>
+  <header>
+    <h1>Payload Pets</h1>
+    <p>Adopt a real lunar instrument and look after it through one lunar day.</p>
+  </header>
+
+  <main>
+    <section class="card" aria-labelledby="setup-h">
+      <h2 id="setup-h">1. Adopt your pet</h2>
+      <label>Pet name <input id="petName" maxlength="24" placeholder="Leave blank for the default name"></label>
+      <label>Pet (a real CLPS lander)
+        <select id="pet"></select>
+      </label>
+      <p id="pet-bio" class="fine"></p>
+      <label>Landing site
+        <select id="site"></select>
+      </label>
+    </section>
+
+    <section class="card" aria-labelledby="day-h">
+      <h2 id="day-h">2. Live one lunar day</h2>
+      <div id="pet-face" aria-live="polite">🙂</div>
+      <div id="mood"></div>
+      <input id="slider" type="range" min="0" max="1000" value="0" aria-label="Lunar day progress">
+      <div id="readout">Day 0.0 of 14</div>
+      <button id="play">Play</button>
+      <button id="restart" class="ghost">Restart</button>
+    </section>
+
+    <section class="card" aria-labelledby="sky-h">
+      <h2 id="sky-h">Sun &amp; Earth at your site</h2>
+      <label>Landing date
+        <input id="date" type="date">
+      </label>
+      <label>Compare with
+        <select id="compare"><option value="">(none)</option></select>
+      </label>
+      <button id="best" class="ghost" type="button">Best landing date for this site</button>
+      <div id="sky"></div>
+      <p id="sky-note" class="fine"></p>
+    </section>
+
+    <section class="card" aria-labelledby="clps-h">
+      <h2 id="clps-h">Real CLPS deliveries</h2>
+      <ol id="timeline"></ol>
+      <p class="fine">Order of planned missions is approximate (NASA places future deliveries by year only).</p>
+    </section>
+  </main>
+
+  <div id="popup" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="popup-title">
+    <div class="modal">
+      <h3 id="popup-title"></h3>
+      <p id="popup-text"></p>
+      <p class="mission" id="popup-mission"></p>
+      <p><a id="popup-source" class="srclink" target="_blank" rel="noopener">NASA source</a></p>
+      <button id="popup-ok">Got it</button>
+    </div>
+  </div>
+
+  <div id="passport" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="pp-title">
+    <div class="modal passport">
+      <h3 id="pp-title">Pet Passport</h3>
+      <dl id="pp-body"></dl>
+      <div class="row">
+        <button id="pp-copy">Copy</button>
+        <a id="pp-nasa" class="btn" target="_blank" rel="noopener">NASA source</a>
+        <button id="pp-close" class="ghost">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="story.js"></script>
+</body>
+</html>
