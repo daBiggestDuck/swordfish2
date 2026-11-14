@@ -1,0 +1,174 @@
+{
+  "displayFieldName": "Name",
+  "sourceEndpoint": "https://trek.nasa.gov/moon/trekarcgis/rest/services/PSR_SP/MapServer/0/query?where=1=1&outFields=*&f=json",
+  "geometryType": "esriGeometryPolygon",
+  "spatialReference": {
+    "wkid": 104903,
+    "latestWkid": 104903
+  },
+  "fields": [
+    { "name": "OBJECTID", "type": "esriFieldTypeOID", "alias": "OBJECTID" },
+    { "name": "PSR_ID", "type": "esriFieldTypeString", "alias": "PSR_ID" },
+    { "name": "Name", "type": "esriFieldTypeString", "alias": "Name" },
+    { "name": "CenterLat", "type": "esriFieldTypeDouble", "alias": "CenterLat" },
+    { "name": "CenterLon", "type": "esriFieldTypeDouble", "alias": "CenterLon" },
+    { "name": "AreaKm2", "type": "esriFieldTypeDouble", "alias": "AreaKm2" },
+    { "name": "RadiusKm", "type": "esriFieldTypeDouble", "alias": "RadiusKm" },
+    { "name": "DivinerMaxTempK", "type": "esriFieldTypeDouble", "alias": "DivinerMaxTempK" },
+    { "name": "IceEvidenceScore", "type": "esriFieldTypeDouble", "alias": "IceEvidenceScore" }
+  ],
+  "features": [
+    {
+      "attributes": {
+        "OBJECTID": 1,
+        "PSR_ID": "PSR_SHACKLETON",
+        "Name": "Shackleton Crater Floor",
+        "CenterLat": -89.67,
+        "CenterLon": 129.78,
+        "AreaKm2": 225.4,
+        "RadiusKm": 10.5,
+        "DivinerMaxTempK": 88.2,
+        "IceEvidenceScore": 0.94,
+        "Notes": "Primary South Pole cold trap; high LOLA albedo and M3/Mini-RF volatile signatures."
+      },
+      "geometry": {
+        "rings": [[
+          [115.0, -89.35], [145.0, -89.35], [160.0, -89.70], [130.0, -89.92], [100.0, -89.70], [115.0, -89.35]
+        ]]
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 2,
+        "PSR_ID": "PSR_CABEUS",
+        "Name": "Cabeus Crater PSR",
+        "CenterLat": -84.90,
+        "CenterLon": -35.50,
+        "AreaKm2": 438.0,
+        "RadiusKm": 18.2,
+        "DivinerMaxTempK": 42.5,
+        "IceEvidenceScore": 0.98,
+        "Notes": "LCROSS impact target (2009); confirmed ~5.6 wt% water ice in permanently shadowed ejecta."
+      },
+      "geometry": {
+        "rings": [[
+          [-41.0, -84.35], [-30.0, -84.35], [-28.5, -84.95], [-35.5, -85.45], [-42.5, -84.95], [-41.0, -84.35]
+        ]]
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 3,
+        "PSR_ID": "PSR_HAWORTH",
+        "Name": "Haworth Crater PSR",
+        "CenterLat": -87.45,
+        "CenterLon": -5.17,
+        "AreaKm2": 782.6,
+        "RadiusKm": 25.0,
+        "DivinerMaxTempK": 58.0,
+        "IceEvidenceScore": 0.91,
+        "Notes": "Large cold trap bordering Malapert massif and Mons Mouton corridor."
+      },
+      "geometry": {
+        "rings": [[
+          [-14.0, -86.65], [3.5, -86.65], [6.0, -87.50], [-5.2, -88.25], [-16.0, -87.50], [-14.0, -86.65]
+        ]]
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 4,
+        "PSR_ID": "PSR_SHOEMAKER",
+        "Name": "Shoemaker Crater PSR",
+        "CenterLat": -88.14,
+        "CenterLon": 45.91,
+        "AreaKm2": 1031.0,
+        "RadiusKm": 25.4,
+        "DivinerMaxTempK": 54.0,
+        "IceEvidenceScore": 0.92,
+        "Notes": "Major PSR adjacent to Nobile and Mons Mouton landing corridor."
+      },
+      "geometry": {
+        "rings": [[
+          [32.0, -87.30], [59.0, -87.30], [62.0, -88.15], [45.9, -88.95], [30.0, -88.15], [32.0, -87.30]
+        ]]
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 5,
+        "PSR_ID": "PSR_FAUSTINI",
+        "Name": "Faustini Crater PSR",
+        "CenterLat": -87.18,
+        "CenterLon": 84.31,
+        "AreaKm2": 667.0,
+        "RadiusKm": 21.2,
+        "DivinerMaxTempK": 61.5,
+        "IceEvidenceScore": 0.88,
+        "Notes": "High Mini-RF circular polarization ratio anomaly inside permanently shadowed floor."
+      },
+      "geometry": {
+        "rings": [[
+          [74.0, -86.50], [94.5, -86.50], [96.5, -87.20], [84.3, -87.85], [72.0, -87.20], [74.0, -86.50]
+        ]]
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 6,
+        "PSR_ID": "PSR_DE_GERLACHE",
+        "Name": "de Gerlache Crater PSR",
+        "CenterLat": -88.48,
+        "CenterLon": -88.34,
+        "AreaKm2": 324.0,
+        "RadiusKm": 16.2,
+        "DivinerMaxTempK": 76.4,
+        "IceEvidenceScore": 0.87,
+        "Notes": "Adjacent to the Connecting Ridge Artemis III candidate site."
+      },
+      "geometry": {
+        "rings": [[
+          [-102.0, -87.95], [-74.0, -87.95], [-72.0, -88.50], [-88.3, -89.02], [-104.0, -88.50], [-102.0, -87.95]
+        ]]
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 7,
+        "PSR_ID": "PSR_NOBILE_LOCAL",
+        "Name": "Nobile Rim Cold Trap",
+        "CenterLat": -85.35,
+        "CenterLon": 46.20,
+        "AreaKm2": 188.5,
+        "RadiusKm": 11.8,
+        "DivinerMaxTempK": 82.0,
+        "IceEvidenceScore": 0.85,
+        "Notes": "Micro-PSR bordering Mons Mouton / Nobile Region target for VIPER & PRIME-1."
+      },
+      "geometry": {
+        "rings": [[
+          [41.5, -84.95], [50.8, -84.95], [52.0, -85.35], [46.2, -85.75], [40.5, -85.35], [41.5, -84.95]
+        ]]
+      }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 8,
+        "PSR_ID": "PSR_MALAPERT_SHADOW",
+        "Name": "Malapert A Crater Floor Shadow",
+        "CenterLat": -80.42,
+        "CenterLon": 3.40,
+        "AreaKm2": 64.2,
+        "RadiusKm": 6.8,
+        "DivinerMaxTempK": 95.0,
+        "IceEvidenceScore": 0.74,
+        "Notes": "Local permanently shadowed depression ~12 km south-southeast of IM-1 Odysseus landing site."
+      },
+      "geometry": {
+        "rings": [[
+          [1.8, -80.22], [5.0, -80.22], [5.4, -80.44], [3.4, -80.62], [1.4, -80.44], [1.8, -80.22]
+        ]]
+      }
+    }
+  ]
+}

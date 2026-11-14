@@ -1,0 +1,66 @@
+{
+  "source": "LROC QuickMap (NASA/GSFC/ASU/ACT-REACT)",
+  "retrievedAt": "2026-11-14T20:30:00Z",
+  "sourceUrl": "https://quickmap.lroc.im-ldi.com/?prjExtent=-2456929.2929293%2C-1737400%2C2456929.2929293%2C1737400&earthShadowEnabled=true&proj=10&stack=3314&defs=N4IgzGCMAsIFygPYAcCGBjAlgFwJ70gF9Cg",
+  "state": {
+    "proj": 10,
+    "projectionName": "Equirectangular (Moon)",
+    "srs": "IAU2000:30100",
+    "lunarRadiusMeters": 1737400,
+    "prjExtent": [-2456929.2929293, -1737400, 2456929.2929293, 1737400],
+    "lonBoundsDeg": [-180, 180],
+    "latBoundsDeg": [-90, 90],
+    "earthShadowEnabled": true,
+    "stack": "3314",
+    "defs": "N4IgzGCMAsIFygPYAcCGBjAlgFwJ70gF9Cg"
+  },
+  "layers": [
+    {
+      "id": "lroc_wac_global",
+      "name": "LROC WAC Global Mosaic 100m",
+      "instrument": "LROC WAC",
+      "resolutionM": 100,
+      "type": "basemap",
+      "attribution": "NASA/GSFC/Arizona State University"
+    },
+    {
+      "id": "lola_hillshade",
+      "name": "LRO LOLA Shaded Relief & Elevation",
+      "instrument": "LOLA",
+      "resolutionM": 118,
+      "type": "terrain",
+      "attribution": "NASA/GSFC/MIT LOLA Team"
+    },
+    {
+      "id": "earth_shadow_terminator",
+      "name": "Solar Illumination & Earth Shadow Overlay",
+      "enabled": true,
+      "type": "lighting",
+      "attribution": "LROC QuickMap / JPL Horizons"
+    },
+    {
+      "id": "iau_nomenclature",
+      "name": "IAU Planetary Nomenclature & Landing Sites",
+      "type": "vector",
+      "attribution": "USGS Astrogeology / IAU"
+    }
+  ],
+  "deepLinkTemplate": "https://quickmap.lroc.im-ldi.com/?extent={{lonMin}},{{latMin}},{{lonMax}},{{latMax}}&proj=10&earthShadowEnabled=true&stack=3314&defs=N4IgzGCMAsIFygPYAcCGBjAlgFwJ70gF9Cg",
+  "notableAlbedoFeatures": [
+    { "name": "Mare Crisium", "lat": 17.0, "lon": 59.1, "radiusDeg": 8.5, "albedo": "low-mare" },
+    { "name": "Mare Tranquillitatis", "lat": 8.5, "lon": 31.4, "radiusDeg": 12.0, "albedo": "low-mare" },
+    { "name": "Mare Serenitatis", "lat": 28.0, "lon": 17.5, "radiusDeg": 10.5, "albedo": "low-mare" },
+    { "name": "Mare Imbrium", "lat": 32.8, "lon": -15.6, "radiusDeg": 17.0, "albedo": "low-mare" },
+    { "name": "Oceanus Procellarum", "lat": 18.4, "lon": -57.4, "radiusDeg": 24.0, "albedo": "low-mare" },
+    { "name": "Mare Fecunditatis", "lat": -7.8, "lon": 51.3, "radiusDeg": 11.0, "albedo": "low-mare" },
+    { "name": "Mare Nectaris", "lat": -15.2, "lon": 35.5, "radiusDeg": 6.5, "albedo": "low-mare" },
+    { "name": "Mare Humorum", "lat": -24.4, "lon": -38.6, "radiusDeg": 6.8, "albedo": "low-mare" },
+    { "name": "Mare Nubium", "lat": -21.3, "lon": -16.6, "radiusDeg": 11.0, "albedo": "low-mare" },
+    { "name": "Mare Moscoviense", "lat": 27.3, "lon": 147.9, "radiusDeg": 5.5, "albedo": "low-mare-farside" },
+    { "name": "Mare Orientale", "lat": -19.4, "lon": -92.8, "radiusDeg": 9.5, "albedo": "multi-ring-basin" },
+    { "name": "South Pole-Aitken Basin", "lat": -53.0, "lon": 191.0, "radiusDeg": 36.0, "albedo": "highland-basin" },
+    { "name": "Tycho Crater", "lat": -43.31, "lon": -11.36, "radiusDeg": 1.8, "albedo": "bright-ray-crater" },
+    { "name": "Copernicus Crater", "lat": 9.62, "lon": -20.08, "radiusDeg": 2.0, "albedo": "bright-ray-crater" },
+    { "name": "Aristarchus Plateau", "lat": 23.7, "lon": -47.4, "radiusDeg": 2.5, "albedo": "bright-pyroclastic" }
+  ]
+}
