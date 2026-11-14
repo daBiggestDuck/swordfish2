@@ -6,7 +6,15 @@ Game rules and meter balance. Owner: Aku (`engine` branch).
 - `engine.js` holds the rules. Every function is pure: you pass in a state and get back `{ state, events, error }`. The engine has no timers and doesn't touch the DOM.
 - `samples.js` has placeholder sites and missions until the `data` branch lands.
 
-Run the tests with `npm test`.
+## Running it (offline, no website)
+
+Everything runs locally with Node. There are no dependencies and no network calls.
+
+| Command | What it does |
+|---|---|
+| `npm start` | Play the pet in the terminal: `feed`, `play`, `mission ice-survey`, `wait 60`, `help` |
+| `npm run balance` | Simulates every site for 3 hours and reports when a neglected pet faints and how often a player has to act. Re-run after editing `config.js` |
+| `npm test` | Runs the engine tests |
 
 ## Using it (ui branch)
 
@@ -61,7 +69,18 @@ Every event also has `time`.
 
 `fainted`, `critical`, `suffocating`, `hungry`, `tired`, `sad`, `exploring`, `happy`, `content`. Each one needs art.
 
+## Saving (ui branch)
+
+```js
+localStorage.setItem('save', serialize(game));
+game = deserialize(localStorage.getItem('save'));
+game = tick(game, secondsSinceLastVisit).state;   // catch up while away
+```
+
 ## Data shapes (data branch)
+
+Check your files with `validateSite(site)` / `validateMission(mission)`. Each returns a list of problems, and an empty list means the data is valid.
+
 
 ```js
 // Site

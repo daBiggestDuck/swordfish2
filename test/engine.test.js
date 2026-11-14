@@ -11,6 +11,10 @@ import {
   config,
   SAMPLE_SITES,
   SAMPLE_MISSIONS,
+  serialize,
+  deserialize,
+  validateSite,
+  validateMission,
 } from '../src/engine/index.js';
 
 const [rim, psr] = SAMPLE_SITES;
@@ -108,4 +112,21 @@ test('mood reacts to meters', () => {
   g.meters.food = 100;
   g.meters.happiness = 90;
   assert.equal(getMood(g), 'happy');
+});
+
+test('save and load round-trip', () => {
+  const g = startMission(tick(createGame({ site: psr }), 90).state, iceSurvey).state;
+  const loaded = deserialize(serialize(g));
+  assert.deepEqual(loaded, g);
+  assert.throws(() => deserialize(JSON.stringify({ version: 999, state: g })), /version/);
+});
+
+test('sample data passes validation', () => {
+  for (const s of SAMPLE_SITES) assert.deepEqual(validateSite(s), []);
+  for (const m of SAMPLE_MISSIONS) assert.deepEqual(validateMission(m), []);
+});
+
+test('validation catches bad data', () => {
+  assert.ok(validateSite({ id: 'x', name: 'X', decayMultipliers: { fuel: 2 } }).length);
+  assert.ok(validateMission({ id: 'x', name: 'X', duration: 0 }).length);
 });

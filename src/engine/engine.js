@@ -205,6 +205,63 @@ export function changeSite(state, site) {
   return { state: s, events: [{ type: 'siteChanged', siteId: site.id, time: s.time }], error: null };
 }
 
+// ---------- Saving ----------
+
+export const SAVE_VERSION = 1;
+
+/** State -> JSON string, for localStorage or a file. */
+export function serialize(state) {
+  return JSON.stringify({ version: SAVE_VERSION, state });
+}
+
+/**
+ * JSON string -> state. Fills in any meters added to config since the save
+ * was made. Throws on a save from a newer, unknown version.
+ */
+export function deserialize(json) {
+  const { version, state } = JSON.parse(json);
+  if (version !== SAVE_VERSION) throw new Error(`Unsupported save version: ${version}`);
+  const fresh = createGame({ pet: state.pet, site: state.site });
+  return {
+    ...fresh,
+    ...state,
+    meters: { ...fresh.meters, ...state.meters },
+    cooldowns: { ...state.cooldowns },
+    completedMissions: [...(state.completedMissions ?? [])],
+  };
+}
+
+// ---------- Data checks (for the data branch) ----------
+
+/** List of problems with a site object; empty means valid. */
+export function validateSite(site) {
+  const problems = [];
+  if (!site || typeof site !== 'object') return ['Site is not an object'];
+  if (typeof site.id !== 'string' || !site.id) problems.push('id must be a non-empty string');
+  if (typeof site.name !== 'string' || !site.name) problems.push('name must be a non-empty string');
+  for (const [key, mult] of Object.entries(site.decayMultipliers ?? {})) {
+    if (!METER_KEYS.includes(key)) problems.push(`decayMultipliers.${key} is not a meter`);
+    else if (typeof mult !== 'number' || mult < 0) problems.push(`decayMultipliers.${key} must be a number ≥ 0`);
+  }
+  return problems;
+}
+
+/** List of problems with a mission object; empty means valid. */
+export function validateMission(mission) {
+  const problems = [];
+  if (!mission || typeof mission !== 'object') return ['Mission is not an object'];
+  if (typeof mission.id !== 'string' || !mission.id) problems.push('id must be a non-empty string');
+  if (typeof mission.name !== 'string' || !mission.name) problems.push('name must be a non-empty string');
+  if (typeof mission.duration !== 'number' || mission.duration <= 0) problems.push('duration must be a number > 0 (seconds)');
+  for (const field of ['requires', 'cost', 'reward']) {
+    for (const [key, n] of Object.entries(mission[field] ?? {})) {
+      if (!METER_KEYS.includes(key)) problems.push(`${field}.${key} is not a meter`);
+      else if (typeof n !== 'number') problems.push(`${field}.${key} must be a number`);
+    }
+  }
+  return problems;
+}
+
 /** 0–1 progress of the current mission, or null. */
 export function missionProgress(state) {
   if (!state.mission) return null;
