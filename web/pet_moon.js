@@ -1,6 +1,6 @@
 /**
  * Drop a payload pet onto the Moon and drive live site reactions.
- * SVG via demos/js-pets present(); mounts sibling 3D when window.PayloadPets3D.renderPet3D exists.
+ * Prefers PayloadPets3D (live / shared farm / capturePetSprite blit); SVG present() is fallback only.
  *
  * Canonical drop set (4): LISTER, Retro, EDS, Nodey — Power / Passive / Dust / Signal.
  */
@@ -288,7 +288,8 @@ export function disposePetVisual(host) {
  * Mount pet visual into host. Prefers sibling 3D API; else SVG from present().
  * Reuses an existing PayloadPets3D handle via update() when the pet id is unchanged.
  * Options:
- *   forceSvg — never mount WebGL (2D map / side card while globe owns the 3D context)
+ *   forceSvg — never mount WebGL
+ *   mode — "live" | "shared" (shared = farm blit; safe beside globe surface live context)
  *   surface — transparent billboard for globe-surface anchoring
  * @returns {'3d'|'svg'|'empty'}
  */
@@ -304,6 +305,7 @@ export async function mountPetVisual(host, petId, skyCurrent, options = {}) {
   const reaction = pose.reaction;
   const forceSvg = Boolean(options.forceSvg);
   const surface = Boolean(options.surface);
+  const mode = options.mode === 'shared' ? 'shared' : options.mode === 'live' ? 'live' : undefined;
   const opts3d = {
     signal: reaction.signal,
     powerGlow: reaction.powerGlow,
@@ -313,6 +315,7 @@ export async function mountPetVisual(host, petId, skyCurrent, options = {}) {
     interactive: Boolean(options.interactive),
     surface,
     transparent: surface || Boolean(options.transparent),
+    ...(mode ? { mode } : {}),
   };
 
   if (!forceSvg) {
@@ -412,12 +415,15 @@ async function waitForPayloadPets3D(timeoutMs) {
 }
 
 /**
- * Compact 2D marker for flat/south-pole map overlays (pure SVG — never WebGL).
+ * Compact 2D marker for flat/south-pole map overlays.
+ * Prefers a PayloadPets3D blit PNG (same instrument geometry as globe 3D);
+ * falls back to SVG face art only when no spriteUrl is provided yet.
+ *
  * @param {object} pose present()-compatible pose from poseForSite
  * @param {number} x
  * @param {number} y
  * @param {number} [scale]
- * @param {{ label?: boolean, pin?: boolean }} [opts]
+ * @param {{ label?: boolean, pin?: boolean, spriteUrl?: string|null, spriteSize?: number }} [opts]
  */
 export function buildOverlayMarkerGroup(pose, x, y, scale = 0.28, opts = {}) {
   const g = document.createElementNS(SVG_NS, 'g');
@@ -443,41 +449,85 @@ export function buildOverlayMarkerGroup(pose, x, y, scale = 0.28, opts = {}) {
 
   const art = document.createElementNS(SVG_NS, 'g');
   art.setAttribute('class', 'moon-pet-sprite-art');
-  art.setAttribute('transform', `scale(${scale}) translate(-100 -118)`);
 
   const reaction = pose.reaction;
-  if (reaction?.powerGlow) {
-    const glow = document.createElementNS(SVG_NS, 'circle');
-    glow.setAttribute('cx', '100');
-    glow.setAttribute('cy', '120');
-    glow.setAttribute('r', '70');
-    glow.setAttribute('fill', '#ffe7ad');
-    glow.setAttribute('opacity', '0.35');
-    glow.setAttribute('class', 'pet-power-glow');
-    art.append(glow);
-  }
-  if (reaction?.signalStress) {
-    const ring = document.createElementNS(SVG_NS, 'circle');
-    ring.setAttribute('cx', '100');
-    ring.setAttribute('cy', '120');
-    ring.setAttribute('r', '78');
-    ring.setAttribute('fill', 'none');
-    ring.setAttribute('stroke', '#ff6b6b');
-    ring.setAttribute('stroke-width', '6');
-    ring.setAttribute('stroke-dasharray', '10 8');
-    ring.setAttribute('opacity', '0.85');
-    ring.setAttribute('class', 'pet-signal-stress');
-    art.append(ring);
-  }
-  for (const node of pose.scene.parts) {
-    art.append(drawNode(node));
+  const spriteUrl = typeof opts.spriteUrl === 'string' && opts.spriteUrl ? opts.spriteUrl : null;
+  // Blit frames are square (~160px). Scale maps the old 200×SVG face budget onto that.
+  const spritePx = Math.max(48, Math.round(Number(opts.spriteSize) || 200 * scale));
+
+  if (spriteUrl) {
+    art.setAttribute('transform', `translate(${-spritePx / 2} ${-spritePx * 0.78})`);
+    g.setAttribute('data-pet-visual', 'blit');
+    if (reaction?.powerGlow) {
+      const glow = document.createElementNS(SVG_NS, 'circle');
+      glow.setAttribute('cx', String(spritePx / 2));
+      glow.setAttribute('cy', String(spritePx * 0.55));
+      glow.setAttribute('r', String(spritePx * 0.42));
+      glow.setAttribute('fill', '#ffe7ad');
+      glow.setAttribute('opacity', '0.35');
+      glow.setAttribute('class', 'pet-power-glow');
+      art.append(glow);
+    }
+    if (reaction?.signalStress) {
+      const ring = document.createElementNS(SVG_NS, 'circle');
+      ring.setAttribute('cx', String(spritePx / 2));
+      ring.setAttribute('cy', String(spritePx * 0.55));
+      ring.setAttribute('r', String(spritePx * 0.48));
+      ring.setAttribute('fill', 'none');
+      ring.setAttribute('stroke', '#ff6b6b');
+      ring.setAttribute('stroke-width', '3');
+      ring.setAttribute('stroke-dasharray', '8 6');
+      ring.setAttribute('opacity', '0.85');
+      ring.setAttribute('class', 'pet-signal-stress');
+      art.append(ring);
+    }
+    const img = document.createElementNS(SVG_NS, 'image');
+    img.setAttribute('href', spriteUrl);
+    img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', spriteUrl);
+    img.setAttribute('x', '0');
+    img.setAttribute('y', '0');
+    img.setAttribute('width', String(spritePx));
+    img.setAttribute('height', String(spritePx));
+    img.setAttribute('class', 'moon-pet-sprite-blit');
+    img.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    art.append(img);
+  } else {
+    art.setAttribute('transform', `scale(${scale}) translate(-100 -118)`);
+    g.setAttribute('data-pet-visual', 'svg');
+    if (reaction?.powerGlow) {
+      const glow = document.createElementNS(SVG_NS, 'circle');
+      glow.setAttribute('cx', '100');
+      glow.setAttribute('cy', '120');
+      glow.setAttribute('r', '70');
+      glow.setAttribute('fill', '#ffe7ad');
+      glow.setAttribute('opacity', '0.35');
+      glow.setAttribute('class', 'pet-power-glow');
+      art.append(glow);
+    }
+    if (reaction?.signalStress) {
+      const ring = document.createElementNS(SVG_NS, 'circle');
+      ring.setAttribute('cx', '100');
+      ring.setAttribute('cy', '120');
+      ring.setAttribute('r', '78');
+      ring.setAttribute('fill', 'none');
+      ring.setAttribute('stroke', '#ff6b6b');
+      ring.setAttribute('stroke-width', '6');
+      ring.setAttribute('stroke-dasharray', '10 8');
+      ring.setAttribute('opacity', '0.85');
+      ring.setAttribute('class', 'pet-signal-stress');
+      art.append(ring);
+    }
+    for (const node of pose.scene.parts) {
+      art.append(drawNode(node));
+    }
   }
   g.append(art);
 
   if (opts.label !== false) {
     const label = document.createElementNS(SVG_NS, 'text');
     label.setAttribute('x', '0');
-    label.setAttribute('y', String(-Math.round(118 * scale) - 6));
+    const labelLift = spriteUrl ? Math.round(spritePx * 0.82) + 4 : Math.round(118 * scale) + 6;
+    label.setAttribute('y', String(-labelLift));
     label.setAttribute('text-anchor', 'middle');
     label.setAttribute('fill', '#ffe7ad');
     label.setAttribute('font-size', '11');
@@ -579,6 +629,7 @@ export const PET_3D_HOOK = Object.freeze({
   dropPetIds: DROP_PETS.map((p) => p.id),
   mapModes: Object.freeze({
     globe3d: 'surface mount via #surface-pet-layer',
-    flatOrPole: 'SVG sprite via buildOverlayMarkerGroup (forceSvg)',
+    flatOrPole: 'PayloadPets3D.capturePetSprite blit PNG in buildOverlayMarkerGroup',
   }),
+  capture: 'capturePetSprite(petId, moodId, { signal, powerGlow, signalStress, size })',
 });

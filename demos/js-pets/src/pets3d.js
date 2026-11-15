@@ -9,6 +9,8 @@ export {
   EXTRA_PETS,
   MOODS,
   PHASES,
+  capturePetSprite,
+  clearPetSpriteCache,
   installPayloadPets3D,
   preloadPets3D,
   renderPet3D,

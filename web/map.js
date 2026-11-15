@@ -1056,11 +1056,12 @@ async function refreshPlacedPetReaction(force = false) {
   updatePlacedPetChrome(state.placedPet, reaction);
   const art = $('#moon-pet-art');
   if (art) {
-    // Side sheet stays SVG so the single WebGL context can live on the globe surface.
+    // Shared-farm blit (same instruments as globe). Does not consume a live WebGL slot,
+    // so the surface pet can keep its dedicated context in 3D mode.
     await mountPetVisual(art, placed.petId, sky, {
       idPrefix: 'map-moon-pet',
-      forceSvg: true,
-      autoRotate: false,
+      mode: 'shared',
+      autoRotate: state.projection !== '3d',
       interactive: false,
     });
   }
@@ -1182,10 +1183,65 @@ function updatePlacedPetChrome(placed, reaction) {
   }
 }
 
+/** Blit PNG cache for Flat / South Pole markers (same geometry as PayloadPets3D). */
+const overlayBlitCache = new Map();
+/** @type {string} */
+let overlayBlitPendingKey = '';
+
+function overlayBlitKey(petId, reaction, size) {
+  return `${petId}:${reaction.moodId}:${Math.round(reaction.signal || 0)}:${reaction.powerGlow ? 1 : 0}:${reaction.signalStress ? 1 : 0}:${size}`;
+}
+
+/**
+ * Kick off a shared-farm capture for the flat-map pin; re-renders when ready.
+ * @param {string} petId
+ * @param {ReturnType<typeof conditionsToReaction>} reaction
+ * @param {number} size
+ */
+async function ensureOverlayBlitSprite(petId, reaction, size) {
+  const key = overlayBlitKey(petId, reaction, size);
+  if (overlayBlitCache.has(key) || overlayBlitPendingKey === key) return overlayBlitCache.get(key) || null;
+  overlayBlitPendingKey = key;
+  try {
+    const three = globalThis.PayloadPets3D;
+    if (!three) return null;
+    if (three.ready) {
+      try {
+        await Promise.race([
+          three.ready,
+          new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
+        ]);
+      } catch {
+        /* may still expose capturePetSprite after partial load */
+      }
+    }
+    if (typeof three.capturePetSprite !== 'function') return null;
+    const sprite = await three.capturePetSprite(petId, reaction.moodId, {
+      size,
+      signal: reaction.signal,
+      powerGlow: reaction.powerGlow,
+      signalStress: reaction.signalStress,
+      phaseId: reaction.phaseId,
+    });
+    if (sprite?.dataUrl) {
+      overlayBlitCache.set(key, sprite.dataUrl);
+      if (state.projection !== '3d' && state.placedPet?.petId === petId) {
+        renderMap();
+      }
+      return sprite.dataUrl;
+    }
+  } catch (err) {
+    console.warn('[map] pet sprite blit failed', err);
+  } finally {
+    if (overlayBlitPendingKey === key) overlayBlitPendingKey = '';
+  }
+  return null;
+}
+
 /**
  * Draw placed pet on map overlays.
  * 3D globe: small surface pin only (3D model lives in #surface-pet-layer).
- * Flat / south-pole: clear mood-reactive SVG sprite (never WebGL).
+ * Flat / south-pole: mood-reactive instrument blit (same geometry as 3D), SVG fallback.
  */
 function drawPlacedPetMarker(svg, projectFn, mode = '2d') {
   const placed = state.placedPet;
@@ -1207,10 +1263,23 @@ function drawPlacedPetMarker(svg, projectFn, mode = '2d') {
   }
 
   try {
-    const pose = poseForSite(placed.petId, currentSkyForPet());
+    const sky = currentSkyForPet();
+    const pose = poseForSite(placed.petId, sky);
+    const reaction = pose.reaction || conditionsToReaction(placed.petId, sky);
     const scale = state.projection === 'pole' ? 0.3 : 0.26;
-    const marker = buildOverlayMarkerGroup(pose, p.x, p.y, scale, { label: true, pin: true });
+    const blitSize = state.projection === 'pole' ? 144 : 128;
+    const cacheKey = overlayBlitKey(placed.petId, reaction, blitSize);
+    const spriteUrl = overlayBlitCache.get(cacheKey) || null;
+    const marker = buildOverlayMarkerGroup(pose, p.x, p.y, scale, {
+      label: true,
+      pin: true,
+      spriteUrl,
+      spriteSize: Math.round(200 * scale),
+    });
     svg.appendChild(marker);
+    if (!spriteUrl) {
+      void ensureOverlayBlitSprite(placed.petId, reaction, blitSize);
+    }
   } catch (err) {
     console.warn('[map] pet marker', err);
     svgEl('circle', {

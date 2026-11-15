@@ -187,9 +187,11 @@ class SharedFarm {
     this.T = T;
     this.renderer = createWebGLRenderer(T, {
       antialias: true,
+      alpha: true,
       preserveDrawingBuffer: true,
     });
     this.renderer.setPixelRatio(1);
+    this.renderer.setClearColor(0x000000, 0);
     this.renderer.outputColorSpace = T.SRGBColorSpace;
     this.renderer.domElement.style.cssText =
       "position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none;";
@@ -236,6 +238,12 @@ class SharedFarm {
     const w = Math.max(64, canvas.width || 160);
     const h = Math.max(64, canvas.height || 160);
     this.renderer.setSize(w, h, false);
+    // Opaque gallery thumbs keep a filled clear; transparent views use alpha 0.
+    if (state.transparent || scene.background == null) {
+      this.renderer.setClearColor(0x000000, 0);
+    } else {
+      this.renderer.setClearColor(0x050811, 1);
+    }
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     this.renderer.render(scene, camera);
@@ -252,6 +260,108 @@ async function getSharedFarm() {
     sharedFarm = new SharedFarm(THREE);
   }
   return sharedFarm;
+}
+
+/** @type {Map<string, { dataUrl: string, petId: string, mood: string, size: number, signal: number }>} */
+const spriteCache = new Map();
+
+function spriteCacheKey(petId, mood, signal, powerGlow, signalStress, size) {
+  return `${petId}:${mood}:${Math.round(Number(signal) || 0)}:${powerGlow ? 1 : 0}:${signalStress ? 1 : 0}:${size}`;
+}
+
+/**
+ * One-shot blit of the procedural instrument into a transparent PNG.
+ * Same geometry/mood lighting as renderPet3D — for Flat Map / South Pole SVG markers.
+ *
+ * @param {string} id
+ * @param {string} moodOrPhase
+ * @param {{
+ *   size?: number,
+ *   signal?: number,
+ *   powerGlow?: boolean,
+ *   signalStress?: boolean,
+ *   phaseId?: string,
+ *   bust?: boolean,
+ * }} [options]
+ * @returns {Promise<{ dataUrl: string, petId: string, mood: string, size: number, signal: number }>}
+ */
+export async function capturePetSprite(id, moodOrPhase, options = {}) {
+  const size = Math.max(64, Math.min(512, Math.floor(Number(options.size) || 160)));
+  const { petId, mood, signal, powerGlow } = parseMountArgs(id, moodOrPhase, options);
+  const signalStress = Boolean(options.signalStress);
+  const key = spriteCacheKey(petId, mood, signal, powerGlow, signalStress, size);
+  if (!options.bust && spriteCache.has(key)) {
+    return spriteCache.get(key);
+  }
+
+  const farm = await getSharedFarm();
+  const state = {
+    petId,
+    mood,
+    signal,
+    root: null,
+    animables: [],
+    dust: [],
+    tips: [],
+  };
+  const { scene, camera, hemi, key: keyLight, rim } = buildSceneKit({
+    surface: true,
+    transparent: true,
+    shadows: false,
+  });
+  // Slightly wider FOV so the full instrument fits the square sprite.
+  camera.fov = 36;
+  camera.position.set(2.05, 1.45, 2.55);
+  camera.lookAt(0, 0.58, 0);
+  camera.updateProjectionMatrix();
+
+  state.root = buildInstrument(petId, state);
+  state.root.rotation.y = 0.55;
+  scene.add(state.root);
+  modelWarmCache.add(petId);
+
+  const palette = PALETTE[mood] || PALETTE.happy;
+  keyLight.color.setHex(powerGlow ? 0xffe7ad : palette.light);
+  keyLight.intensity = (0.95 + 0.45 * palette.tint) * (powerGlow ? 1.3 : 1);
+  hemi.intensity = 0.7 + 0.35 * palette.tint;
+  rim.color.setHex(signalStress ? 0xff6b6b : palette.accent);
+  rim.intensity = mood === "sleeping" ? 0.18 : signalStress ? 0.75 : 0.5;
+  const high = signal >= 70 && mood !== "sleeping";
+  for (const tip of state.tips) {
+    if (!tip.material) continue;
+    tip.material.emissiveIntensity = high ? 1.35 : 0.25;
+  }
+  // Settled pose (no mid-animation wobble) so map pins stay readable.
+  animateMood(state.root, state, 0.35, true);
+
+  const renderer = farm.renderer;
+  renderer.setClearColor(0x000000, 0);
+  renderer.setSize(size, size, false);
+  camera.aspect = 1;
+  camera.updateProjectionMatrix();
+  renderer.render(scene, camera);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    disposeObject(scene);
+    throw new Error("2D canvas unavailable for pet sprite blit");
+  }
+  ctx.clearRect(0, 0, size, size);
+  ctx.drawImage(renderer.domElement, 0, 0, size, size);
+  const dataUrl = canvas.toDataURL("image/png");
+  disposeObject(scene);
+
+  const result = Object.freeze({ dataUrl, petId, mood, size, signal });
+  spriteCache.set(key, result);
+  return result;
+}
+
+/** Drop cached blit frames (tests / pet catalog hot-reload). */
+export function clearPetSpriteCache() {
+  spriteCache.clear();
 }
 
 function parseMountArgs(id, moodOrPhase, options) {
@@ -842,6 +952,8 @@ async function mountLivePet3D(id, moodOrPhase, el, options) {
 export function installPayloadPets3D(target = globalThis) {
   const api = {
     renderPet3D,
+    capturePetSprite,
+    clearPetSpriteCache,
     preloadPets3D,
     showPets3DError,
     resolvePetId,

@@ -32,6 +32,7 @@ Click an instrument, scrub moods, drag the main viewport to orbit.
 
 - `three-loader.js` — single shared Three module promise, multi-CDN retry.
 - `renderPet3D(..., { mode: "shared" })` — gallery/adopt thumbs blit from **one** WebGL farm (Pets page).
+- `capturePetSprite(id, mood, opts)` — one-shot transparent PNG of the same instrument (Flat Map / South Pole pins).
 - `mode: "live"` (default) — dedicated context, queued (`MAX_LIVE_CONTEXTS = 3`), `forceContextLoss` on dispose.
 - Failures show a **Retry 3D** control (no silent blank canvases).
 - Showcase parks Map/Pets iframes when switching away so WebGL contexts free up.
