@@ -291,12 +291,28 @@ test('NASA QuickMap catalog includes craters/massifs & Moon Trek rasters and 3D 
   assert.match(globeSrc, /createRealisticMoonMaps/);
 });
 
-test('cross-branch compatibility: site aliases, engine METER_KEYS/mission schema, and story /api/sky fields', async () => {
+test('cross-branch compatibility: Data/story/engine site aliases, filters, mission fields, cascade aliases, and /api/sky', async () => {
   const ENGINE_METER_KEYS = ['food', 'happiness', 'oxygen', 'power'];
   const CARE_KEYS = ['power', 'signal', 'warmth'];
+  const ORIGIN_DATA_SITE_IDS = [
+    'sinus-viscositatis',
+    'malapert-a',
+    'mare-crisium',
+    'nobile-region',
+    'shackleton-ridge',
+    'reiner-gamma',
+    'schrodinger-basin',
+    'gruithuisen-domes',
+    'mons-mouton',
+    'lunar-farside',
+    'south-pole-bo',
+    'south-pole-bg4',
+    'south-pole-novad',
+  ];
 
   assert.equal(normalizeSiteId('SHACKLETON_RIDGE'), 'SHACKLETON_RIM');
   assert.equal(normalizeSiteId('shackleton-ridge'), 'SHACKLETON_RIM');
+  assert.equal(normalizeSiteId('nobile-region'), 'MONS_MOUTON');
   assert.equal(normalizeSiteId('mare-crisium'), 'MARE_CRISIUM');
   assert.equal(normalizeSiteId('schrodinger-basin'), 'FAR_SIDE');
 
@@ -317,7 +333,32 @@ test('cross-branch compatibility: site aliases, engine METER_KEYS/mission schema
     assert.deepEqual(Object.keys(site.careMultipliers).sort(), CARE_KEYS);
   }
 
+  for (const extSiteId of ORIGIN_DATA_SITE_IDS) {
+    const extSiteRes = await invokeHandler(handler, `/api/sites?site=${encodeURIComponent(extSiteId)}`);
+    assert.equal(extSiteRes.status, 200, `Expected 200 for /api/sites?site=${extSiteId}`);
+    const matched = JSON.parse(extSiteRes.text);
+    assert.equal(matched.length, 1, `Expected 1 site for ${extSiteId}, got ${matched.length}`);
+
+    const extSkyRes = await invokeHandler(handler, `/api/sky?site=${encodeURIComponent(extSiteId)}`);
+    assert.equal(extSkyRes.status, 200, `Expected 200 for /api/sky?site=${extSiteId}`);
+    const extSky = JSON.parse(extSkyRes.text);
+    assert.ok(Number.isFinite(extSky.bestAvgPowerPct));
+  }
+
   const bundle = loadMapDataset(MAPS_ROOT);
+  assert.equal(filterSites(bundle, { region: 'polar' }).length, 3);
+  assert.equal(filterSites(bundle, { region: 'nearside' }).length, filterSites(bundle, { region: 'NEAR_SIDE' }).length);
+  assert.equal(filterSites(bundle, { region: 'farside' }).length, 1);
+  assert.equal(filterMissions(bundle, { status: 'failed' }).length, 1);
+  assert.equal(filterMissions(bundle, { status: 'landed' }).length, 3);
+  assert.equal(filterMissions(bundle, { status: 'planned' }).length, filterMissions(bundle, { status: 'PLANNED' }).length);
+
+  const cascadeAliasRes = await invokeHandler(handler, '/api/map/cascade?mission=cs-3');
+  assert.equal(cascadeAliasRes.status, 200);
+  const cascadeAlias = JSON.parse(cascadeAliasRes.text);
+  assert.equal(cascadeAlias.failedMission.id, 'blue-ghost-2');
+  assert.ok(cascadeAlias.impactCount >= 1);
+
   const ev = evaluateDropPoint(bundle, -86.2, -20.0, 141);
   assert.ok(Number.isFinite(ev.elevationM));
   assert.ok(Number.isFinite(ev.slopeDegs));
@@ -333,6 +374,9 @@ test('cross-branch compatibility: site aliases, engine METER_KEYS/mission schema
   const missions = JSON.parse(missionsRes.text);
   assert.ok(missions.length >= 11);
   for (const m of missions) {
+    assert.ok('launchDate' in m && 'landingDate' in m);
+    assert.ok(typeof m.lander === 'string' && m.lander.length > 0);
+    assert.ok('launched' in m && 'landed' in m && typeof m.status === 'string');
     assert.ok(Number.isFinite(m.duration) && m.duration > 0);
     for (const bucket of [m.requires, m.cost, m.reward]) {
       assert.ok(bucket && typeof bucket === 'object');
@@ -347,11 +391,13 @@ test('cross-branch compatibility: site aliases, engine METER_KEYS/mission schema
   assert.equal(skyAliasRes.status, 200);
   const skyAlias = JSON.parse(skyAliasRes.text);
   assert.equal(skyAlias.id, 'SHACKLETON_RIM');
-  assert.match(skyAlias.startDate, /^\d{4}-\d{2}-\d{2}$/);
+  assert.equal(skyAlias.startDate, '2026-10-19');
   assert.match(skyAlias.bestStartDate, /^\d{4}-\d{2}-\d{2}$/);
   assert.ok(Number.isFinite(skyAlias.gameDays) && skyAlias.gameDays > 0);
   assert.ok(Number.isFinite(skyAlias.monthDays) && skyAlias.monthDays > 0);
   assert.ok(Number.isFinite(skyAlias.avgPowerPct));
+  assert.ok(Number.isFinite(skyAlias.bestAvgPowerPct));
+  assert.ok(skyAlias.bestAvgPowerPct >= skyAlias.avgPowerPct);
 
   const siteAliasRes = await invokeHandler(handler, '/api/sites?site=shackleton-ridge');
   assert.equal(siteAliasRes.status, 200);
@@ -371,7 +417,15 @@ test('cross-branch compatibility: site aliases, engine METER_KEYS/mission schema
     ['SHACKLETON_RIM', 'FAR_SIDE']
   );
 
-  const clientSky = await handleClientApi('/api/sky?site=schrodinger-basin&date=2026-10-19');
+  const clientSky = await handleClientApi('/api/sky?site=schrodinger-basin&date=2026-11-15');
   assert.equal(clientSky.id, 'FAR_SIDE');
+  assert.equal(clientSky.startDate, '2026-11-15');
   assert.ok(Number.isFinite(clientSky.avgPowerPct));
+  assert.ok(Number.isFinite(clientSky.bestAvgPowerPct));
+
+  const snappedMare = evaluateDropPoint(bundle, 16.35, 59.35, 141);
+  assert.equal(snappedMare.matchedKnownSite, true);
+  assert.equal(snappedMare.nearestSiteId, 'MARE_CRISIUM');
+  assert.equal(snappedMare.lat, 16.18);
+  assert.equal(snappedMare.lon, 59.1);
 });

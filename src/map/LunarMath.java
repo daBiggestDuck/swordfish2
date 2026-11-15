@@ -195,7 +195,23 @@ public final class LunarMath {
         double dualViableHours = dualCount * stepHours;
         double avgPowerPct = n > 0 ? round1(powerSum / n) : 0.0;
         String startDate = n > 0 ? toIsoDate(ephemeris.get(0).timestampUtc()) : "2026-11-10";
-        String bestStartDate = computeBestStartDate(ephemeris, powerSeries, startDate);
+        int win = n > 0 ? Math.max(1, n / 2) : 0;
+        int bestIdx = 0;
+        double bestSum = -1.0;
+        if (n > 0 && powerSeries.size() == n) {
+            for (int start = 0; start < n; start++) {
+                double sum = 0.0;
+                for (int k = 0; k < win; k++) {
+                    sum += powerSeries.get((start + k) % n);
+                }
+                if (sum > bestSum) {
+                    bestSum = sum;
+                    bestIdx = start;
+                }
+            }
+        }
+        String bestStartDate = n > 0 ? toIsoDate(ephemeris.get(bestIdx).timestampUtc()) : startDate;
+        double bestAvgPowerPct = (win > 0 && bestSum >= 0.0) ? round1(bestSum / win) : avgPowerPct;
 
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("id", site.id());
@@ -235,6 +251,7 @@ public final class LunarMath {
         out.put("earthVisible", currentDte);
         out.put("startDate", startDate);
         out.put("bestStartDate", bestStartDate);
+        out.put("bestAvgPowerPct", bestAvgPowerPct);
         out.put("gameDays", 14.77);
         out.put("monthDays", 29.53);
         out.put("avgPowerPct", avgPowerPct);
@@ -245,6 +262,32 @@ public final class LunarMath {
         out.put("horizonProfileDeg", site.horizonProfileDeg());
         out.put("timestamps", ephemeris.stream().map(MapModels.EphemerisSample::timestampUtc).toList());
         out.put("model", "JPL Horizons DE441 ephemeris + LOLA DEM 36-bin horizon profile");
+        return out;
+    }
+
+    public static int sampleIndexForDate(List<MapModels.EphemerisSample> ephemeris, String isoDate) {
+        int n = ephemeris.size();
+        if (n == 0 || isoDate == null || !isoDate.matches("\\d{4}-\\d{2}-\\d{2}")) return 141;
+        for (int i = 0; i < n; i++) {
+            if (isoDate.equals(toIsoDate(ephemeris.get(i).timestampUtc()))) {
+                return i;
+            }
+        }
+        try {
+            java.time.LocalDate base = java.time.LocalDate.parse(toIsoDate(ephemeris.get(0).timestampUtc()));
+            java.time.LocalDate target = java.time.LocalDate.parse(isoDate);
+            long diffDays = java.time.temporal.ChronoUnit.DAYS.between(base, target);
+            double synodicDays = 29.530588;
+            double phaseDays = ((diffDays % synodicDays) + synodicDays) % synodicDays;
+            return (int) (Math.round((phaseDays * 24.0) / 4.0) % n);
+        } catch (Exception ignored) {
+            return 141;
+        }
+    }
+
+    private static List<Double> roundList(List<Double> values) {
+        List<Double> out = new ArrayList<>(values.size());
+        for (double v : values) out.add(round1(v));
         return out;
     }
 
@@ -269,27 +312,6 @@ public final class LunarMath {
             default -> "11";
         };
         return ymd[0] + "-" + mon + "-" + (ymd[2].length() == 1 ? "0" + ymd[2] : ymd[2]);
-    }
-
-    private static String computeBestStartDate(List<MapModels.EphemerisSample> ephemeris,
-                                               List<Double> powerSeries,
-                                               String fallback) {
-        int n = ephemeris.size();
-        if (n == 0 || powerSeries.size() != n) return fallback;
-        int win = Math.max(1, n / 2);
-        int bestIdx = 0;
-        double bestSum = -1.0;
-        for (int start = 0; start < n; start++) {
-            double sum = 0.0;
-            for (int k = 0; k < win; k++) {
-                sum += powerSeries.get((start + k) % n);
-            }
-            if (sum > bestSum) {
-                bestSum = sum;
-                bestIdx = start;
-            }
-        }
-        return toIsoDate(ephemeris.get(bestIdx).timestampUtc());
     }
 
     private static String findNextTransition(List<Boolean> series, int startIdx, boolean targetState, double stepHours) {
@@ -439,8 +461,10 @@ public final class LunarMath {
                         ? matchedFeature.featureLabel() + " (" + coordLabel + ")"
                         : "Custom Drop Point (" + coordLabel + ")";
 
+        double outLat = matchedKnownSite ? nearestSite.lat() : round2(lat);
+        double outLon = matchedKnownSite ? nearestSite.lon() : round2(lon);
         MapModels.LandingSite synthetic = new MapModels.LandingSite(
-                id, name, name, round2(lat), round2(lon), region, elevM, slopeDeg, roughness,
+                id, name, name, outLat, outLon, region, elevM, slopeDeg, roughness,
                 terrainSummary, lightingCond, 50.0, 50.0, "horizon-raycast",
                 "JPL_HORIZONS:301 + MOON_TREK:LOLA", Math.abs(lon) > 90.0 ? 0.0 : 100.0,
                 minTempK, maxTempK, albedo,
@@ -500,11 +524,14 @@ public final class LunarMath {
         out.put("nearestSiteId", nearestSite != null ? nearestSite.id() : null);
         out.put("nearestSiteName", nearestSite != null ? nearestSite.name() : null);
         out.put("nearestSiteKm", round1(nearestSiteKm));
-        out.put("lat", round2(lat));
-        out.put("lon", round2(lon));
+        out.put("lat", outLat);
+        out.put("lon", outLon);
         out.put("region", region);
         out.put("elevationMeters", elevM);
+        out.put("elevationM", round1(elevM));
         out.put("slopeDegrees", slopeDeg);
+        out.put("slopeDegs", round1(slopeDeg));
+        out.put("horizonProfile", roundList(horizonBins));
         out.put("roughnessIndex", roughness);
         out.put("terrainSummary", terrainSummary);
         out.put("lightingCondition", lightingCond);

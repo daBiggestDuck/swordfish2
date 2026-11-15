@@ -1,4 +1,12 @@
-# Payload Pets — NASA Space Apps Lunar Explorer
+# nasa space pet
+
+the ultimate pet
+
+## Story branch (Yeshwin)
+
+Mission pop-ups and the Pet Passport. Java server (JDK only, no libraries) plus a web page (`src/story/StoryServer.java`, `web/story.js`).
+
+## Map & 3D Lunar Explorer (`map` branch)
 
 An interactive 3D WebGL lunar globe, mission planning sandbox, and survival/care simulation powered by authentic NASA Lunar Reconnaissance Orbiter (LRO), JPL Horizons, Moon Trek, and Commercial Lunar Payload Services (CLPS) datasets.
 

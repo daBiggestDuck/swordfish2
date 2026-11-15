@@ -1,5 +1,5 @@
 import { LunarGlobeGL } from './globe_gl.js';
-import { handleClientApi, normalizeSiteId } from './map_engine_client.js';
+import { handleClientApi, normalizeSiteId, elevationDeg, azimuthDeg } from './map_engine_client.js';
 
 const $ = (sel) => document.querySelector(sel);
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -18,13 +18,19 @@ const state = {
   compareIds: ['SHACKLETON_RIM', 'MALAPERT_A', 'MARE_CRISIUM'],
   projection: '3d', // '3d' | 'global' | 'pole'
   sampleIndex: 141, // 2026-Dec-03 12:00 UTC
+  sampleFloat: 141,
   playing: false,
-  playTimer: null,
+  playRaf: null,
+  playLastTime: 0,
+  skySyncBusy: false,
+  skySyncPending: false,
+  lastSyncedSample: 141,
   sky: null,
   failedMissionId: null,
   impactedMissionIds: new Set(),
   globe: null,
   stagedDrop: null, // { lat, lon, evalData, animStartTime }
+  inspectedEval: null,
   storyboardRaf: null,
   stageSeq: 0,
 };
@@ -36,6 +42,19 @@ function svgEl(tag, attrs = {}, parent = null) {
   }
   if (parent) parent.appendChild(el);
   return el;
+}
+
+function setElementHidden(el, isHidden) {
+  if (!el) return;
+  const hide = Boolean(isHidden);
+  el.hidden = hide;
+  if (hide) {
+    el.setAttribute('hidden', '');
+    el.style.display = 'none';
+  } else {
+    el.removeAttribute('hidden');
+    el.style.display = '';
+  }
 }
 
 let clientFallbackMode = false;
@@ -75,6 +94,135 @@ function parseHorizonsRows(horizonsJson) {
     rows.push({ timestampUtc: p[0].trim(), obsSubLon, obsSubLat, sunSubLon, sunSubLat });
   }
   return rows;
+}
+
+const MONTHS_REV = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_IDX = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+
+function lerpAngleDeg(a, b, t) {
+  const delta = (((b - a + 540) % 360) - 180);
+  const res = a + delta * t;
+  return (((res + 180) % 360) + 360) % 360 - 180;
+}
+
+function formatInterpolatedUtc(ep0, frac) {
+  if (!ep0?.timestampUtc) return '';
+  const m = String(ep0.timestampUtc).trim().match(/^(\d{4})-([A-Za-z]{3})-(\d{1,2})\s+(\d{2}):(\d{2})$/);
+  if (!m || frac <= 0) return ep0.timestampUtc;
+  const mon = MONTH_IDX[m[2]];
+  if (mon === undefined) return ep0.timestampUtc;
+  const baseMs = Date.UTC(Number(m[1]), mon, Number(m[3]), Number(m[4]), Number(m[5]));
+  const dt = new Date(baseMs + Math.round(frac * 240) * 60 * 1000);
+  const yyyy = dt.getUTCFullYear();
+  const monStr = MONTHS_REV[dt.getUTCMonth()];
+  const dd = String(dt.getUTCDate()).padStart(2, '0');
+  const hh = String(dt.getUTCHours()).padStart(2, '0');
+  const min = String(dt.getUTCMinutes()).padStart(2, '0');
+  return `${yyyy}-${monStr}-${dd} ${hh}:${min}`;
+}
+
+function getInterpolatedEphemeris(sampleFloat = state.sampleFloat) {
+  const list = state.ephemeris;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  const n = list.length;
+  const wrapped = ((Number(sampleFloat) % n) + n) % n;
+  const i0 = Math.floor(wrapped) % n;
+  const i1 = (i0 + 1) % n;
+  const frac = wrapped - Math.floor(wrapped);
+  const a = list[i0];
+  const b = list[i1];
+  return {
+    timestampUtc: formatInterpolatedUtc(a, frac),
+    sunSubLat: a.sunSubLat + (b.sunSubLat - a.sunSubLat) * frac,
+    sunSubLon: lerpAngleDeg(a.sunSubLon, b.sunSubLon, frac),
+    obsSubLat: a.obsSubLat + (b.obsSubLat - a.obsSubLat) * frac,
+    obsSubLon: lerpAngleDeg(a.obsSubLon, b.obsSubLon, frac),
+  };
+}
+
+function getActiveCoords() {
+  if (state.stagedDrop) return { lat: state.stagedDrop.lat, lon: state.stagedDrop.lon };
+  if (state.inspectedEval && !state.inspectedEval.matchedKnownSite) {
+    return { lat: state.inspectedEval.lat, lon: state.inspectedEval.lon };
+  }
+  if (state.confirmedDrop && !state.confirmedDrop.matchedKnownSite) {
+    return { lat: state.confirmedDrop.lat, lon: state.confirmedDrop.lon };
+  }
+  const site = (state.data?.sites || []).find((s) => s.id === state.selectedSiteId);
+  return site ? { lat: site.lat, lon: site.lon } : null;
+}
+
+function getActivePointInfo() {
+  if (state.stagedDrop) {
+    const ev = state.stagedDrop.evalData;
+    const isCustom = ev ? !ev.matchedKnownSite : false;
+    return {
+      lat: state.stagedDrop.lat,
+      lon: state.stagedDrop.lon,
+      name: ev?.name || 'Selected Spot',
+      shortName: ev?.matchedKnownSite ? (ev.name || 'Selected Spot') : 'Selected Spot',
+      isCustom,
+      isStaged: true,
+      isConfirmed: false,
+      siteId: ev?.matchedKnownSite ? (normalizeSiteId(ev.nearestSiteId) || state.selectedSiteId) : null,
+    };
+  }
+  if (state.inspectedEval && !state.inspectedEval.matchedKnownSite) {
+    const confirmedSame = Boolean(
+      state.confirmedDrop?.custom &&
+      Math.abs(state.confirmedDrop.lat - state.inspectedEval.lat) < 0.05 &&
+      Math.abs(state.confirmedDrop.lon - state.inspectedEval.lon) < 0.05
+    );
+    return {
+      lat: state.inspectedEval.lat,
+      lon: state.inspectedEval.lon,
+      name: state.inspectedEval.name || 'Custom Landing Spot',
+      shortName: 'Custom Spot',
+      isCustom: true,
+      isStaged: false,
+      isConfirmed: confirmedSame,
+      siteId: null,
+    };
+  }
+  if (state.confirmedDrop?.custom) {
+    return {
+      lat: state.confirmedDrop.lat,
+      lon: state.confirmedDrop.lon,
+      name: state.confirmedDrop.name || 'Selected Spot',
+      shortName: 'Selected Spot',
+      isCustom: true,
+      isStaged: false,
+      isConfirmed: true,
+      siteId: null,
+    };
+  }
+  const canon = normalizeSiteId(state.selectedSiteId);
+  const site = (state.data?.sites || []).find((s) => normalizeSiteId(s.id) === canon);
+  if (site) {
+    return {
+      lat: site.lat,
+      lon: site.lon,
+      name: site.name,
+      shortName: site.shortName || site.name,
+      isCustom: false,
+      isStaged: false,
+      isConfirmed: state.pickedPetSiteId === site.id,
+      siteId: site.id,
+    };
+  }
+  return null;
+}
+
+function horizonElevAtAz(bins, azDeg) {
+  if (!Array.isArray(bins) || bins.length === 0) return 0;
+  const n = bins.length;
+  const binW = 360 / n;
+  const norm = ((azDeg % 360) + 360) % 360;
+  const exact = norm / binW;
+  const i0 = Math.floor(exact) % n;
+  const i1 = (i0 + 1) % n;
+  const frac = exact - Math.floor(exact);
+  return bins[i0] * (1 - frac) + bins[i1] * frac;
 }
 
 function formatCoords(lat, lon) {
@@ -206,7 +354,10 @@ async function applyFilters() {
   ]);
   state.filteredSites = sites;
   state.filteredMissions = missions;
-  if (sites.length > 0 && !sites.some((s) => s.id === state.selectedSiteId) && !state.confirmedDrop?.custom) {
+  const isCustomActive =
+    Boolean(state.confirmedDrop?.custom) ||
+    Boolean(state.inspectedEval && !state.inspectedEval.matchedKnownSite);
+  if (sites.length > 0 && !sites.some((s) => s.id === state.selectedSiteId) && !isCustomActive) {
     state.selectedSiteId = sites[0].id;
     await loadSiteSky();
   }
@@ -216,29 +367,45 @@ async function applyFilters() {
 }
 
 async function loadSiteSky() {
-  if (state.confirmedDrop && !state.confirmedDrop.matchedKnownSite) {
+  if (state.stagedDrop) {
+    await stageDropPoint(state.stagedDrop.lat, state.stagedDrop.lon, true, false);
+    return;
+  }
+
+  const customTarget =
+    state.confirmedDrop && !state.confirmedDrop.matchedKnownSite
+      ? state.confirmedDrop
+      : state.inspectedEval && !state.inspectedEval.matchedKnownSite
+        ? state.inspectedEval
+        : null;
+
+  if (customTarget) {
     const ev = await api(
-      `/api/map/evaluate?lat=${state.confirmedDrop.lat}&lon=${state.confirmedDrop.lon}&sample=${state.sampleIndex}`
+      `/api/map/evaluate?lat=${Number(customTarget.lat).toFixed(3)}&lon=${Number(customTarget.lon).toFixed(3)}&sample=${state.sampleIndex}`
     );
+    state.inspectedEval = ev;
     state.sky = ev.sky;
     renderDossierFromEval(ev);
   } else {
     state.sky = await api(
       `/api/map/sky?site=${encodeURIComponent(state.selectedSiteId)}&sample=${state.sampleIndex}`
     );
-    renderDossier();
+    const matchingEval =
+      state.inspectedEval &&
+      state.inspectedEval.matchedKnownSite &&
+      normalizeSiteId(state.inspectedEval.nearestSiteId) === normalizeSiteId(state.selectedSiteId)
+        ? state.inspectedEval
+        : null;
+    renderDossier(matchingEval);
   }
   renderTelemetry();
   renderSkyDome();
   renderOpChart();
   updateClockDisplay();
 
-  const ep = state.ephemeris[state.sampleIndex];
+  const ep = getInterpolatedEphemeris();
   if (ep && state.globe) {
     state.globe.setSunAndEarth(ep.sunSubLat, ep.sunSubLon, ep.obsSubLat, ep.obsSubLon);
-  }
-  if (state.stagedDrop) {
-    await stageDropPoint(state.stagedDrop.lat, state.stagedDrop.lon, false);
   }
 }
 
@@ -247,12 +414,14 @@ async function selectSite(siteId) {
   state.confirmedDrop = null;
   state.selectedSiteId = canonicalId;
   const site = (state.data?.sites || []).find((s) => normalizeSiteId(s.id) === canonicalId);
-  if (site && state.globe && state.projection === '3d') {
-    state.globe.focusLatLon(site.lat, site.lon);
+  if (site) {
+    await stageDropPoint(site.lat, site.lon, true, true);
+  } else {
+    state.inspectedEval = null;
+    await loadSiteSky();
+    renderSiteList();
+    renderMap();
   }
-  await loadSiteSky();
-  renderSiteList();
-  renderMap();
   if ($('#tab-recipe').classList.contains('active')) {
     await refreshRecipe();
   }
@@ -264,25 +433,47 @@ async function selectSite(siteId) {
 }
 
 function updateClockDisplay() {
-  const ep = state.ephemeris[state.sampleIndex];
+  const ep = getInterpolatedEphemeris();
   const utcText = ep ? `${ep.timestampUtc} UTC` : (state.sky?.timestampUtc || '—');
-  const dayNum = Math.floor((state.sampleIndex * 4) / 24) + 1;
+  const dayNum = Math.floor((state.sampleFloat * 4) / 24) + 1;
   $('#clock-utc').textContent = utcText;
   $('#clock-sample').textContent = `Day ${dayNum} of 29.5 (Lunar Cycle)`;
-  $('#time-slider').value = String(state.sampleIndex);
+  const maxSlider = Math.max(0, (state.ephemeris.length || 178) - 1);
+  $('#time-slider').value = String(Math.min(maxSlider, Math.max(0, state.sampleFloat)));
+}
+
+function applyContinuousSunFrame() {
+  const ep = getInterpolatedEphemeris();
+  if (ep && state.globe) {
+    state.globe.setSunAndEarth(ep.sunSubLat, ep.sunSubLon, ep.obsSubLat, ep.obsSubLon);
+  }
+  if (state.projection !== '3d') {
+    renderMap();
+  }
+  renderSkyDome();
+  renderOpChart();
+  updateClockDisplay();
+}
+
+function isCustomSpotActive() {
+  return (
+    Boolean(state.inspectedEval && !state.inspectedEval.matchedKnownSite) ||
+    Boolean(state.confirmedDrop?.custom)
+  );
 }
 
 function renderSiteList() {
   const ul = $('#site-list');
   ul.replaceChildren();
   $('#site-count').textContent = String(state.filteredSites.length);
+  const customActive = isCustomSpotActive();
 
   for (const s of state.filteredSites) {
     const status = primarySiteStatus(s.id);
     const li = document.createElement('li');
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `site-item${s.id === state.selectedSiteId && !state.confirmedDrop?.custom ? ' active' : ''}`;
+    btn.className = `site-item${s.id === state.selectedSiteId && !customActive ? ' active' : ''}`;
     btn.onclick = () => selectSite(s.id);
 
     const left = document.createElement('div');
@@ -303,7 +494,7 @@ function renderSiteList() {
   }
 }
 
-function renderDossier() {
+function renderDossier(ev = null) {
   const site = (state.data?.sites || []).find((s) => s.id === state.selectedSiteId);
   if (!site) return;
 
@@ -320,10 +511,19 @@ function renderDossier() {
   $('#dossier-missions').textContent = siteMissions.length
     ? siteMissions.map((m) => `${m.name} (${m.vendor} — ${formatMissionWhenPlain(m)})`).join(' · ')
     : 'Official NASA Candidate Site';
-  $('#dossier-lighting').textContent = `${site.lightingCondition} (${site.illuminationTerrainPct}% sunlit per month)`;
-  $('#dossier-elev').textContent = `${formatSlopePlain(site.slopeDegrees)} · Height ${formatElevationPlain(site.elevationMeters)}`;
+
+  const skyCur = state.sky?.current || ev?.sky?.current;
+  const skyWin = state.sky?.windows || ev?.sky?.windows;
+  const sunlitPct = skyWin ? skyWin.computedSunlitTerrainPct : site.illuminationTerrainPct;
+  $('#dossier-lighting').textContent = skyCur
+    ? `${skyCur.sunlit ? `Daytime (${skyCur.panelPowerPct.toFixed(0)}% solar)` : 'In Shadow (Dark)'} · Sunlit ${sunlitPct}% of month`
+    : `${site.lightingCondition} (${site.illuminationTerrainPct}% sunlit per month)`;
+  $('#dossier-elev').textContent = ev
+    ? `${formatSlopePlain(site.slopeDegrees)} · Safety ${ev.scores.safety}/100 · Height ${formatElevationPlain(site.elevationMeters)}`
+    : `${formatSlopePlain(site.slopeDegrees)} · Height ${formatElevationPlain(site.elevationMeters)}`;
   $('#dossier-psr').textContent = `${site.nearestPsrName} (${site.nearestPsrKm.toFixed(1)} km away)`;
-  $('#dossier-temp').textContent = formatTempRangePlain(site.divinerMinTempK, site.divinerMaxTempK);
+  const rangeText = formatTempRangePlain(site.divinerMinTempK, site.divinerMaxTempK);
+  $('#dossier-temp').textContent = skyCur ? `${formatTempPlain(skyCur.surfaceTempK)} (Range: ${rangeText})` : rangeText;
   $('#dossier-science').textContent = site.scienceGoal;
 
   $('#link-quickmap').href = site.quickmapUrl;
@@ -332,10 +532,10 @@ function renderDossier() {
 
   const banner = $('#picked-banner');
   if (state.pickedPetSiteId === site.id) {
-    banner.hidden = false;
+    setElementHidden(banner, false);
     banner.textContent = `Selected Spot: ${site.shortName} (${formatCoords(site.lat, site.lon)})`;
   } else {
-    banner.hidden = true;
+    setElementHidden(banner, true);
   }
 }
 
@@ -367,10 +567,15 @@ function renderDossierFromEval(ev) {
       : 'Custom spot on Moon (no scheduled NASA mission)';
   }
 
-  $('#dossier-lighting').textContent = `${ev.lightingCondition} (${ev.sky.windows.computedSunlitTerrainPct}% sunlit per month)`;
-  $('#dossier-elev').textContent = `${formatSlopePlain(ev.slopeDegrees)} · Height ${formatElevationPlain(ev.elevationMeters)}`;
+  const skyCur = ev.sky?.current;
+  const skyWin = ev.sky?.windows;
+  $('#dossier-lighting').textContent = skyCur
+    ? `${skyCur.sunlit ? `Daytime (${skyCur.panelPowerPct.toFixed(0)}% solar)` : 'In Shadow (Dark)'} · Sunlit ${skyWin.computedSunlitTerrainPct}% of month`
+    : `${ev.lightingCondition} (${ev.sky.windows.computedSunlitTerrainPct}% sunlit per month)`;
+  $('#dossier-elev').textContent = `${formatSlopePlain(ev.slopeDegrees)} · Safety ${ev.scores.safety}/100 · Height ${formatElevationPlain(ev.elevationMeters)}`;
   $('#dossier-psr').textContent = `${ev.nearestPsrName} (${ev.nearestPsrKm.toFixed(1)} km away)`;
-  $('#dossier-temp').textContent = formatTempRangePlain(ev.divinerMinTempK, ev.divinerMaxTempK);
+  const rangeText = formatTempRangePlain(ev.divinerMinTempK, ev.divinerMaxTempK);
+  $('#dossier-temp').textContent = skyCur ? `${formatTempPlain(skyCur.surfaceTempK)} (Range: ${rangeText})` : rangeText;
   $('#dossier-science').textContent = (ev.warnings || []).map(translateWarningPlain).join(' ');
 
   $('#link-quickmap').href =
@@ -380,7 +585,7 @@ function renderDossierFromEval(ev) {
   $('#link-nasa').href = 'https://www.nasa.gov/commercial-lunar-payload-services/';
 
   const banner = $('#picked-banner');
-  banner.hidden = false;
+  setElementHidden(banner, false);
   banner.textContent = `Selected Spot: ${formatCoords(ev.lat, ev.lon)} (Score ${ev.scores.overall}/100)`;
 }
 
@@ -431,28 +636,32 @@ function cancelStoryboardAnim() {
 function startStoryboardLineLoop() {
   cancelStoryboardAnim();
   if (typeof requestAnimationFrame !== 'function') return;
+  const renderOverlayFrame = () => {
+    if (state.projection === '3d') render3DOverlay();
+    else renderMap();
+  };
   const tick = () => {
-    render3DOverlay();
+    renderOverlayFrame();
     const start = state.stagedDrop?.animStartTime;
     if (start && performance.now() - start < 210) {
       state.storyboardRaf = requestAnimationFrame(tick);
     } else {
       state.storyboardRaf = null;
-      render3DOverlay();
+      renderOverlayFrame();
     }
   };
   state.storyboardRaf = requestAnimationFrame(tick);
 }
 
 // ---- Pre-Drop Staging & Environmental Context Callout ----
-async function stageDropPoint(lat, lon, fetchNew = true) {
+async function stageDropPoint(lat, lon, fetchNew = true, animate = fetchNew) {
   const seq = ++state.stageSeq;
   const card = $('#predrop-card');
 
-  if (fetchNew) {
+  if (animate) {
     cancelStoryboardAnim();
     card.classList.remove('story-active');
-    card.hidden = true;
+    setElementHidden(card, true);
   }
 
   const ev =
@@ -461,13 +670,42 @@ async function stageDropPoint(lat, lon, fetchNew = true) {
       : await api(`/api/map/evaluate?lat=${lat.toFixed(3)}&lon=${lon.toFixed(3)}&sample=${state.sampleIndex}`);
   if (seq !== state.stageSeq) return;
 
-  const existingAnimStart = !fetchNew ? (state.stagedDrop?.animStartTime || 0) : null;
-  state.stagedDrop = { lat: ev.lat, lon: ev.lon, evalData: ev, animStartTime: existingAnimStart };
-  if (state.globe) {
-    state.globe.setStagedPoint(ev.lat, ev.lon);
+  if (ev.matchedKnownSite && ev.nearestSiteId) {
+    const canonId = normalizeSiteId(ev.nearestSiteId) || ev.nearestSiteId;
+    const matchedSite = (state.data?.sites || []).find((s) => normalizeSiteId(s.id) === canonId);
+    if (matchedSite) {
+      ev.lat = matchedSite.lat;
+      ev.lon = matchedSite.lon;
+    }
+    state.selectedSiteId = canonId;
   }
 
-  if (fetchNew && state.globe && state.projection === '3d') {
+  const existingAnimStart = !animate ? (state.stagedDrop?.animStartTime ?? 0) : null;
+  state.stagedDrop = { lat: ev.lat, lon: ev.lon, evalData: ev, animStartTime: existingAnimStart };
+  state.inspectedEval = ev;
+  state.sky = ev.sky;
+
+  if (state.globe) {
+    state.globe.setStagedPoint(ev.lat, ev.lon);
+    const ep = getInterpolatedEphemeris();
+    if (ep) state.globe.setSunAndEarth(ep.sunSubLat, ep.sunSubLon, ep.obsSubLat, ep.obsSubLon);
+  }
+
+  if (ev.matchedKnownSite && ev.nearestSiteId) {
+    renderDossier(ev);
+  } else {
+    renderDossierFromEval(ev);
+  }
+  renderSiteList();
+  renderTelemetry();
+  renderSkyDome();
+  renderOpChart();
+  updateClockDisplay();
+  if ($('#tab-recipe').classList.contains('active')) {
+    refreshRecipe();
+  }
+
+  if (animate && state.globe && state.projection === '3d') {
     renderMap();
     await state.globe.focusLatLon(ev.lat, ev.lon, { duration: 250, yawOffsetRad: 0.22 });
     if (seq !== state.stageSeq) return;
@@ -530,16 +768,17 @@ async function stageDropPoint(lat, lon, fetchNew = true) {
     warnUl.appendChild(li);
   }
 
-  if (fetchNew) {
+  if (animate) {
     state.stagedDrop.animStartTime = typeof performance !== 'undefined' ? performance.now() : 0;
     card.classList.remove('story-active');
-    card.hidden = false;
+    setElementHidden(card, false);
     void card.offsetWidth;
     card.classList.add('story-active');
     renderMap();
     startStoryboardLineLoop();
   } else {
-    card.hidden = false;
+    card.classList.add('story-active');
+    setElementHidden(card, false);
     renderMap();
   }
 }
@@ -550,8 +789,15 @@ function clearStagedDrop() {
   state.stagedDrop = null;
   const card = $('#predrop-card');
   card.classList.remove('story-active');
-  card.hidden = true;
-  if (state.globe) state.globe.setStagedPoint(null, null);
+  setElementHidden(card, true);
+  if (state.globe) {
+    const active = getActivePointInfo();
+    if (active && active.isCustom) {
+      state.globe.setStagedPoint(active.lat, active.lon);
+    } else {
+      state.globe.setStagedPoint(null, null);
+    }
+  }
   renderMap();
 }
 
@@ -610,11 +856,36 @@ function projectSouthPole(lat, lon) {
   };
 }
 
-function unproject2DClick(clientX, clientY, svg) {
+function projectSouthPoleClamped(lat, lon) {
+  if (lat <= -73.5) {
+    return { ...projectSouthPole(lat, lon), clamped: false };
+  }
+  const rad = (lon * Math.PI) / 180;
+  return {
+    x: 480 + 204 * Math.sin(rad),
+    y: 240 - 204 * Math.cos(rad),
+    clamped: true,
+  };
+}
+
+function svgViewBoxMetrics(svg) {
   const rect = svg.getBoundingClientRect();
-  const x = ((clientX - rect.left) / Math.max(1, rect.width)) * 960;
-  const y = ((clientY - rect.top) / Math.max(1, rect.height)) * 480;
+  const rw = Math.max(1, rect.width || 960);
+  const rh = Math.max(1, rect.height || 480);
+  const scale = Math.min(rw / 960, rh / 480);
+  const drawW = 960 * scale;
+  const drawH = 480 * scale;
+  const offsetX = rect.left + (rw - drawW) * 0.5;
+  const offsetY = rect.top + (rh - drawH) * 0.5;
+  return { rect, rw, rh, scale, drawW, drawH, offsetX, offsetY };
+}
+
+function unproject2DClick(clientX, clientY, svg) {
+  const { scale, offsetX, offsetY } = svgViewBoxMetrics(svg);
+  const x = (clientX - offsetX) / Math.max(0.0001, scale);
+  const y = (clientY - offsetY) / Math.max(0.0001, scale);
   if (state.projection === 'global') {
+    if (x < 0 || x > 960 || y < 0 || y > 480) return null;
     const lon = (x / 960) * 360 - 180;
     const lat = 90 - (y / 480) * 180;
     return { lat, lon };
@@ -622,7 +893,7 @@ function unproject2DClick(clientX, clientY, svg) {
   const dx = x - 480;
   const dy = 240 - y;
   const r = Math.hypot(dx, dy);
-  if (r > 215) return null;
+  if (r > 212) return null;
   const colat = (r / 212) * 16.5;
   const lat = -90 + colat;
   const lon = (Math.atan2(dx, dy) * 180) / Math.PI;
@@ -631,6 +902,123 @@ function unproject2DClick(clientX, clientY, svg) {
 
 function projectPoint2D(lat, lon) {
   return state.projection === 'global' ? projectGlobal(lat, lon) : projectSouthPole(lat, lon);
+}
+
+function findNearest2DSite(clientX, clientY, svg, maxPx = 16) {
+  const { scale, offsetX, offsetY } = svgViewBoxMetrics(svg);
+  const x = (clientX - offsetX) / Math.max(0.0001, scale);
+  const y = (clientY - offsetY) / Math.max(0.0001, scale);
+  const maxViewDist = maxPx / Math.max(0.0001, scale);
+  let best = null;
+  let bestDist = maxViewDist;
+
+  for (const s of state.filteredSites || []) {
+    if (state.projection === 'pole' && s.lat > -73.5) continue;
+    const p = projectPoint2D(s.lat, s.lon);
+    const d = Math.hypot(p.x - x, p.y - y);
+    if (d <= bestDist) {
+      bestDist = d;
+      best = s;
+    }
+  }
+
+  if (!best && state.projection === 'pole' && !isCustomSpotActive()) {
+    const activeCanonId = normalizeSiteId(state.selectedSiteId);
+    const selSite = (state.data?.sites || []).find((s) => normalizeSiteId(s.id) === activeCanonId);
+    if (selSite && selSite.lat > -73.5) {
+      const rp = projectSouthPoleClamped(selSite.lat, selSite.lon);
+      if (Math.hypot(rp.x - x, rp.y - y) <= maxViewDist) {
+        best = selSite;
+      }
+    }
+  }
+  return best;
+}
+
+function drawStoryboardConnector(svg, spx, spy, anchorX, cardTopY, padTop = 14) {
+  const elbowY = Math.max(padTop, Math.min(cardTopY - padTop, spy - 24));
+  const seg1 = Math.hypot(anchorX - spx, elbowY - spy);
+  const seg2 = Math.abs(cardTopY - elbowY);
+  const totalLen = Math.max(1, seg1 + seg2);
+
+  const rawT = state.stagedDrop.animStartTime > 0
+    ? Math.min(1, (performance.now() - state.stagedDrop.animStartTime) / 180)
+    : 1;
+  // Fast-out, slow-in speed curve matching cubic-bezier(0.16, 1, 0.3, 1)
+  const lineProgress = 1 - Math.pow(1 - rawT, 3.5);
+  const drawnLen = totalLen * lineProgress;
+
+  let pts;
+  let tipX = anchorX;
+  let tipY = cardTopY;
+  if (drawnLen <= seg1) {
+    const u = drawnLen / Math.max(0.001, seg1);
+    tipX = spx + (anchorX - spx) * u;
+    tipY = spy + (elbowY - spy) * u;
+    pts = `${spx.toFixed(1)},${spy.toFixed(1)} ${tipX.toFixed(1)},${tipY.toFixed(1)}`;
+  } else {
+    const v = (drawnLen - seg1) / Math.max(0.001, seg2);
+    tipX = anchorX;
+    tipY = elbowY + (cardTopY - elbowY) * v;
+    pts = `${spx.toFixed(1)},${spy.toFixed(1)} ${anchorX.toFixed(1)},${elbowY.toFixed(1)} ${tipX.toFixed(1)},${tipY.toFixed(1)}`;
+  }
+
+  svgEl('polyline', {
+    points: pts,
+    fill: 'none', stroke: 'rgba(255, 184, 77, 0.25)', 'stroke-width': '4.5', 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+  }, svg);
+  svgEl('polyline', {
+    points: pts,
+    fill: 'none', stroke: '#ffb84d', 'stroke-width': '1.9', 'stroke-dasharray': '4 2.5', 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+  }, svg);
+  svgEl('circle', {
+    cx: tipX.toFixed(1), cy: tipY.toFixed(1), r: lineProgress < 1 ? 3.8 : 3.0,
+    fill: '#ffb84d', stroke: '#ffffff', 'stroke-width': '1.2',
+  }, svg);
+}
+
+function renderActiveCustomMarkers(svg, projFn) {
+  if (state.confirmedDrop?.custom) {
+    const cp = projFn(state.confirmedDrop.lat, state.confirmedDrop.lon);
+    if (cp.visible !== false) {
+      svgEl('circle', { cx: cp.x.toFixed(1), cy: cp.y.toFixed(1), r: 7, fill: '#45d48a', stroke: '#ffffff', 'stroke-width': '2' }, svg);
+      if (cp.clamped) {
+        svgEl('circle', { cx: cp.x.toFixed(1), cy: cp.y.toFixed(1), r: 11.5, fill: 'none', stroke: '#45d48a', 'stroke-width': '1.3', 'stroke-dasharray': '3 2' }, svg);
+      }
+      const inward = cp.clamped && cp.x > 480;
+      const lbl = svgEl('text', {
+        x: (inward ? cp.x - 12 : cp.x + 10).toFixed(1),
+        y: (cp.y + 4).toFixed(1),
+        fill: '#45d48a', 'font-size': '10.5', 'font-weight': '700',
+        'text-anchor': inward ? 'end' : 'start',
+      }, svg);
+      lbl.textContent = cp.clamped
+        ? `SELECTED ★ (${Math.abs(state.confirmedDrop.lat).toFixed(0)}°${state.confirmedDrop.lat >= 0 ? 'N' : 'S'} ↑)`
+        : 'SELECTED ★';
+    }
+  }
+
+  const ie = state.inspectedEval;
+  const sameAsConfirmed = Boolean(
+    state.confirmedDrop?.custom && ie &&
+    Math.hypot(state.confirmedDrop.lat - ie.lat, state.confirmedDrop.lon - ie.lon) < 0.05
+  );
+  if (ie && !ie.matchedKnownSite && !state.stagedDrop && !sameAsConfirmed) {
+    const ip = projFn(ie.lat, ie.lon);
+    if (ip.visible !== false) {
+      svgEl('circle', { cx: ip.x.toFixed(1), cy: ip.y.toFixed(1), r: 10, fill: 'none', stroke: '#62b0ff', 'stroke-width': '1.5', 'stroke-dasharray': '3 2' }, svg);
+      svgEl('circle', { cx: ip.x.toFixed(1), cy: ip.y.toFixed(1), r: 5.5, fill: '#62b0ff', stroke: '#ffffff', 'stroke-width': '1.6' }, svg);
+      const inward = ip.clamped && ip.x > 480;
+      svgEl('text', {
+        x: (inward ? ip.x - 12 : ip.x + 10).toFixed(1),
+        y: (ip.y + 4).toFixed(1),
+        fill: '#dce6f9', 'font-size': '10', 'font-weight': '600',
+        'text-anchor': inward ? 'end' : 'start',
+      }, svg).textContent = ip.clamped
+        ? `Custom Spot (${Math.abs(ie.lat).toFixed(0)}°${ie.lat >= 0 ? 'N' : 'S'} ↑)`
+        : 'Custom Spot';
+    }
+  }
 }
 
 function render3DOverlay() {
@@ -681,45 +1069,34 @@ function render3DOverlay() {
   }
 
   // Clickable CLPS Landing Sites on 3D Globe
+  const customActive = isCustomSpotActive();
   for (const s of state.filteredSites) {
     const p = state.globe.latLonToScreen(s.lat, s.lon);
     if (!p.visible) continue;
     const status = primarySiteStatus(s.id);
     const color = status === 'LANDED' ? '#45d48a' : status === 'NO_LANDING' ? '#ff6b6b' : '#62b0ff';
-    const selected = s.id === state.selectedSiteId && !state.confirmedDrop?.custom;
+    const selected = s.id === state.selectedSiteId && !customActive;
 
     if (selected) {
       svgEl('circle', { cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 10.5, fill: 'none', stroke: '#ffffff', 'stroke-width': '1.6' }, svg);
     }
-    const dot = svgEl('circle', {
+    svgEl('circle', {
       cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: selected ? 6.2 : 5,
       fill: color, stroke: '#070a14', 'stroke-width': '1.5', class: 'clickable-marker',
+      'data-site-id': s.id,
     }, svg);
-    dot.addEventListener('click', (e) => {
-      e.stopPropagation();
-      stageDropPoint(s.lat, s.lon);
-    });
 
     const lbl = svgEl('text', {
       x: (p.x + 8).toFixed(1), y: (p.y + 3).toFixed(1),
       fill: selected ? '#ffffff' : '#dce6f9', 'font-size': '10.5', 'font-weight': selected ? '700' : '500',
       class: 'clickable-marker',
+      'data-site-id': s.id,
     }, svg);
     lbl.textContent = s.shortName + (state.pickedPetSiteId === s.id ? ' ★' : '');
-    lbl.addEventListener('click', (e) => {
-      e.stopPropagation();
-      stageDropPoint(s.lat, s.lon);
-    });
   }
 
-  // Confirmed Custom Drop Marker
-  if (state.confirmedDrop?.custom) {
-    const cp = state.globe.latLonToScreen(state.confirmedDrop.lat, state.confirmedDrop.lon);
-    if (cp.visible) {
-      svgEl('circle', { cx: cp.x.toFixed(1), cy: cp.y.toFixed(1), r: 7, fill: '#45d48a', stroke: '#ffffff', 'stroke-width': '2' }, svg);
-      svgEl('text', { x: (cp.x + 10).toFixed(1), y: (cp.y + 4).toFixed(1), fill: '#45d48a', 'font-size': '10.5', 'font-weight': '700' }, svg).textContent = 'SELECTED ★';
-    }
-  }
+  // Confirmed / Inspected Custom Drop Markers
+  renderActiveCustomMarkers(svg, (lat, lon) => state.globe.latLonToScreen(lat, lon));
 
   // Staged Drop Pin + Animated Storyboard Leader Line to Top Edge of #predrop-card
   if (state.stagedDrop) {
@@ -735,57 +1112,30 @@ function render3DOverlay() {
       if (state.stagedDrop.animStartTime !== null) {
         const cardWidth = Math.min(320, Math.max(200, vw - 24));
         const anchorX = dockLeft ? 12 + cardWidth * 0.52 : vw - 12 - cardWidth * 0.52;
-        const cardTopY = 58;
-        const elbowY = Math.max(14, Math.min(cardTopY - 14, sp.y - 24));
-
-        const seg1 = Math.hypot(anchorX - sp.x, elbowY - sp.y);
-        const seg2 = Math.abs(cardTopY - elbowY);
-        const totalLen = Math.max(1, seg1 + seg2);
-
-        const rawT = state.stagedDrop.animStartTime > 0
-          ? Math.min(1, (performance.now() - state.stagedDrop.animStartTime) / 180)
-          : 1;
-        // Fast-out, slow-in speed curve matching cubic-bezier(0.16, 1, 0.3, 1)
-        const lineProgress = 1 - Math.pow(1 - rawT, 3.5);
-        const drawnLen = totalLen * lineProgress;
-
-        let pts;
-        let tipX = anchorX;
-        let tipY = cardTopY;
-        if (drawnLen <= seg1) {
-          const u = drawnLen / Math.max(0.001, seg1);
-          tipX = sp.x + (anchorX - sp.x) * u;
-          tipY = sp.y + (elbowY - sp.y) * u;
-          pts = `${sp.x.toFixed(1)},${sp.y.toFixed(1)} ${tipX.toFixed(1)},${tipY.toFixed(1)}`;
-        } else {
-          const v = (drawnLen - seg1) / Math.max(0.001, seg2);
-          tipX = anchorX;
-          tipY = elbowY + (cardTopY - elbowY) * v;
-          pts = `${sp.x.toFixed(1)},${sp.y.toFixed(1)} ${anchorX.toFixed(1)},${elbowY.toFixed(1)} ${tipX.toFixed(1)},${tipY.toFixed(1)}`;
-        }
-
-        svgEl('polyline', {
-          points: pts,
-          fill: 'none', stroke: 'rgba(255, 184, 77, 0.25)', 'stroke-width': '4.5', 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
-        }, svg);
-        svgEl('polyline', {
-          points: pts,
-          fill: 'none', stroke: '#ffb84d', 'stroke-width': '1.9', 'stroke-dasharray': '4 2.5', 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
-        }, svg);
-        svgEl('circle', {
-          cx: tipX.toFixed(1), cy: tipY.toFixed(1), r: lineProgress < 1 ? 3.8 : 3.0,
-          fill: '#ffb84d', stroke: '#ffffff', 'stroke-width': '1.2',
-        }, svg);
+        drawStoryboardConnector(svg, sp.x, sp.y, anchorX, 58, 14);
       }
     }
   }
 }
 
+function siteLabelPlacement2D(site, projection) {
+  if (projection === 'global') {
+    if (site.id === 'GRUITHUISEN_DOMES') return { dx: 10, dy: -4, anchor: 'start' };
+    if (site.id === 'SINUS_VISCOSITATIS') return { dx: -10, dy: 9, anchor: 'end' };
+    if (site.id === 'SHACKLETON_RIM') return { dx: 10, dy: -5, anchor: 'start' };
+    return { dx: 10, dy: 4, anchor: 'start' };
+  }
+  const p = projectSouthPole(site.lat, site.lon);
+  const inward = p.x > 525;
+  if (site.id === 'MALAPERT_A') return { dx: 10, dy: -3, anchor: 'start' };
+  return { dx: inward ? -10 : 10, dy: 4, anchor: inward ? 'end' : 'start' };
+}
+
 function renderMap() {
   const is3D = state.projection === '3d';
-  $('#lunar-globe-gl').hidden = !is3D;
-  $('#globe-overlay').hidden = !is3D;
-  $('#lunar-map').hidden = is3D;
+  setElementHidden($('#lunar-globe-gl'), !is3D);
+  setElementHidden($('#globe-overlay'), !is3D);
+  setElementHidden($('#lunar-map'), is3D);
 
   if (is3D) {
     if (state.globe) {
@@ -801,7 +1151,8 @@ function renderMap() {
 
   const svg = $('#lunar-map');
   svg.replaceChildren();
-  const ep = state.ephemeris[state.sampleIndex] || { sunSubLon: 121.2, sunSubLat: -1.35, obsSubLon: -4.2, obsSubLat: -5.9 };
+  svg.setAttribute('viewBox', '0 0 960 480');
+  const ep = getInterpolatedEphemeris() || { sunSubLon: 121.2, sunSubLat: -1.35, obsSubLon: -4.2, obsSubLat: -5.9 };
   const showTerm = $('#lyr-terminator').checked;
   const showGrid = $('#lyr-graticule').checked;
   const showPsr = $('#lyr-psr').checked;
@@ -814,17 +1165,10 @@ function renderMap() {
       svgEl('image', {
         href: state.globe.getAlbedoDataUrl(),
         x: 0, y: 0, width: 960, height: 480,
-        preserveAspectRatio: 'none', opacity: '0.88',
+        preserveAspectRatio: 'none', opacity: '0.9',
       }, svg);
     } else {
       svgEl('rect', { x: 240, y: 0, width: 480, height: 480, fill: '#10182d', opacity: '0.55' }, svg);
-    }
-    for (const f of state.data?.quickmap?.notableAlbedoFeatures || []) {
-      const p = projectGlobal(f.lat, f.lon > 180 ? f.lon - 360 : f.lon);
-      svgEl('text', {
-        x: p.x.toFixed(1), y: (p.y + 3).toFixed(1),
-        fill: '#9ab0e0', opacity: '0.68', 'font-size': '8.5', 'text-anchor': 'middle', 'font-family': 'monospace',
-      }, svg).textContent = f.name;
     }
 
     if (showGrid) {
@@ -835,6 +1179,11 @@ function renderMap() {
           stroke: lon === 0 ? '#2b3d66' : '#162038', 'stroke-width': lon === 0 ? 1.4 : 0.8,
           'stroke-dasharray': Math.abs(lon) === 90 ? '4 4' : '',
         }, svg);
+        if (lon === -90 || lon === 0 || lon === 90) {
+          svgEl('text', {
+            x: x + 3, y: 12, fill: '#6c80ad', 'font-size': '8.5', 'font-family': 'monospace', opacity: '0.85',
+          }, svg).textContent = lon === 0 ? '0°' : `${Math.abs(lon)}°${lon > 0 ? 'E' : 'W'}`;
+        }
       }
       for (let lat = -60; lat <= 60; lat += 30) {
         const y = ((90 - lat) / 180) * 480;
@@ -842,48 +1191,152 @@ function renderMap() {
           x1: 0, y1: y, x2: 960, y2: y,
           stroke: lat === 0 ? '#2b3d66' : '#162038', 'stroke-width': lat === 0 ? 1.4 : 0.8,
         }, svg);
+        if (lat === -60 || lat === 0 || lat === 60) {
+          svgEl('text', {
+            x: 6, y: y - 3, fill: '#6c80ad', 'font-size': '8.5', 'font-family': 'monospace', opacity: '0.85',
+          }, svg).textContent = lat === 0 ? '0° Eq' : `${Math.abs(lat)}°${lat > 0 ? 'N' : 'S'}`;
+        }
       }
+    }
+
+    for (const f of state.data?.quickmap?.notableAlbedoFeatures || []) {
+      const normLon = f.lon > 180 ? f.lon - 360 : f.lon;
+      const p = projectGlobal(f.lat, normLon);
+      svgEl('text', {
+        x: p.x.toFixed(1), y: (p.y + 3).toFixed(1),
+        fill: '#9ab0e0', opacity: '0.68', 'font-size': '8.5', 'text-anchor': 'middle', 'font-family': 'monospace',
+      }, svg).textContent = f.name;
     }
 
     if (showTerm) {
       const rad = Math.PI / 180;
-      const sunLatRad = Math.abs(ep.sunSubLat) < 0.12 ? (ep.sunSubLat >= 0 ? 0.12 : -0.12) * rad : ep.sunSubLat * rad;
-      const pts = [];
-      for (let lon = -180; lon <= 180; lon += 4) {
+      const sunLatDeg = Math.abs(ep.sunSubLat) < 0.08 ? (ep.sunSubLat >= 0 ? 0.08 : -0.08) : ep.sunSubLat;
+      const sunLatRad = sunLatDeg * rad;
+      const polyPts = [];
+      let segPts = [];
+      const termSegments = [];
+      for (let lon = -180; lon <= 180; lon += 0.5) {
         const dLon = (ep.sunSubLon - lon) * rad;
-        const termLatRad = Math.atan(-Math.cos(dLon) / Math.tan(sunLatRad));
-        const p = projectGlobal((termLatRad * 180) / Math.PI, lon);
-        pts.push(`${p.x.toFixed(1)},${p.y.toFixed(1)}`);
+        const termLatDeg = (Math.atan(-Math.cos(dLon) / Math.tan(sunLatRad)) * 180) / Math.PI;
+        const p = projectGlobal(termLatDeg, lon);
+        polyPts.push(`${p.x.toFixed(1)},${p.y.toFixed(1)}`);
+        if (Math.abs(termLatDeg) < 88.2) {
+          segPts.push(`${p.x.toFixed(1)},${p.y.toFixed(1)}`);
+        } else if (segPts.length > 1) {
+          termSegments.push(segPts);
+          segPts = [];
+        } else {
+          segPts = [];
+        }
       }
-      const nightPoleY = ep.sunSubLat >= 0 ? 480 : 0;
-      svgEl('path', { d: `M 0,${nightPoleY} L ${pts.join(' L ')} L 960,${nightPoleY} Z`, fill: '#02040a', opacity: '0.52' }, svg);
-      svgEl('polyline', { points: pts.join(' '), fill: 'none', stroke: '#ffb84d', 'stroke-width': '1.2', opacity: '0.65' }, svg);
+      if (segPts.length > 1) termSegments.push(segPts);
+      const nightPoleY = sunLatDeg >= 0 ? 480 : 0;
+      svgEl('path', {
+        d: `M 0,${nightPoleY} L ${polyPts.join(' L ')} L 960,${nightPoleY} Z`,
+        fill: '#02040a', opacity: '0.52',
+      }, svg);
+      for (const seg of termSegments) {
+        svgEl('polyline', {
+          points: seg.join(' '), fill: 'none', stroke: '#ffb84d', 'stroke-width': '1.25', opacity: '0.62',
+        }, svg);
+      }
+
+      const sunP = projectGlobal(ep.sunSubLat, ep.sunSubLon);
+      svgEl('circle', { cx: sunP.x.toFixed(1), cy: sunP.y.toFixed(1), r: 5.5, fill: '#ffb84d', stroke: '#fff7e0', 'stroke-width': '1.4', opacity: '0.9' }, svg);
+      svgEl('text', { x: (sunP.x + 8).toFixed(1), y: (sunP.y + 3).toFixed(1), fill: '#ffb84d', 'font-size': '8.5', 'font-family': 'monospace', 'font-weight': '700' }, svg).textContent = 'SUN';
+
+      const earthP = projectGlobal(ep.obsSubLat, ep.obsSubLon);
+      svgEl('circle', { cx: earthP.x.toFixed(1), cy: earthP.y.toFixed(1), r: 4.5, fill: '#58a6ff', stroke: '#ffffff', 'stroke-width': '1.2', opacity: '0.88' }, svg);
+      svgEl('text', { x: (earthP.x + 7).toFixed(1), y: (earthP.y + 3).toFixed(1), fill: '#58a6ff', 'font-size': '8.5', 'font-family': 'monospace', 'font-weight': '700' }, svg).textContent = 'EARTH';
     }
   } else {
-    svgEl('circle', { cx: 480, cy: 240, r: 215, fill: '#121b31', stroke: '#293b66', 'stroke-width': '1.5' }, svg);
+    const defs = svgEl('defs', {}, svg);
+    const clip = svgEl('clipPath', { id: 'pole-clip' }, defs);
+    svgEl('circle', { cx: 480, cy: 240, r: 212 }, clip);
+
+    svgEl('circle', { cx: 480, cy: 240, r: 214, fill: '#0b1222', stroke: '#293b66', 'stroke-width': '1.6' }, svg);
+    if (state.globe && typeof state.globe.getSouthPoleDataUrl === 'function') {
+      svgEl('image', {
+        href: state.globe.getSouthPoleDataUrl(),
+        x: 268, y: 28, width: 424, height: 424,
+        preserveAspectRatio: 'xMidYMid meet',
+        'clip-path': 'url(#pole-clip)',
+        opacity: '0.94',
+      }, svg);
+    } else {
+      svgEl('circle', { cx: 480, cy: 240, r: 212, fill: '#121b31' }, svg);
+    }
+
     if (showGrid) {
+      for (const deg of [0, 90, 180, -90]) {
+        const rad = (deg * Math.PI) / 180;
+        svgEl('line', {
+          x1: 480, y1: 240,
+          x2: (480 + 212 * Math.sin(rad)).toFixed(1),
+          y2: (240 - 212 * Math.cos(rad)).toFixed(1),
+          stroke: deg === 0 ? 'rgba(98, 176, 255, 0.42)' : 'rgba(98, 176, 255, 0.2)',
+          'stroke-width': deg === 0 ? '1.1' : '0.8',
+        }, svg);
+      }
       for (const latRing of [-85, -80, -75]) {
         const r = ((90 + latRing) / 16.5) * 212;
-        svgEl('circle', { cx: 480, cy: 240, r: r.toFixed(1), fill: 'none', stroke: '#223055', 'stroke-dasharray': '3 3' }, svg);
-        svgEl('text', { x: 484, y: (240 - r + 11).toFixed(1), fill: '#6c80ad', 'font-size': '10' }, svg).textContent = `${Math.abs(latRing)}°S`;
+        svgEl('circle', {
+          cx: 480, cy: 240, r: r.toFixed(1), fill: 'none',
+          stroke: 'rgba(130, 165, 225, 0.34)', 'stroke-dasharray': '3 3',
+        }, svg);
+        svgEl('text', {
+          x: 484, y: (240 - r + 11).toFixed(1),
+          fill: '#9ab0e0', 'font-size': '9.5', 'font-family': 'monospace',
+        }, svg).textContent = `${Math.abs(latRing)}°S`;
       }
+      // Subtle South Pole crosshair (90°S)
+      svgEl('line', { x1: 475, y1: 240, x2: 485, y2: 240, stroke: 'rgba(255,255,255,0.45)', 'stroke-width': '1' }, svg);
+      svgEl('line', { x1: 480, y1: 235, x2: 480, y2: 245, stroke: 'rgba(255,255,255,0.45)', 'stroke-width': '1' }, svg);
+
+      svgEl('text', { x: 480, y: 18, fill: '#9ab0e0', 'font-size': '9.5', 'font-family': 'monospace', 'text-anchor': 'middle' }, svg).textContent = '0° NEAR SIDE (EARTH)';
+      svgEl('text', { x: 480, y: 470, fill: '#9ab0e0', 'font-size': '9.5', 'font-family': 'monospace', 'text-anchor': 'middle' }, svg).textContent = '180° FAR SIDE';
+      svgEl('text', { x: 702, y: 243, fill: '#9ab0e0', 'font-size': '9.5', 'font-family': 'monospace' }, svg).textContent = '90°E';
+      svgEl('text', { x: 258, y: 243, fill: '#9ab0e0', 'font-size': '9.5', 'font-family': 'monospace', 'text-anchor': 'end' }, svg).textContent = '90°W';
     }
+
     if (showTerm) {
       const sunRad = (ep.sunSubLon * Math.PI) / 180;
-      const nx = -Math.sin(sunRad);
-      const ny = Math.cos(sunRad);
+      const sx = Math.sin(sunRad);
+      const sy = -Math.cos(sunRad);
+      const nx = -sx;
+      const ny = -sy;
       const tx = -ny;
       const ty = nx;
-      const R = 212;
+      const R = 360;
+      // Offset terminator across pole by solar sub-latitude so negative sunSubLat lights the pole
+      const termOffsetPx = (ep.sunSubLat / 16.5) * 212;
+      const cxT = 480 + sx * termOffsetPx;
+      const cyT = 240 + sy * termOffsetPx;
       const pts = [
-        [480 + tx * R, 240 + ty * R],
-        [480 + tx * R + nx * R, 240 + ty * R + ny * R],
-        [480 - tx * R + nx * R, 240 - ty * R + ny * R],
-        [480 - tx * R, 240 - ty * R],
+        [cxT + tx * R, cyT + ty * R],
+        [cxT + tx * R + nx * R, cyT + ty * R + ny * R],
+        [cxT - tx * R + nx * R, cyT - ty * R + ny * R],
+        [cxT - tx * R, cyT - ty * R],
       ].map((p) => p.map((n) => n.toFixed(1)).join(','));
-      const clip = svgEl('clipPath', { id: 'pole-clip' }, svg);
-      svgEl('circle', { cx: 480, cy: 240, r: 212 }, clip);
-      svgEl('polygon', { points: pts.join(' '), fill: '#02040a', opacity: '0.48', 'clip-path': 'url(#pole-clip)' }, svg);
+      svgEl('polygon', {
+        points: pts.join(' '), fill: '#02040a', opacity: '0.52', 'clip-path': 'url(#pole-clip)',
+      }, svg);
+      svgEl('line', {
+        x1: (cxT - tx * 240).toFixed(1), y1: (cyT - ty * 240).toFixed(1),
+        x2: (cxT + tx * 240).toFixed(1), y2: (cyT + ty * 240).toFixed(1),
+        stroke: '#ffb84d', 'stroke-width': '1.25', opacity: '0.68', 'clip-path': 'url(#pole-clip)',
+      }, svg);
+
+      // Sun azimuth badge on polar rim (well inside outer cardinal labels)
+      const sRimX = 480 + sx * 212;
+      const sRimY = 240 + sy * 212;
+      svgEl('circle', { cx: sRimX.toFixed(1), cy: sRimY.toFixed(1), r: 4.5, fill: '#ffb84d', stroke: '#fff7e0', 'stroke-width': '1.2' }, svg);
+      svgEl('text', {
+        x: (480 + sx * 198).toFixed(1), y: (240 + sy * 198 + 3).toFixed(1),
+        fill: '#ffb84d', 'font-size': '8.5', 'font-family': 'monospace', 'font-weight': '700',
+        'text-anchor': sx > 0.25 ? 'end' : (sx < -0.25 ? 'start' : 'middle'),
+        style: 'paint-order: stroke; stroke: #070a14; stroke-width: 2.4px;',
+      }, svg).textContent = 'SUN';
     }
   }
 
@@ -899,6 +1352,13 @@ function renderMap() {
           return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
         }).join(' ');
         svgEl('polygon', { points: pts, fill: 'rgba(68, 226, 255, 0.28)', stroke: '#44e2ff', 'stroke-width': '1.2' }, svg);
+        if (!psr.name.includes('Shackleton')) {
+          const cp = projectSouthPole(psr.centerLat, psr.centerLon);
+          svgEl('text', {
+            x: cp.x.toFixed(1), y: (cp.y - 6).toFixed(1),
+            fill: '#7ae9ff', opacity: '0.78', 'font-size': '8.2', 'font-family': 'monospace', 'text-anchor': 'middle',
+          }, svg).textContent = psr.name.replace(/\s+(Crater|Floor|PSR|Complex).*$/i, '');
+        }
       }
     }
   }
@@ -929,44 +1389,89 @@ function renderMap() {
     }
   }
 
+  const customActive2D = isCustomSpotActive();
+  const activeCanonId = normalizeSiteId(state.selectedSiteId);
+  let renderedSelectedSiteInPole = false;
   for (const s of state.filteredSites) {
+    const selected = normalizeSiteId(s.id) === activeCanonId && !customActive2D;
     if (state.projection === 'pole' && s.lat > -73.5) continue;
+    if (selected) renderedSelectedSiteInPole = true;
+
     const p = projectPoint2D(s.lat, s.lon);
     const status = primarySiteStatus(s.id);
     const color = status === 'LANDED' ? '#45d48a' : status === 'NO_LANDING' ? '#ff6b6b' : '#62b0ff';
-    const selected = s.id === state.selectedSiteId;
 
     if (selected) {
       svgEl('circle', { cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 12, fill: 'none', stroke: '#ffffff', 'stroke-width': '2' }, svg);
     }
-    const marker = svgEl('circle', {
+    svgEl('circle', {
       cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: selected ? 7 : 5.5,
       fill: color, stroke: '#070a14', 'stroke-width': '1.6', style: 'cursor:pointer',
+      'data-site-id': s.id,
     }, svg);
-    marker.addEventListener('click', (e) => {
-      e.stopPropagation();
-      stageDropPoint(s.lat, s.lon);
-    });
-    svgEl('text', {
-      x: (p.x + 10).toFixed(1), y: (p.y + 4).toFixed(1),
+
+    const plc = siteLabelPlacement2D(s, state.projection);
+    const lbl = svgEl('text', {
+      x: (p.x + plc.dx).toFixed(1), y: (p.y + plc.dy).toFixed(1),
       fill: selected ? '#ffffff' : '#c2cee8', 'font-size': selected ? '11.5' : '10',
-      'font-weight': selected ? '700' : '500', style: 'cursor:pointer',
-    }, svg).textContent = s.shortName + (state.pickedPetSiteId === s.id ? ' ★' : '');
+      'font-weight': selected ? '700' : '500', 'text-anchor': plc.anchor,
+      style: 'cursor:pointer; paint-order: stroke; stroke: #070a14; stroke-width: 2.6px; stroke-linejoin: round;',
+      'data-site-id': s.id,
+    }, svg);
+    lbl.textContent = s.shortName + (state.pickedPetSiteId === s.id ? ' ★' : '');
   }
 
+  // If the currently selected known site is north of -73.5S while in South Pole view,
+  // render a directional polar-rim indicator so selection remains visibly synchronized.
+  if (state.projection === 'pole' && !customActive2D && !renderedSelectedSiteInPole) {
+    const selSite = (state.data?.sites || []).find((s) => normalizeSiteId(s.id) === activeCanonId);
+    if (selSite && selSite.lat > -73.5) {
+      const rp = projectSouthPoleClamped(selSite.lat, selSite.lon);
+      svgEl('circle', { cx: rp.x.toFixed(1), cy: rp.y.toFixed(1), r: 10, fill: 'none', stroke: '#ffffff', 'stroke-width': '1.6', 'stroke-dasharray': '3 2', 'data-site-id': selSite.id }, svg);
+      svgEl('circle', { cx: rp.x.toFixed(1), cy: rp.y.toFixed(1), r: 5.5, fill: '#62b0ff', stroke: '#070a14', 'stroke-width': '1.5', style: 'cursor:pointer', 'data-site-id': selSite.id }, svg);
+      const inward = rp.x > 480;
+      svgEl('text', {
+        x: (inward ? rp.x - 12 : rp.x + 12).toFixed(1), y: (rp.y + 4).toFixed(1),
+        fill: '#ffffff', 'font-size': '10', 'font-weight': '700', 'text-anchor': inward ? 'end' : 'start',
+        style: 'cursor:pointer; paint-order: stroke; stroke: #070a14; stroke-width: 2.6px;',
+        'data-site-id': selSite.id,
+      }, svg).textContent = `${selSite.shortName} (${Math.abs(selSite.lat).toFixed(0)}°${selSite.lat >= 0 ? 'N' : 'S'} ↑)`;
+    }
+  }
+
+  const proj2DOrClamped = (lat, lon) => (
+    state.projection === 'global' ? projectGlobal(lat, lon) : projectSouthPoleClamped(lat, lon)
+  );
+  renderActiveCustomMarkers(svg, proj2DOrClamped);
+
   if (state.stagedDrop) {
-    const sp = projectPoint2D(state.stagedDrop.lat, state.stagedDrop.lon);
+    const sp = proj2DOrClamped(state.stagedDrop.lat, state.stagedDrop.lon);
     const card = $('#predrop-card');
     const dockLeft = sp.x > 480;
     card.classList.toggle('dock-left', dockLeft);
-    svgEl('circle', { cx: sp.x.toFixed(1), cy: sp.y.toFixed(1), r: 10, fill: 'none', stroke: '#ffb84d', 'stroke-width': '1.8' }, svg);
-    svgEl('circle', { cx: sp.x.toFixed(1), cy: sp.y.toFixed(1), r: 4, fill: '#ffffff', stroke: '#ffb84d', 'stroke-width': '1.5' }, svg);
+    svgEl('circle', {
+      cx: sp.x.toFixed(1), cy: sp.y.toFixed(1), r: 10.5,
+      fill: 'none', stroke: '#ffb84d', 'stroke-width': '1.8',
+      'stroke-dasharray': sp.clamped ? '3 2' : 'none',
+    }, svg);
+    svgEl('circle', { cx: sp.x.toFixed(1), cy: sp.y.toFixed(1), r: 4.5, fill: '#ffffff', stroke: '#ffb84d', 'stroke-width': '1.5' }, svg);
+    if (sp.clamped) {
+      const inward = sp.x > 480;
+      svgEl('text', {
+        x: (inward ? sp.x - 14 : sp.x + 14).toFixed(1), y: (sp.y + 4).toFixed(1),
+        fill: '#ffb84d', 'font-size': '10', 'font-weight': '700', 'text-anchor': inward ? 'end' : 'start',
+        style: 'paint-order: stroke; stroke: #070a14; stroke-width: 2.6px;',
+      }, svg).textContent = `${Math.abs(state.stagedDrop.lat).toFixed(1)}°${state.stagedDrop.lat >= 0 ? 'N' : 'S'} ↑`;
+    }
+    if (state.stagedDrop.animStartTime !== null) {
+      const m = svgViewBoxMetrics(svg);
+      const cardWidthPx = Math.min(320, Math.max(200, m.rw - 24));
+      const anchorPxX = dockLeft ? 12 + cardWidthPx * 0.52 : m.rw - 12 - cardWidthPx * 0.52;
+      const anchorX = (m.rect.left + anchorPxX - m.offsetX) / Math.max(0.0001, m.scale);
+      const cardTopY = (m.rect.top + 58 - m.offsetY) / Math.max(0.0001, m.scale);
+      drawStoryboardConnector(svg, sp.x, sp.y, anchorX, cardTopY, 10);
+    }
   }
-
-  svg.onclick = (e) => {
-    const coords = unproject2DClick(e.clientX, e.clientY, svg);
-    if (coords) stageDropPoint(coords.lat, coords.lon);
-  };
 }
 
 function renderSkyDome() {
@@ -1013,26 +1518,35 @@ function renderSkyDome() {
   }
 
   const cur = state.sky.current;
+  const ep = getInterpolatedEphemeris();
+  const coords = getActiveCoords();
+  const earthEl = ep && coords ? elevationDeg(coords.lat, coords.lon, ep.obsSubLat, ep.obsSubLon) : cur.earthElevationDeg;
+  const earthAz = ep && coords ? azimuthDeg(coords.lat, coords.lon, ep.obsSubLat, ep.obsSubLon) : cur.earthAzimuthDeg;
+  const sunEl = ep && coords ? elevationDeg(coords.lat, coords.lon, ep.sunSubLat, ep.sunSubLon) : cur.sunElevationDeg;
+  const sunAz = ep && coords ? azimuthDeg(coords.lat, coords.lon, ep.sunSubLat, ep.sunSubLon) : cur.sunAzimuthDeg;
+  const earthVis = bins.length ? earthEl > horizonElevAtAz(bins, earthAz) : (ep && coords ? earthEl > -0.5 : cur.earthVisible);
+  const sunVis = bins.length ? sunEl > horizonElevAtAz(bins, sunAz) : (ep && coords ? sunEl > 0 : cur.sunlit);
+
   function domePos(elev, az) {
     const r = ((90 - Math.max(-5, Math.min(90, elev))) / 90) * R;
     const rad = (az * Math.PI) / 180;
     return { x: cx + r * Math.sin(rad), y: cy - r * Math.cos(rad) };
   }
-  const earthP = domePos(cur.earthElevationDeg, cur.earthAzimuthDeg);
+  const earthP = domePos(earthEl, earthAz);
   svgEl('circle', {
     cx: earthP.x.toFixed(1), cy: earthP.y.toFixed(1), r: 6.5,
-    fill: cur.earthVisible ? '#58a6ff' : 'none', stroke: '#58a6ff', 'stroke-width': '1.6',
+    fill: earthVis ? '#58a6ff' : 'none', stroke: '#58a6ff', 'stroke-width': '1.6',
   }, svg);
-  const sunP = domePos(cur.sunElevationDeg, cur.sunAzimuthDeg);
+  const sunP = domePos(sunEl, sunAz);
   svgEl('circle', {
     cx: sunP.x.toFixed(1), cy: sunP.y.toFixed(1), r: 7.5,
-    fill: cur.sunlit ? '#ffb84d' : 'none', stroke: '#ffb84d', 'stroke-width': '1.8',
+    fill: sunVis ? '#ffb84d' : 'none', stroke: '#ffb84d', 'stroke-width': '1.8',
   }, svg);
 
   svgEl('text', { x: 14, y: 242, fill: '#45d48a', 'font-size': '10', 'font-family': 'monospace' }, svg)
-    .textContent = `EARTH ${cur.earthElevationDeg >= 0 ? '+' : ''}${cur.earthElevationDeg.toFixed(1)}°`;
+    .textContent = `EARTH ${earthEl >= 0 ? '+' : ''}${earthEl.toFixed(1)}°`;
   svgEl('text', { x: 266, y: 242, fill: '#ffb84d', 'font-size': '10', 'font-family': 'monospace', 'text-anchor': 'end' }, svg)
-    .textContent = `SUN ${cur.sunElevationDeg >= 0 ? '+' : ''}${cur.sunElevationDeg.toFixed(1)}°`;
+    .textContent = `SUN ${sunEl >= 0 ? '+' : ''}${sunEl.toFixed(1)}°`;
 }
 
 function renderOpChart() {
@@ -1079,7 +1593,7 @@ function renderOpChart() {
   const sunPts = state.sky.sun.map((e, i) => `${xOf(i).toFixed(1)},${yOf(e).toFixed(1)}`).join(' ');
   svgEl('polyline', { points: sunPts, fill: 'none', stroke: '#ffb84d', 'stroke-width': '2' }, svg);
 
-  const nowX = xOf(state.sampleIndex);
+  const nowX = xOf(Math.min(Math.max(0, state.sampleFloat), Math.max(0, n - 1)));
   svgEl('line', { x1: nowX.toFixed(1), y1: padT, x2: nowX.toFixed(1), y2: H - padB, stroke: '#ffffff', 'stroke-width': '1.3', 'stroke-dasharray': '3 3' }, svg);
   svgEl('text', { x: Math.min(W - 35, Math.max(padL + 4, nowX + 4)), y: padT + 10, fill: '#ffffff', 'font-size': '9.5', 'font-family': 'monospace' }, svg)
     .textContent = 'NOW';
@@ -1094,7 +1608,10 @@ function renderOpChart() {
     const rect = svg.getBoundingClientRect();
     const clickX = ((ev.clientX - rect.left) / rect.width) * W;
     const ratio = Math.max(0, Math.min(1, (clickX - padL) / plotW));
-    state.sampleIndex = Math.round(ratio * (n - 1));
+    state.sampleFloat = ratio * (n - 1);
+    state.sampleIndex = Math.round(state.sampleFloat) % n;
+    state.lastSyncedSample = state.sampleIndex;
+    applyContinuousSunFrame();
     loadSiteSky().then(renderMap);
   };
 }
@@ -1286,20 +1803,69 @@ function renderSources() {
 }
 
 // ---- Playback & Events ----
+function stopPlay() {
+  if (state.playRaf !== null && typeof cancelAnimationFrame === 'function') {
+    cancelAnimationFrame(state.playRaf);
+  }
+  state.playRaf = null;
+  state.playing = false;
+  state.playLastTime = 0;
+  const btn = $('#btn-play');
+  if (btn) btn.textContent = '▶ Play';
+}
+
+function requestSkySync() {
+  if (state.skySyncBusy) {
+    state.skySyncPending = true;
+    return;
+  }
+  state.skySyncBusy = true;
+  state.skySyncPending = false;
+  state.lastSyncedSample = state.sampleIndex;
+  loadSiteSky()
+    .catch((err) => console.error(err))
+    .finally(() => {
+      state.skySyncBusy = false;
+      if (state.skySyncPending && state.lastSyncedSample !== state.sampleIndex) {
+        requestSkySync();
+      } else {
+        state.skySyncPending = false;
+      }
+    });
+}
+
+function stepPlay(now) {
+  if (!state.playing) return;
+  const dt = state.playLastTime > 0 ? Math.min(0.1, Math.max(0, (now - state.playLastTime) / 1000)) : 0;
+  state.playLastTime = now;
+
+  const n = state.ephemeris.length || 178;
+  const hz = Number($('#play-speed').value) || 3;
+  state.sampleFloat = (state.sampleFloat + dt * hz) % n;
+  const rounded = Math.round(state.sampleFloat) % n;
+  const crossed = rounded !== state.sampleIndex;
+  state.sampleIndex = rounded;
+
+  applyContinuousSunFrame();
+  if (crossed) {
+    requestSkySync();
+  }
+  if (state.playing && typeof requestAnimationFrame === 'function') {
+    state.playRaf = requestAnimationFrame(stepPlay);
+  }
+}
+
 function togglePlay() {
   if (state.playing) {
-    clearInterval(state.playTimer);
-    state.playing = false;
-    $('#btn-play').textContent = '▶ Play';
+    stopPlay();
     return;
   }
   state.playing = true;
   $('#btn-play').textContent = '❚❚ Pause';
-  const hz = Number($('#play-speed').value);
-  state.playTimer = setInterval(() => {
-    state.sampleIndex = (state.sampleIndex + 1) % (state.ephemeris.length || 178);
-    loadSiteSky().then(renderMap);
-  }, Math.round(1000 / hz));
+  state.playLastTime = typeof performance !== 'undefined' ? performance.now() : 0;
+  if (typeof requestAnimationFrame === 'function') {
+    state.playRaf = requestAnimationFrame(stepPlay);
+  }
 }
 
 function jumpToSunTransition(targetSunlit) {
@@ -1312,17 +1878,43 @@ function jumpToSunTransition(targetSunlit) {
     const hCurr = state.sky.sun[curr] > 0;
     if (hPrev !== targetSunlit && hCurr === targetSunlit) {
       state.sampleIndex = curr;
+      state.sampleFloat = curr;
+      state.lastSyncedSample = curr;
       loadSiteSky().then(renderMap);
       return;
     }
   }
 }
 
-function setProjection(mode) {
+function setProjection(mode, focusActive = true) {
   state.projection = mode;
   $('#proj-3d').classList.toggle('active', mode === '3d');
   $('#proj-global').classList.toggle('active', mode === 'global');
   $('#proj-pole').classList.toggle('active', mode === 'pole');
+
+  const active = getActivePointInfo();
+  if (mode === '3d' && state.globe) {
+    setElementHidden($('#lunar-globe-gl'), false);
+    setElementHidden($('#globe-overlay'), false);
+    setElementHidden($('#lunar-map'), true);
+    state.globe.resize();
+    if (active && (state.stagedDrop || active.isCustom)) {
+      state.globe.setStagedPoint(active.lat, active.lon);
+    } else {
+      state.globe.setStagedPoint(null, null);
+    }
+    if (focusActive && active) {
+      state.globe.focusLatLon(active.lat, active.lon, {
+        duration: 240,
+        yawOffsetRad: state.stagedDrop ? 0.22 : 0,
+      });
+    }
+  }
+
+  $('#cursor-hud').textContent = mode === '3d'
+    ? 'Drag to spin · Scroll to zoom · Click anywhere on the Moon to inspect a spot'
+    : 'Click anywhere on the Moon map to inspect conditions or check a landing spot';
+
   renderMap();
 }
 
@@ -1332,11 +1924,72 @@ function wireEvents() {
   $('#proj-pole').onclick = () => setProjection('pole');
   $('#btn-reset-globe').onclick = () => {
     if (state.globe) state.globe.resetView();
-    setProjection('3d');
+    setProjection('3d', false);
   };
 
   for (const id of ['#lyr-terminator', '#lyr-graticule', '#lyr-psr', '#lyr-links']) {
     $(id).onchange = renderMap;
+  }
+
+  const mapSvg = $('#lunar-map');
+  if (mapSvg) {
+    let mapDown = null;
+    mapSvg.addEventListener('mousedown', (e) => {
+      if (state.projection === '3d') return;
+      const targetSiteEl = e.target?.closest?.('[data-site-id]');
+      const siteId = targetSiteEl?.dataset?.siteId || targetSiteEl?.getAttribute?.('data-site-id') || null;
+      mapDown = { x: e.clientX, y: e.clientY, siteId };
+    });
+
+    mapSvg.addEventListener('mousemove', (e) => {
+      if (state.projection === '3d') return;
+      const hud = $('#cursor-hud');
+      const targetSiteEl = e.target?.closest?.('[data-site-id]');
+      const targetSiteId = targetSiteEl?.dataset?.siteId || targetSiteEl?.getAttribute?.('data-site-id');
+      const siteHit = (targetSiteId
+        ? (state.data?.sites || []).find((s) => s.id === targetSiteId)
+        : null) || findNearest2DSite(e.clientX, e.clientY, mapSvg, 16);
+      const ep = getInterpolatedEphemeris() || { sunSubLon: 121.2, sunSubLat: -1.35, obsSubLon: -4.2, obsSubLat: -5.9 };
+      if (siteHit) {
+        mapSvg.style.cursor = 'pointer';
+        const sunEl = quickSunElevation(siteHit.lat, siteHit.lon, ep);
+        hud.textContent = `${siteHit.shortName} · ${formatCoords(siteHit.lat, siteHit.lon)} · ${sunEl > 0 ? 'Daytime (Sunlit)' : 'Nighttime (Dark)'} — Click to inspect`;
+        return;
+      }
+      const coords = unproject2DClick(e.clientX, e.clientY, mapSvg);
+      if (!coords) {
+        mapSvg.style.cursor = 'default';
+        hud.textContent = 'Click anywhere on the Moon map to inspect conditions or check a landing spot';
+        return;
+      }
+      mapSvg.style.cursor = 'crosshair';
+      const sunEl = quickSunElevation(coords.lat, coords.lon, ep);
+      hud.textContent = `${formatCoords(coords.lat, coords.lon)} · ${sunEl > 0 ? 'Daytime (Sunlit)' : 'Nighttime (Dark)'} — Click to check this spot`;
+    });
+
+    mapSvg.addEventListener('mouseleave', () => {
+      mapDown = null;
+      if (state.projection === '3d') return;
+      $('#cursor-hud').textContent = 'Click anywhere on the Moon map to inspect conditions or check a landing spot';
+    });
+
+    mapSvg.addEventListener('mouseup', (e) => {
+      if (state.projection === '3d') return;
+      const down = mapDown;
+      mapDown = null;
+      if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) return;
+      const targetSiteEl = e.target?.closest?.('[data-site-id]');
+      const targetSiteId = down?.siteId || targetSiteEl?.dataset?.siteId || targetSiteEl?.getAttribute?.('data-site-id');
+      const siteHit = (targetSiteId
+        ? (state.data?.sites || []).find((s) => s.id === targetSiteId)
+        : null) || findNearest2DSite(e.clientX, e.clientY, mapSvg, 16);
+      if (siteHit) {
+        stageDropPoint(siteHit.lat, siteHit.lon);
+        return;
+      }
+      const coords = unproject2DClick(e.clientX, e.clientY, mapSvg);
+      if (coords) stageDropPoint(coords.lat, coords.lon);
+    });
   }
 
   for (const id of ['#f-time', '#f-year', '#f-region', '#f-status', '#f-payload']) {
@@ -1355,26 +2008,39 @@ function wireEvents() {
 
   $('#btn-play').onclick = togglePlay;
   $('#play-speed').onchange = () => {
-    if (state.playing) { togglePlay(); togglePlay(); }
+    // Speed is read dynamically on each animation frame.
   };
   $('#btn-step-back').onclick = () => {
     const n = state.ephemeris.length || 178;
-    state.sampleIndex = (state.sampleIndex - 1 + n) % n;
+    state.sampleIndex = (Math.round(state.sampleFloat) - 1 + n) % n;
+    state.sampleFloat = state.sampleIndex;
+    state.lastSyncedSample = state.sampleIndex;
     loadSiteSky().then(renderMap);
   };
   $('#btn-step-fwd').onclick = () => {
     const n = state.ephemeris.length || 178;
-    state.sampleIndex = (state.sampleIndex + 1) % n;
+    state.sampleIndex = (Math.round(state.sampleFloat) + 1) % n;
+    state.sampleFloat = state.sampleIndex;
+    state.lastSyncedSample = state.sampleIndex;
     loadSiteSky().then(renderMap);
   };
   $('#btn-jump-sunrise').onclick = () => jumpToSunTransition(true);
   $('#btn-jump-sunset').onclick = () => jumpToSunTransition(false);
   $('#time-slider').oninput = (e) => {
-    state.sampleIndex = Number(e.target.value);
-    loadSiteSky().then(renderMap);
+    const n = state.ephemeris.length || 178;
+    state.sampleFloat = Math.max(0, Math.min(n - 1, Number(e.target.value)));
+    state.sampleIndex = Math.round(state.sampleFloat) % n;
+    applyContinuousSunFrame();
+    if (state.sampleIndex !== state.lastSyncedSample) {
+      requestSkySync();
+    }
   };
 
   $('#btn-pick-pet-site').onclick = () => {
+    if (state.inspectedEval && !state.inspectedEval.matchedKnownSite) {
+      stageDropPoint(state.inspectedEval.lat, state.inspectedEval.lon);
+      return;
+    }
     const s = (state.data?.sites || []).find((x) => x.id === state.selectedSiteId);
     if (s) stageDropPoint(s.lat, s.lon);
   };
@@ -1432,15 +2098,20 @@ async function init() {
         hud.textContent = 'Drag to spin · Scroll to zoom · Click anywhere on the Moon to inspect a spot';
         return;
       }
-      const ep = state.ephemeris[state.sampleIndex];
+      const ep = getInterpolatedEphemeris() || state.ephemeris[state.sampleIndex];
       const sunEl = ep ? quickSunElevation(hit.lat, hit.lon, ep) : 0;
-      hud.textContent = `${formatCoords(hit.lat, hit.lon)} · ${sunEl > 0 ? 'Daytime (Sunlit)' : 'Nighttime (Dark)'} — Click to check this spot`;
+      const siteObj = hit.siteId ? (state.data?.sites || []).find((s) => s.id === hit.siteId) : null;
+      const prefix = siteObj ? `${siteObj.shortName} · ` : '';
+      hud.textContent = `${prefix}${formatCoords(hit.lat, hit.lon)} · ${sunEl > 0 ? 'Daytime (Sunlit)' : 'Nighttime (Dark)'} — Click to check this spot`;
     },
     onSelectPoint: (hit) => {
       stageDropPoint(hit.lat, hit.lon);
     },
     onViewChange: () => {
-      render3DOverlay();
+      if (state.projection === '3d') render3DOverlay();
+    },
+    onTextureLoad: () => {
+      if (state.projection !== '3d') renderMap();
     },
   });
 

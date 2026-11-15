@@ -36,14 +36,59 @@ public final class MapFilterService {
             Map.entry("SCHRODINGER-BASIN", "FAR_SIDE"),
             Map.entry("LUNAR_FARSIDE", "FAR_SIDE"),
             Map.entry("LUNAR-FARSIDE", "FAR_SIDE"),
-            Map.entry("NOBILE_RIM", "NOBILE_RIM"),
-            Map.entry("NOBILE_REGION", "NOBILE_RIM"),
-            Map.entry("NOBILE-REGION", "NOBILE_RIM"),
+            Map.entry("NOBILE_RIM", "MONS_MOUTON"),
+            Map.entry("NOBILE_REGION", "MONS_MOUTON"),
+            Map.entry("NOBILE-REGION", "MONS_MOUTON"),
+            Map.entry("NOBILE", "MONS_MOUTON"),
+            Map.entry("SOUTH_POLE_BO", "SHACKLETON_RIM"),
+            Map.entry("SOUTH-POLE-BO", "SHACKLETON_RIM"),
+            Map.entry("SOUTH_POLE_BG4", "SHACKLETON_RIM"),
+            Map.entry("SOUTH-POLE-BG4", "SHACKLETON_RIM"),
+            Map.entry("SOUTH_POLE_NOVAD", "SHACKLETON_RIM"),
+            Map.entry("SOUTH-POLE-NOVAD", "SHACKLETON_RIM"),
             Map.entry("SINUS_VISCOSITATIS", "SINUS_VISCOSITATIS"),
             Map.entry("SINUS-VISCOSITATIS", "SINUS_VISCOSITATIS"),
             Map.entry("GRUITHUISEN_DOMES", "GRUITHUISEN_DOMES"),
             Map.entry("GRUITHUISEN-DOMES", "GRUITHUISEN_DOMES")
     );
+
+    private static final Map<String, String> MISSION_ALIASES = Map.ofEntries(
+            Map.entry("to2-ab", "peregrine-1"),
+            Map.entry("to2-im", "im-1"),
+            Map.entry("to19d", "blue-ghost-1"),
+            Map.entry("to-prime1", "im-2"),
+            Map.entry("ct-3", "blue-moon-1"),
+            Map.entry("to20a", "griffin-1"),
+            Map.entry("cp-11", "im-3"),
+            Map.entry("cp-21", "blue-ghost-3"),
+            Map.entry("cs-3", "blue-ghost-2"),
+            Map.entry("cs-11", "draper-1"),
+            Map.entry("cp-22", "im-4")
+    );
+
+    private static String normalizeRegion(String raw) {
+        String upper = norm(raw);
+        if (upper.isEmpty() || "ALL".equals(upper)) return upper;
+        String canon = upper.replace('-', '_');
+        return switch (canon) {
+            case "NEARSIDE", "NEAR_SIDE" -> "NEAR_SIDE";
+            case "POLAR", "SOUTHPOLE", "SOUTH_POLE" -> "SOUTH_POLE";
+            case "FARSIDE", "FAR_SIDE" -> "FAR_SIDE";
+            default -> canon;
+        };
+    }
+
+    private static String normalizeStatus(String raw) {
+        String upper = norm(raw);
+        if (upper.isEmpty() || "ALL".equals(upper)) return upper;
+        String canon = upper.replace('-', '_').replace(' ', '_');
+        return switch (canon) {
+            case "FAILED", "NO_LANDING" -> "NO_LANDING";
+            case "LANDED" -> "LANDED";
+            case "PLANNED" -> "PLANNED";
+            default -> canon;
+        };
+    }
 
     public static String normalizeSiteId(String raw) {
         if (raw == null || raw.isBlank()) return "";
@@ -65,8 +110,8 @@ public final class MapFilterService {
     public static List<MapModels.ClpsMission> filterMissions(MapModels.DatasetBundle bundle, Map<String, String> params) {
         String timeWindow = norm(params.get("timeWindow"));
         String year = norm(params.get("year"));
-        String region = norm(params.get("region"));
-        String status = norm(params.get("status"));
+        String region = normalizeRegion(params.get("region"));
+        String status = normalizeStatus(params.get("status"));
         String payloadType = norm(params.get("payloadType"));
         String siteId = normalizeSiteId(params.getOrDefault("site", params.get("siteId")));
         String q = normLower(params.get("q"));
@@ -75,8 +120,8 @@ public final class MapFilterService {
         for (MapModels.ClpsMission m : bundle.missions()) {
             if (!isAll(timeWindow) && !timeWindow.equals(norm(m.timeWindow()))) continue;
             if (!isAll(year) && !year.equals(String.valueOf(m.year()))) continue;
-            if (!isAll(region) && !region.equals(norm(m.region()))) continue;
-            if (!isAll(status) && !status.equals(norm(m.status()))) continue;
+            if (!isAll(region) && !region.equals(normalizeRegion(m.region()))) continue;
+            if (!isAll(status) && !status.equals(normalizeStatus(m.status()))) continue;
             if (!isAll(siteId) && !siteId.equals(normalizeSiteId(m.siteId()))) continue;
             if (!isAll(payloadType) && m.payloadTypes().stream().noneMatch(pt -> norm(pt).equals(payloadType))) continue;
             if (!q.isEmpty()) {
@@ -92,8 +137,8 @@ public final class MapFilterService {
     public static List<MapModels.LandingSite> filterSites(MapModels.DatasetBundle bundle, Map<String, String> params) {
         String timeWindow = norm(params.get("timeWindow"));
         String year = norm(params.get("year"));
-        String region = norm(params.get("region"));
-        String status = norm(params.get("status"));
+        String region = normalizeRegion(params.get("region"));
+        String status = normalizeStatus(params.get("status"));
         String payloadType = norm(params.get("payloadType"));
         String siteParam = normalizeSiteId(params.getOrDefault("site", params.get("siteId")));
         String q = normLower(params.get("q"));
@@ -110,7 +155,7 @@ public final class MapFilterService {
 
         List<MapModels.LandingSite> out = new ArrayList<>();
         for (MapModels.LandingSite s : bundle.sites()) {
-            if (!isAll(region) && !region.equals(norm(s.region()))) continue;
+            if (!isAll(region) && !region.equals(normalizeRegion(s.region()))) continue;
             if (!isAll(siteParam) && !siteParam.equals(normalizeSiteId(s.id()))) continue;
             if (hasMissionFilter && !missionMatchedSites.contains(normalizeSiteId(s.id()))) continue;
             if (!q.isEmpty()) {
@@ -169,8 +214,12 @@ public final class MapFilterService {
      * Given a failed mission id, discovers all downstream CLPS missions that depend on it.
      */
     public static Map<String, Object> simulateCascade(MapModels.DatasetBundle bundle, String failedMissionId) {
+        String raw = normLower(failedMissionId);
+        String aliased = MISSION_ALIASES.getOrDefault(raw, raw);
         MapModels.ClpsMission root = bundle.missions().stream()
-                .filter(m -> m.id().equalsIgnoreCase(failedMissionId))
+                .filter(m -> m.id().equalsIgnoreCase(raw)
+                        || m.id().equalsIgnoreCase(aliased)
+                        || (m.taskOrder() != null && m.taskOrder().equalsIgnoreCase(raw)))
                 .findFirst()
                 .orElse(null);
         if (root == null) {

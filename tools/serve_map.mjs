@@ -118,6 +118,8 @@ export function createMapRequestHandler(mapsRoot = DEFAULT_MAPS_ROOT, webRoot = 
       relPath = fs.existsSync(path.join(webRoot, 'index.html')) ? '/index.html' : '/map.html';
     } else if (relPath === '/map') {
       relPath = '/map.html';
+    } else if (relPath === '/story') {
+      relPath = '/story.html';
     }
     const resolved = path.resolve(webRoot, '.' + relPath);
     if (!resolved.startsWith(webRoot) || !fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) {

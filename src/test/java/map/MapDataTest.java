@@ -52,6 +52,15 @@ public final class MapDataTest {
 
         assertTrue(MapFilterService.normalizeSiteId("SHACKLETON_RIDGE").equals("SHACKLETON_RIM"),
                 "Site alias SHACKLETON_RIDGE must normalize to SHACKLETON_RIM");
+        assertTrue(MapFilterService.normalizeSiteId("nobile-region").equals("MONS_MOUTON"),
+                "Site alias nobile-region must normalize to MONS_MOUTON");
+        for (String extId : List.of(
+                "sinus-viscositatis", "malapert-a", "mare-crisium", "nobile-region",
+                "shackleton-ridge", "reiner-gamma", "schrodinger-basin", "gruithuisen-domes",
+                "mons-mouton", "lunar-farside", "south-pole-bo", "south-pole-bg4", "south-pole-novad")) {
+            assertTrue(MapFilterService.findSite(bundle, extId) != null,
+                    "External Data/story site id must resolve: " + extId);
+        }
         List<String> engineMeterKeys = List.of("power", "oxygen", "food", "happiness");
         for (MapModels.LandingSite site : bundle.sites()) {
             assertTrue(site.lat() >= -90.0 && site.lat() <= 90.0, "Valid latitude for " + site.id());
@@ -79,6 +88,8 @@ public final class MapDataTest {
 
         assertTrue((boolean) mareSky.get("earthVisible"), "Mare Crisium must have direct Earth link");
         assertTrue(!(boolean) farSky.get("earthVisible"), "Far Side Schrodinger must have zero DTE link");
+        assertTrue(shackletonSky.get("bestAvgPowerPct") instanceof Number,
+                "Sky payload must expose bestAvgPowerPct for story branch");
         @SuppressWarnings("unchecked")
         Map<String, Object> sWin = (Map<String, Object>) shackletonSky.get("windows");
         assertTrue(((Number) sWin.get("computedSunlitTerrainPct")).doubleValue() > 70.0,
@@ -91,15 +102,24 @@ public final class MapDataTest {
         List<MapModels.ClpsMission> past = MapFilterService.filterMissions(bundle, Map.of("timeWindow", "PAST"));
         assertTrue(past.size() == 4, "Expected 4 past missions (Peregrine, IM-1, BG-1, IM-2)");
 
+        List<MapModels.ClpsMission> failed = MapFilterService.filterMissions(bundle, Map.of("status", "failed"));
+        assertTrue(failed.size() == 1, "Status alias failed must normalize to NO_LANDING");
+
         List<MapModels.ClpsMission> year2026 = MapFilterService.filterMissions(bundle, Map.of("year", "2026"));
         assertTrue(year2026.size() == 4, "Expected 4 missions in 2026");
 
         List<MapModels.LandingSite> southPole = MapFilterService.filterSites(bundle, Map.of("region", "SOUTH_POLE"));
         assertTrue(southPole.size() == 3, "Expected 3 South Pole landing sites");
+        List<MapModels.LandingSite> polarAlias = MapFilterService.filterSites(bundle, Map.of("region", "polar"));
+        assertTrue(polarAlias.size() == 3, "Region alias polar must match 3 South Pole landing sites");
 
         Map<String, Object> cascade = MapFilterService.simulateCascade(bundle, "blue-ghost-2");
         assertTrue(((Number) cascade.get("impactCount")).intValue() >= 1,
                 "Blue Ghost 2 failure must cascade to Draper Mission 1 relay dependency");
+
+        Map<String, Object> cascadeAlias = MapFilterService.simulateCascade(bundle, "cs-3");
+        assertTrue(((Number) cascadeAlias.get("impactCount")).intValue() >= 1,
+                "Mission alias cs-3 must resolve to blue-ghost-2 cascade");
 
         Map<String, Object> recipe = MapFilterService.recommendRecipe(bundle, "MONS_MOUTON", 25.0, 90.0);
         @SuppressWarnings("unchecked")
@@ -126,6 +146,10 @@ public final class MapDataTest {
         assertTrue(evalMult.keySet().size() == 4
                 && evalMult.keySet().containsAll(List.of("power", "oxygen", "food", "happiness")),
                 "evaluateDropPoint decayMultipliers must contain exact engine METER_KEYS");
+        assertTrue(farCustom.get("elevationM") instanceof Number
+                && farCustom.get("slopeDegs") instanceof Number
+                && farCustom.get("horizonProfile") instanceof List<?>,
+                "evaluateDropPoint must expose Data-branch aliases elevationM, slopeDegs, horizonProfile");
     }
 
     private static void assertTrue(boolean cond, String message) {

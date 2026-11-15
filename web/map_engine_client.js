@@ -36,14 +36,55 @@ const SITE_ID_ALIASES = {
   'SCHRODINGER-BASIN': 'FAR_SIDE',
   LUNAR_FARSIDE: 'FAR_SIDE',
   'LUNAR-FARSIDE': 'FAR_SIDE',
-  NOBILE_RIM: 'NOBILE_RIM',
-  NOBILE_REGION: 'NOBILE_RIM',
-  'NOBILE-REGION': 'NOBILE_RIM',
+  NOBILE_RIM: 'MONS_MOUTON',
+  NOBILE_REGION: 'MONS_MOUTON',
+  'NOBILE-REGION': 'MONS_MOUTON',
+  NOBILE: 'MONS_MOUTON',
+  SOUTH_POLE_BO: 'SHACKLETON_RIM',
+  'SOUTH-POLE-BO': 'SHACKLETON_RIM',
+  SOUTH_POLE_BG4: 'SHACKLETON_RIM',
+  'SOUTH-POLE-BG4': 'SHACKLETON_RIM',
+  SOUTH_POLE_NOVAD: 'SHACKLETON_RIM',
+  'SOUTH-POLE-NOVAD': 'SHACKLETON_RIM',
   SINUS_VISCOSITATIS: 'SINUS_VISCOSITATIS',
   'SINUS-VISCOSITATIS': 'SINUS_VISCOSITATIS',
   GRUITHUISEN_DOMES: 'GRUITHUISEN_DOMES',
   'GRUITHUISEN-DOMES': 'GRUITHUISEN_DOMES',
 };
+
+const MISSION_ID_ALIASES = {
+  'to2-ab': 'peregrine-1',
+  'to2-im': 'im-1',
+  to19d: 'blue-ghost-1',
+  'to-prime1': 'im-2',
+  'ct-3': 'blue-moon-1',
+  to20a: 'griffin-1',
+  'cp-11': 'im-3',
+  'cp-21': 'blue-ghost-3',
+  'cs-3': 'blue-ghost-2',
+  'cs-11': 'draper-1',
+  'cp-22': 'im-4',
+};
+
+function normalizeRegion(raw) {
+  const upper = norm(raw);
+  if (!upper || upper === 'ALL') return upper;
+  const canon = upper.replace(/-/g, '_');
+  if (canon === 'NEARSIDE' || canon === 'NEAR_SIDE') return 'NEAR_SIDE';
+  if (canon === 'POLAR' || canon === 'SOUTHPOLE' || canon === 'SOUTH_POLE') return 'SOUTH_POLE';
+  if (canon === 'FARSIDE' || canon === 'FAR_SIDE') return 'FAR_SIDE';
+  return canon;
+}
+
+function normalizeStatus(raw) {
+  const upper = norm(raw);
+  if (!upper || upper === 'ALL') return upper;
+  const canon = upper.replace(/[\s-]+/g, '_');
+  if (canon === 'FAILED' || canon === 'NO_LANDING') return 'NO_LANDING';
+  if (canon === 'LANDED') return 'LANDED';
+  if (canon === 'PLANNED') return 'PLANNED';
+  return canon;
+}
 
 const MONTH_MAP = {
   Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
@@ -321,6 +362,9 @@ export function buildMapDataset({ main = {}, quickmap = {}, trekSites = {}, trek
 
   const missions = (main.missions || []).map((m) => ({
     ...m,
+    launchDate: m.launchDate ?? m.launched ?? null,
+    landingDate: m.landingDate ?? m.landed ?? null,
+    lander: m.lander || m.name,
     duration: m.duration ?? 60,
     requires: m.requires || { power: 25, oxygen: 20 },
     cost: m.cost || { power: -15, oxygen: -10 },
@@ -413,9 +457,9 @@ export function computeSiteSky(site, ephemeris, currentIndex = 141) {
   const avgPowerPct = n > 0 ? round1(powerSum / n) : 0;
   const startDate = n > 0 ? toIsoDate(ephemeris[0].timestampUtc) : '2026-11-10';
   let bestIdx = 0;
+  let bestSum = -1;
+  const win = n > 0 ? Math.max(1, Math.floor(n / 2)) : 0;
   if (n > 0) {
-    const win = Math.max(1, Math.floor(n / 2));
-    let bestSum = -1;
     for (let start = 0; start < n; start++) {
       let sum = 0;
       for (let k = 0; k < win; k++) sum += powerSeries[(start + k) % n];
@@ -426,6 +470,7 @@ export function computeSiteSky(site, ephemeris, currentIndex = 141) {
     }
   }
   const bestStartDate = n > 0 ? toIsoDate(ephemeris[bestIdx].timestampUtc) : startDate;
+  const bestAvgPowerPct = win > 0 && bestSum >= 0 ? round1(bestSum / win) : avgPowerPct;
 
   return {
     id: site.id,
@@ -464,6 +509,7 @@ export function computeSiteSky(site, ephemeris, currentIndex = 141) {
     earthVisible: currentDte,
     startDate,
     bestStartDate,
+    bestAvgPowerPct,
     gameDays: 14.77,
     monthDays: 29.53,
     avgPowerPct,
@@ -755,11 +801,13 @@ export function evaluateDropPoint(bundle, rawLat, rawLon, sampleIndex = 141) {
       ? `${matchedFeature.featureLabel} (${coordLabel})`
       : `Custom Drop Point (${coordLabel})`;
 
+  const outLat = matchedKnownSite ? nearestSite.lat : round2(lat);
+  const outLon = matchedKnownSite ? nearestSite.lon : round2(lon);
   const synthetic = {
     id,
     name,
-    lat: round2(lat),
-    lon: round2(lon),
+    lat: outLat,
+    lon: outLon,
     region,
     elevationMeters,
     elevationM: elevationMeters,
@@ -832,8 +880,8 @@ export function evaluateDropPoint(bundle, rawLat, rawLon, sampleIndex = 141) {
     nearestSiteId: nearestSite?.id || null,
     nearestSiteName: nearestSite?.name || null,
     nearestSiteKm: round1(nearestSiteKm),
-    lat: round2(lat),
-    lon: round2(lon),
+    lat: outLat,
+    lon: outLon,
     region,
     elevationMeters,
     elevationM: elevationMeters,
@@ -859,8 +907,8 @@ export function evaluateDropPoint(bundle, rawLat, rawLon, sampleIndex = 141) {
 export function filterMissions(bundle, params = {}) {
   const timeWindow = norm(params.timeWindow);
   const year = norm(params.year);
-  const region = norm(params.region);
-  const status = norm(params.status);
+  const region = normalizeRegion(params.region);
+  const status = normalizeStatus(params.status);
   const payloadType = norm(params.payloadType);
   const rawSiteId = norm(params.site || params.siteId);
   const siteId = isAll(rawSiteId) ? rawSiteId : normalizeSiteId(rawSiteId);
@@ -869,8 +917,8 @@ export function filterMissions(bundle, params = {}) {
   return bundle.missions.filter((m) => {
     if (!isAll(timeWindow) && norm(m.timeWindow) !== timeWindow) return false;
     if (!isAll(year) && String(m.year) !== year) return false;
-    if (!isAll(region) && norm(m.region) !== region) return false;
-    if (!isAll(status) && norm(m.status) !== status) return false;
+    if (!isAll(region) && normalizeRegion(m.region) !== region) return false;
+    if (!isAll(status) && normalizeStatus(m.status) !== status) return false;
     if (!isAll(siteId) && normalizeSiteId(m.siteId) !== siteId) return false;
     if (!isAll(payloadType) && !(m.payloadTypes || []).some((pt) => norm(pt) === payloadType)) return false;
     if (q) {
@@ -884,8 +932,8 @@ export function filterMissions(bundle, params = {}) {
 export function filterSites(bundle, params = {}) {
   const timeWindow = norm(params.timeWindow);
   const year = norm(params.year);
-  const region = norm(params.region);
-  const status = norm(params.status);
+  const region = normalizeRegion(params.region);
+  const status = normalizeStatus(params.status);
   const payloadType = norm(params.payloadType);
   const rawSiteId = norm(params.site || params.siteId);
   const siteId = isAll(rawSiteId) ? rawSiteId : normalizeSiteId(rawSiteId);
@@ -898,7 +946,7 @@ export function filterSites(bundle, params = {}) {
 
   return bundle.sites.filter((s) => {
     if (!isAll(siteId) && normalizeSiteId(s.id) !== siteId) return false;
-    if (!isAll(region) && norm(s.region) !== region) return false;
+    if (!isAll(region) && normalizeRegion(s.region) !== region) return false;
     if (hasMissionFilter && !matchedSites.has(normalizeSiteId(s.id))) return false;
     if (q) {
       const hay = `${s.id} ${s.name} ${s.terrainSummary} ${s.scienceGoal}`.toLowerCase();
@@ -944,7 +992,14 @@ export function compareSites(bundle, siteIds = []) {
 }
 
 export function simulateCascade(bundle, failedMissionId) {
-  const root = bundle.missions.find((m) => m.id.toLowerCase() === String(failedMissionId).toLowerCase());
+  const raw = String(failedMissionId || '').trim().toLowerCase();
+  const aliased = MISSION_ID_ALIASES[raw] || raw;
+  const root = bundle.missions.find(
+    (m) =>
+      m.id.toLowerCase() === raw ||
+      m.id.toLowerCase() === aliased ||
+      String(m.taskOrder || '').toLowerCase() === raw
+  );
   if (!root) return { error: 'Unknown mission id', missionId: failedMissionId };
 
   const impactedIds = new Set();
@@ -1060,10 +1115,37 @@ export function dispatchMapApi(bundle, rawSources, urlPathAndQuery) {
   }
   if (pathname === '/api/map/sky' || pathname === '/api/sky') {
     const siteId = params.site || 'SHACKLETON_RIM';
-    const sample = Number.parseInt(params.sample ?? '141', 10);
     const site = findSite(bundle, siteId);
     if (!site) return { status: 404, body: { error: 'unknown site' } };
-    return { status: 200, body: computeSiteSky(site, bundle.ephemeris, Number.isNaN(sample) ? 141 : sample) };
+    const dateParam = (params.date || '').trim();
+    const hasIsoDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam);
+    let sample = Number.parseInt(params.sample ?? '', 10);
+    if (Number.isNaN(sample)) {
+      if (hasIsoDate && bundle.ephemeris.length > 0) {
+        const exactIdx = bundle.ephemeris.findIndex((ep) => toIsoDate(ep.timestampUtc) === dateParam);
+        if (exactIdx >= 0) {
+          sample = exactIdx;
+        } else {
+          const baseMs = Date.parse(`${toIsoDate(bundle.ephemeris[0].timestampUtc)}T00:00:00Z`);
+          const targetMs = Date.parse(`${dateParam}T00:00:00Z`);
+          if (Number.isNaN(targetMs) || Number.isNaN(baseMs)) {
+            sample = 141;
+          } else {
+            const SYNODIC_DAYS = 29.530588;
+            const diffDays = (targetMs - baseMs) / 86400000;
+            const phaseDays = ((diffDays % SYNODIC_DAYS) + SYNODIC_DAYS) % SYNODIC_DAYS;
+            sample = Math.round((phaseDays * 24) / 4.0) % bundle.ephemeris.length;
+          }
+        }
+      } else {
+        sample = 141;
+      }
+    }
+    const sky = computeSiteSky(site, bundle.ephemeris, sample);
+    if (hasIsoDate && !Number.isNaN(Date.parse(`${dateParam}T00:00:00Z`))) {
+      sky.startDate = dateParam;
+    }
+    return { status: 200, body: sky };
   }
   if (pathname === '/api/map/evaluate') {
     const lat = Number.parseFloat(params.lat ?? '-89.63');

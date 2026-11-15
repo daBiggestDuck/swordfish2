@@ -915,6 +915,7 @@ export class LunarGlobeGL {
     this.onHover = options.onHover || (() => {});
     this.onSelectPoint = options.onSelectPoint || (() => {});
     this.onViewChange = options.onViewChange || (() => {});
+    this.onTextureLoad = options.onTextureLoad || (() => {});
 
     this.quickmap = options.quickmap || { notableAlbedoFeatures: options.quickmapFeatures || [] };
     this.psrZones = options.psrZones || [];
@@ -927,6 +928,8 @@ export class LunarGlobeGL {
     this.fovYDeg = 42;
     this.parallaxX = 0;
     this.parallaxY = 0;
+    this.targetParallaxX = 0;
+    this.targetParallaxY = 0;
     this.sunVec = latLonToVec3(-1.35, 121.2);
     this.earthVec = latLonToVec3(-5.9, -4.2);
     this.hoverVec = null;
@@ -940,10 +943,12 @@ export class LunarGlobeGL {
     this.velYaw = 0;
     this.velPitch = 0;
     this._lastDragMoveTime = 0;
+    this._pressedSite = null;
     this._animRaf = null;
     this._lastFrameTime = 0;
     this._cameraTween = null;
     this._cachedDataUrl = null;
+    this._cachedSouthPoleDataUrl = null;
 
     this.maps = createRealisticMoonMaps(this.quickmap, this.psrZones, this.sites);
 
@@ -971,6 +976,102 @@ export class LunarGlobeGL {
       this._cachedDataUrl = this.maps.albedoCanvas.toDataURL('image/jpeg', 0.86);
     }
     return this._cachedDataUrl;
+  }
+
+  /**
+   * Project the South Pole region (-90S to -73.5S) onto a stereographic polar disc (424x424)
+   * matching projectSouthPole(): center = 90S, radius 212px = 73.5S, top = 0 deg Near Side, right = 90E.
+   */
+  getSouthPoleDataUrl() {
+    if (this._cachedSouthPoleDataUrl) return this._cachedSouthPoleDataUrl;
+    const size = 424;
+    const half = size * 0.5;
+    const maxColat = 16.5;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const outImg = ctx.createImageData(size, size);
+    const dst = outImg.data;
+
+    const aCanvas = this.maps.albedoCanvas;
+    const aw = aCanvas.width;
+    const ah = aCanvas.height;
+    const aData = aCanvas.getContext('2d').getImageData(0, 0, aw, ah).data;
+
+    const hCanvas = this.maps.heightCanvas;
+    const hw = hCanvas.width;
+    const hh = hCanvas.height;
+    const hData = hCanvas.getContext('2d').getImageData(0, 0, hw, hh).data;
+
+    const elevGrid = new Float32Array(size * size);
+
+    const sampleBilinear = (data, w, h, u, v, chOffset) => {
+      const fx = (((u % 1) + 1) % 1) * w;
+      const fy = Math.max(0, Math.min(1, v)) * (h - 1);
+      const x0 = Math.floor(fx) % w;
+      const x1 = (x0 + 1) % w;
+      const y0 = Math.min(h - 1, Math.floor(fy));
+      const y1 = Math.min(h - 1, y0 + 1);
+      const tx = fx - Math.floor(fx);
+      const ty = fy - y0;
+      const idx00 = (y0 * w + x0) * 4 + chOffset;
+      const idx10 = (y0 * w + x1) * 4 + chOffset;
+      const idx01 = (y1 * w + x0) * 4 + chOffset;
+      const idx11 = (y1 * w + x1) * 4 + chOffset;
+      const top = data[idx00] * (1 - tx) + data[idx10] * tx;
+      const bot = data[idx01] * (1 - tx) + data[idx11] * tx;
+      return top * (1 - ty) + bot * ty;
+    };
+
+    for (let sy = 0; sy < size; sy++) {
+      for (let sx = 0; sx < size; sx++) {
+        const dx = sx - half;
+        const dy = half - sy;
+        const r = Math.hypot(dx, dy);
+        const idx = sy * size + sx;
+        const pIdx = idx * 4;
+        if (r > half + 1) {
+          dst[pIdx + 3] = 0;
+          continue;
+        }
+        const colat = (r / half) * maxColat;
+        const lat = -90 + colat;
+        const lonDeg = Math.atan2(dx, dy) * RAD2DEG;
+        const u = (lonDeg + 180) / 360;
+        const v = (90 - lat) / 180;
+
+        const rCol = sampleBilinear(aData, aw, ah, u, v, 0);
+        const gCol = sampleBilinear(aData, aw, ah, u, v, 1);
+        const bCol = sampleBilinear(aData, aw, ah, u, v, 2);
+        const elev = sampleBilinear(hData, hw, hh, u, v, 0);
+        elevGrid[idx] = elev;
+
+        dst[pIdx] = Math.round(rCol);
+        dst[pIdx + 1] = Math.round(gCol);
+        dst[pIdx + 2] = Math.round(bCol);
+        dst[pIdx + 3] = 255;
+      }
+    }
+
+    // Apply clean isotropic topographic hillshade directly in polar grid coordinates
+    for (let sy = 1; sy < size - 1; sy++) {
+      for (let sx = 1; sx < size - 1; sx++) {
+        const pIdx = (sy * size + sx) * 4;
+        if (dst[pIdx + 3] === 0) continue;
+        const gx = elevGrid[sy * size + (sx + 1)] - elevGrid[sy * size + (sx - 1)];
+        const gy = elevGrid[(sy + 1) * size + sx] - elevGrid[(sy - 1) * size + sx];
+        const shade = (-gx * 0.85 - gy * 0.85) * 0.9 + (elevGrid[sy * size + sx] - 128) * 0.24;
+        dst[pIdx] = Math.max(18, Math.min(242, Math.round(dst[pIdx] + shade)));
+        dst[pIdx + 1] = Math.max(18, Math.min(244, Math.round(dst[pIdx + 1] + shade)));
+        dst[pIdx + 2] = Math.max(22, Math.min(248, Math.round(dst[pIdx + 2] + shade + 3)));
+      }
+    }
+
+    ctx.putImageData(outImg, 0, 0);
+    this._cachedSouthPoleDataUrl = canvas.toDataURL('image/png');
+    return this._cachedSouthPoleDataUrl;
   }
 
   _uploadMoonBuffers(mesh) {
@@ -1082,9 +1183,11 @@ export class LunarGlobeGL {
         // Verify canvas was not CORS-tainted before uploading to WebGL
         ctx.getImageData(0, 0, 1, 1);
         this._cachedDataUrl = null;
+        this._cachedSouthPoleDataUrl = null;
         this._uploadTexture2D(this.tex, this.maps.albedoCanvas);
         this.render();
         this.onViewChange();
+        this.onTextureLoad();
       } catch {
         // Keep offline NASA-calibrated map if remote server lacks CORS headers
       }
@@ -1108,10 +1211,12 @@ export class LunarGlobeGL {
         const { heightCanvas, heightSampler } = buildNormalSlopeCanvas(tmp, this.maps.mareMaskData);
         this.maps.heightCanvas = heightCanvas;
         this.maps.heightSampler = heightSampler;
+        this._cachedSouthPoleDataUrl = null;
         this._uploadTexture2D(this.heightTex, heightCanvas);
         this._uploadMoonBuffers(buildSphereMesh(96, 192, heightSampler));
         this.render();
         this.onViewChange();
+        this.onTextureLoad();
       } catch {
         // Keep offline LOLA-calibrated heightmap cleanly
       }
@@ -1145,10 +1250,10 @@ export class LunarGlobeGL {
   }
 
   _cameraBasis() {
-    // Keep camera locked to orbited yaw/pitch so 2D overlay markers stay pixel-locked
-    // while deep-space background stars retain subtle hover parallax.
-    const effYaw = this.yaw;
-    const effPitch = Math.max(-1.46, Math.min(1.46, this.pitch));
+    // Apply smoothed cursor micro-parallax directly to the orbited camera basis so
+    // the 3D Moon, Steep POM surface relief, deep-space stars, and 2D overlay stay pixel-locked.
+    const effYaw = this.yaw - this.parallaxX * 0.062;
+    const effPitch = Math.max(-1.46, Math.min(1.46, this.pitch + this.parallaxY * 0.048));
     const cp = Math.cos(effPitch);
     const camPos = [
       this.distance * cp * Math.sin(effYaw),
@@ -1215,7 +1320,9 @@ export class LunarGlobeGL {
   _stepAnim(now) {
     const dt = Math.min(48, Math.max(4, now - (this._lastFrameTime || now)));
     this._lastFrameTime = now;
+    const stepScale = dt / 16.67;
     let keepRunning = false;
+    let needsRender = false;
 
     if (this._cameraTween) {
       const tw = this._cameraTween;
@@ -1223,8 +1330,7 @@ export class LunarGlobeGL {
       const k = easeOutCubicBezier(t);
       this.yaw = tw.startYaw + tw.deltaYaw * k;
       this.pitch = tw.startPitch + tw.deltaPitch * k;
-      this.render();
-      this.onViewChange();
+      needsRender = true;
       if (t >= 1) {
         this._cameraTween = null;
         if (tw.onComplete) tw.onComplete();
@@ -1232,7 +1338,6 @@ export class LunarGlobeGL {
         keepRunning = true;
       }
     } else if (!this.dragging && Math.hypot(this.velYaw, this.velPitch) > 0.00015) {
-      const stepScale = dt / 16.67;
       this.yaw += this.velYaw * stepScale;
       const nextPitch = this.pitch + this.velPitch * stepScale;
       if (nextPitch >= 1.46 || nextPitch <= -1.46) {
@@ -1245,14 +1350,34 @@ export class LunarGlobeGL {
       const friction = Math.pow(0.925, stepScale);
       this.velYaw *= friction;
       this.velPitch *= friction;
-      this.render();
-      this.onViewChange();
+      needsRender = true;
       if (Math.hypot(this.velYaw, this.velPitch) > 0.00015) {
         keepRunning = true;
       } else {
         this.velYaw = 0;
         this.velPitch = 0;
       }
+    }
+
+    // Smooth exponential damping for mouse micro-parallax (eases to & from origin)
+    const pDx = this.targetParallaxX - this.parallaxX;
+    const pDy = this.targetParallaxY - this.parallaxY;
+    if (Math.hypot(pDx, pDy) > 0.0006) {
+      const ease = 1 - Math.pow(1 - 0.14, stepScale);
+      this.parallaxX += pDx * ease;
+      this.parallaxY += pDy * ease;
+      needsRender = true;
+      if (Math.hypot(this.targetParallaxX - this.parallaxX, this.targetParallaxY - this.parallaxY) > 0.0006) {
+        keepRunning = true;
+      } else {
+        this.parallaxX = this.targetParallaxX;
+        this.parallaxY = this.targetParallaxY;
+      }
+    }
+
+    if (needsRender) {
+      this.render();
+      this.onViewChange();
     }
 
     if (keepRunning && typeof requestAnimationFrame === 'function') {
@@ -1316,14 +1441,28 @@ export class LunarGlobeGL {
     this.distance = 2.68;
     this.parallaxX = 0;
     this.parallaxY = 0;
+    this.targetParallaxX = 0;
+    this.targetParallaxY = 0;
     this.render();
     this.onViewChange();
   }
 
+  _surfaceRadius(latDeg, lonDeg) {
+    const heightSampler = this.maps?.heightSampler;
+    if (!heightSampler) return 1.0;
+    const v = (90 - latDeg) / 180;
+    if (v <= 0.0001 || v >= 0.9999) return 1.0;
+    const u = (lonDeg + 180) / 360;
+    const hVal = heightSampler(u, v);
+    return 1.0 + (hVal - 0.5) * 0.028;
+  }
+
   latLonToScreen(latDeg, lonDeg) {
-    const P = latLonToVec3(latDeg, lonDeg);
+    const unitP = latLonToVec3(latDeg, lonDeg);
+    const radius = this._surfaceRadius(latDeg, lonDeg);
+    const P = [unitP[0] * radius, unitP[1] * radius, unitP[2] * radius];
     const basis = this._cameraBasis();
-    const visible = dot(P, basis.camPos) > 1.0;
+    const visible = dot(unitP, basis.camPos) > 1.0;
     const rel = sub(P, basis.camPos);
     const cx = dot(rel, basis.right);
     const cy = dot(rel, basis.up);
@@ -1337,6 +1476,25 @@ export class LunarGlobeGL {
       y: (0.5 - ndcY * 0.5) * height,
       visible,
     };
+  }
+
+  findNearestVisibleSite(clientX, clientY, maxPx = 16) {
+    if (!this.sites || !this.sites.length) return null;
+    const rect = this.canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    let best = null;
+    let bestDist = maxPx;
+    for (const s of this.sites) {
+      const p = this.latLonToScreen(s.lat, s.lon);
+      if (!p.visible) continue;
+      const d = Math.hypot(p.x - x, p.y - y);
+      if (d <= bestDist) {
+        bestDist = d;
+        best = s;
+      }
+    }
+    return best;
   }
 
   screenToLatLon(clientX, clientY) {
@@ -1364,15 +1522,44 @@ export class LunarGlobeGL {
   }
 
   _bindEvents() {
-    this.canvas.addEventListener('mousedown', (e) => {
+    const host = this.canvas.parentElement || this.canvas;
+    host.addEventListener('mousedown', (e) => {
+      if (this.canvas.hidden) return;
+      if (e.target !== this.canvas && !e.target?.closest?.('#globe-overlay')) return;
+      if (e.target?.closest?.('.predrop-card')) return;
       this._cameraTween = null;
       this.velYaw = 0;
       this.velPitch = 0;
+      this.targetParallaxX = 0;
+      this.targetParallaxY = 0;
       this._lastDragMoveTime = performance.now();
       this.dragging = true;
       this.movedDuringDrag = false;
       this.lastMouse = { x: e.clientX, y: e.clientY };
+      const targetSiteEl = e.target?.closest?.('[data-site-id]');
+      const targetSiteId = targetSiteEl?.dataset?.siteId || targetSiteEl?.getAttribute?.('data-site-id');
+      this._pressedSite = targetSiteId
+        ? (this.sites.find((s) => s.id === targetSiteId) || this.findNearestVisibleSite(e.clientX, e.clientY, 18))
+        : this.findNearestVisibleSite(e.clientX, e.clientY, 18);
+      if (Math.hypot(this.parallaxX, this.parallaxY) > 0.0006) {
+        this._startAnimLoop();
+      }
     });
+
+    const resetHoverParallax = () => {
+      const hadHover = this.hoverVec !== null;
+      this.hoverVec = null;
+      this.targetParallaxX = 0;
+      this.targetParallaxY = 0;
+      if (hadHover) {
+        this.render();
+        this.onViewChange();
+        this.onHover(null);
+      }
+      if (Math.hypot(this.parallaxX, this.parallaxY) > 0.0006) {
+        this._startAnimLoop();
+      }
+    };
 
     window.addEventListener('mousemove', (e) => {
       if (this.dragging && this.lastMouse) {
@@ -1391,30 +1578,63 @@ export class LunarGlobeGL {
         this.onViewChange();
         return;
       }
-      if (e.target === this.canvas) {
+
+      const inPredrop = Boolean(e.target?.closest && e.target.closest('.predrop-card'));
+      const overGlobe =
+        !this.canvas.hidden &&
+        (e.target === this.canvas ||
+          (host && host.contains(e.target) && !inPredrop));
+
+      if (overGlobe) {
         const rect = this.canvas.getBoundingClientRect();
-        this.parallaxX = ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
-        this.parallaxY = ((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 - 1;
-        const hit = this.screenToLatLon(e.clientX, e.clientY);
-        this.hoverVec = hit ? latLonToVec3(hit.lat, hit.lon) : null;
-        this.canvas.style.cursor = hit ? 'crosshair' : 'grab';
+        this.targetParallaxX = Math.max(-1, Math.min(1, ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1));
+        this.targetParallaxY = Math.max(-1, Math.min(1, ((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 - 1));
+        const targetSiteEl = e.target?.closest?.('[data-site-id]');
+        const targetSiteId = targetSiteEl?.dataset?.siteId || targetSiteEl?.getAttribute?.('data-site-id');
+        const siteHit = targetSiteId
+          ? this.sites.find((s) => s.id === targetSiteId)
+          : this.findNearestVisibleSite(e.clientX, e.clientY, 16);
+        let hit;
+        if (siteHit) {
+          hit = { lat: siteHit.lat, lon: siteHit.lon, siteId: siteHit.id };
+          this.hoverVec = latLonToVec3(siteHit.lat, siteHit.lon);
+          this.canvas.style.cursor = 'pointer';
+        } else {
+          hit = this.screenToLatLon(e.clientX, e.clientY);
+          this.hoverVec = hit ? latLonToVec3(hit.lat, hit.lon) : null;
+          this.canvas.style.cursor = hit ? 'crosshair' : 'grab';
+        }
         this.render();
         this.onViewChange();
         this.onHover(hit);
+        this._startAnimLoop();
+      } else if (this.hoverVec !== null || Math.hypot(this.targetParallaxX, this.targetParallaxY) > 0.0006) {
+        resetHoverParallax();
       }
     });
 
     window.addEventListener('mouseup', (e) => {
-      const wasClick = this.dragging && !this.movedDuringDrag && e.target === this.canvas;
+      const wasClick = this.dragging && !this.movedDuringDrag && !this.canvas.hidden;
       const sinceMove = performance.now() - this._lastDragMoveTime;
+      const pressedSite = this._pressedSite;
+      this._pressedSite = null;
       this.dragging = false;
       this.lastMouse = null;
       if (wasClick) {
         this.velYaw = 0;
         this.velPitch = 0;
-        const hit = this.screenToLatLon(e.clientX, e.clientY);
-        if (hit) {
-          this.onSelectPoint(hit);
+        const targetSiteEl = e.target?.closest?.('[data-site-id]');
+        const targetSiteId = targetSiteEl?.dataset?.siteId || targetSiteEl?.getAttribute?.('data-site-id');
+        const siteHit = pressedSite
+          || (targetSiteId ? this.sites.find((s) => s.id === targetSiteId) : null)
+          || this.findNearestVisibleSite(e.clientX, e.clientY, 18);
+        if (siteHit) {
+          this.onSelectPoint({ lat: siteHit.lat, lon: siteHit.lon, siteId: siteHit.id });
+        } else {
+          const hit = this.screenToLatLon(e.clientX, e.clientY);
+          if (hit) {
+            this.onSelectPoint(hit);
+          }
         }
       } else if (sinceMove > 85) {
         this.velYaw = 0;
@@ -1424,16 +1644,18 @@ export class LunarGlobeGL {
       }
     });
 
-    this.canvas.addEventListener('mouseleave', () => {
-      this.hoverVec = null;
-      this.parallaxX = 0;
-      this.parallaxY = 0;
-      this.render();
-      this.onViewChange();
-      this.onHover(null);
-    });
+    host.addEventListener('mouseleave', resetHoverParallax);
+    if (host !== this.canvas) {
+      this.canvas.addEventListener('mouseleave', (e) => {
+        if (!e.relatedTarget || !host.contains(e.relatedTarget)) {
+          resetHoverParallax();
+        }
+      });
+    }
 
-    this.canvas.addEventListener('wheel', (e) => {
+    host.addEventListener('wheel', (e) => {
+      if (this.canvas.hidden) return;
+      if (e.target !== this.canvas && !e.target?.closest?.('#globe-overlay')) return;
       e.preventDefault();
       this.distance = Math.max(1.38, Math.min(4.6, this.distance + e.deltaY * 0.0018));
       this.render();
