@@ -1,0 +1,167 @@
+:root {
+  color-scheme: dark;
+  --ink: #1c1914;
+  --paper: #f4ecd9;
+  --night: #171d27;
+  --night-2: #242c39;
+  --gold: #e0b15a;
+  --gold-ink: #3a2a10;
+  --stamp: #d36a62;
+  --sea: #8fd0c4;
+  --muted: #b7c0cc;
+  --line: rgba(244, 236, 217, 0.16);
+  --serif: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+  --sans: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 88% -10%, rgba(224, 177, 90, 0.28), transparent 28%),
+    var(--night);
+  color: var(--paper);
+  font-family: var(--sans);
+  line-height: 1.45;
+}
+
+.skip {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  background: var(--gold);
+  color: var(--gold-ink);
+  padding: 0.4rem 0.7rem;
+}
+
+.skip:focus { top: 0.5rem; }
+
+.mast, .sheet, .colophon {
+  width: min(920px, calc(100% - 2rem));
+  margin-inline: auto;
+}
+
+.mast { padding: 2.2rem 0 0.2rem; }
+
+h1, h2, h3, .choice-name {
+  font-family: var(--serif);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: clamp(2.4rem, 6vw, 4.2rem); line-height: 0.95; margin: 0.1rem 0 0.6rem; }
+h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 0.2rem 0 0.4rem; }
+h3 { font-size: 1.05rem; margin: 1.2rem 0 0.3rem; }
+
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.74rem;
+  color: var(--gold);
+}
+
+.mast p:last-child, .lede, .note, .ahead, .books, .choice-body, .choice-passport, .colophon, #rules p {
+  color: var(--muted);
+}
+
+.sheet { margin-top: 1rem; padding-bottom: 0.4rem; }
+
+fieldset {
+  border: 1px solid var(--line);
+  margin: 0.8rem 0;
+  padding: 0.7rem;
+}
+
+legend { padding: 0 0.3rem; }
+
+.choice {
+  display: flex;
+  gap: 0.7rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.choice-copy { display: flex; flex-direction: column; gap: 0.1rem; }
+.choice-name { font-size: 1.15rem; }
+.choice-meta { color: var(--gold); font-size: 0.82rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.choice-passport { font-size: 0.92rem; }
+
+button, input { font: inherit; }
+
+button {
+  background: transparent;
+  color: var(--paper);
+  border: 1px solid var(--line);
+  padding: 0.55rem 0.8rem;
+  cursor: pointer;
+}
+
+button.primary { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.8rem 0; }
+
+.meters { display: grid; gap: 0.7rem; margin: 0.8rem 0; }
+@media (min-width: 720px) {
+  .meters { grid-template-columns: repeat(3, 1fr); }
+}
+
+.meter-top { display: flex; justify-content: space-between; font-size: 0.92rem; }
+.meter-track {
+  height: 0.7rem;
+  background: var(--night-2);
+  border: 1px solid var(--line);
+  margin-top: 0.25rem;
+}
+.meter-fill { height: 100%; }
+.meter-fill.power { background: var(--gold); }
+.meter-fill.warmth { background: var(--stamp); }
+.meter-fill.signal { background: var(--sea); }
+
+.status {
+  display: inline-block;
+  margin: 0.2rem 0;
+  padding: 0.15rem 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.78rem;
+  background: var(--night-2);
+}
+
+.status.is-shiver { animation: shiver 0.28s linear infinite; }
+.status.is-lost, .status.is-dark { color: var(--stamp); }
+.status.is-happy, .status.is-holding, .status.is-asleep { color: var(--sea); }
+
+@keyframes shiver {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status.is-shiver { animation: none; }
+}
+
+.controls { display: grid; gap: 0.45rem; }
+.slider, .check { display: flex; gap: 0.4rem; align-items: center; }
+input[type="range"] { width: min(100%, 280px); }
+
+.who { margin: 0; }
+.form-error { min-height: 1.2rem; color: var(--stamp); }
+.log { padding-left: 1.2rem; }
+.log li { margin: 0.15rem 0; }
+.const-list {
+  columns: 2;
+  padding-left: 1.1rem;
+  color: var(--paper);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+  .const-list { columns: 1; }
+}
+.colophon { padding: 0.4rem 0 2.4rem; }
+a { color: var(--gold); }

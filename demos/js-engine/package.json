@@ -1,0 +1,8 @@
+{
+  "name": "payload-pets-engine",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test src/engine.test.js"
+  }
+}

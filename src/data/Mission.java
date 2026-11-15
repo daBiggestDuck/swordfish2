@@ -105,9 +105,9 @@ public class Mission {
                 TIMELINE),
 
             new Mission("im-2", "TO-PRIME1", "Intuitive Machines", "Nova-C (Athena)",
-                "SHACKLETON_RIDGE", "2025-02-27", "2025-03-06",
+                "MONS_MOUTON", "2025-02-27", "2025-03-06",
                 "landed", "2026-11-14", 2025,
-                ids("msolo","lra-im2","micro-nova"),
+                ids("trident","msolo","lra-im2","micro-nova"),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/prime-1-im/",
                 TIMELINE),
 
@@ -115,7 +115,7 @@ public class Mission {
             new Mission("griffin-1", "TO20A", "Astrobotic", "Griffin 1",
                 "NOBILE_REGION", null, null,
                 "planned", "2026-11-14", 2026,
-                ids("trident","msolo-griffin","lra-griffin","nss-griffin"),
+                ids("msolo-griffin","lra-griffin","nss-griffin"),
                 "https://science.nasa.gov/lunar-science/clps-deliveries/to20a-astrobotic/",
                 TIMELINE),
 

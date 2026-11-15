@@ -5,10 +5,15 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * The 6 pet archetypes — each maps to a real CLPS instrument type.
+ * Pet archetypes — each maps to a real CLPS instrument type.
  * Art, moods, and animations come from the pets branch.
  * This file defines the *data contract*: what fields the pet sprites
  * need, and what science traits each archetype carries.
+ *
+ * Game branches (engine / pets / ui) also use {@code catalog.json} pet ids
+ * {@code trident} (Triddy) and {@code ln-1} (Nodey). Those ids must stay
+ * aligned with the archetypes here so payload → pet joins do not collapse
+ * TRIDENT into Digby or LN-1 into Shutterbug.
  */
 public class PetArchetype {
     public final String id;
@@ -93,7 +98,22 @@ public class PetArchetype {
                 false, 20.0,
                 "Capture regolith samples using pneumatic suction",
                 "Locks down — the sample container seals to protect its precious cargo",
-                "PlanetVac was originally tested on Mauna Kea, Hawai'i, using volcanic soil as a Moon stand-in")
+                "PlanetVac was originally tested on Mauna Kea, Hawai'i, using volcanic soil as a Moon stand-in"),
+
+            // Game pets Triddy / Nodey (ids shared with catalog.json + engine/pets/ui)
+            new PetArchetype("trident", "Triddy", "TRIDENT",
+                "\uD83E\uDDCA", // ice cube emoji
+                false, 34.0,
+                "Drill and sample subsurface ice and regolith with MSOLO sniffing volatiles",
+                "Cold huddle — rotary-percussive drill needs power through the lunar night",
+                "TRIDENT flew on PRIME-1 (IM-2). Game engineDraw key tridentDraw ≈ 34 (hungrier than LISTER)."),
+
+            new PetArchetype("ln-1", "Nodey", "LN-1",
+                "\uD83D\uDCE1", // satellite antenna emoji
+                false, 18.0,
+                "Broadcast ranging so later vehicles can find the landed asset",
+                "Cold huddle — radio beacon still needs power; tutor prefers waiting for Earth",
+                "LN-1 flew on IM-1 at Malapert A. Game engineDraw key ln1Draw ≈ 18; preferWait true.")
         ));
     }
 }

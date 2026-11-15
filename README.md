@@ -1,6 +1,34 @@
-# nasa space pet
+# nasa space pet — `pranav/pets-triddy-nodey`
 
-the ultimate pet
+Pranav's personal branch: **Triddy** (`trident`) + **Nodey** (`ln-1`) pet work on top of `origin/Data`.
+
+## What's here
+
+| Path | What |
+|---|---|
+| `data/` + `src/data/` | Data pipeline (Java) with Triddy/Nodey archetype + payload/mission patches |
+| `data/catalog.json` (+ `.js` / tests) | Sourced game catalog including Triddy & Nodey passports |
+| `demos/js-pets/` | Browser pet art demo (open `index.html`) |
+| `demos/js-engine/` | JS meter/tutor demo with Triddy & Nodey |
+| `demos/js-ui/` | Intro/stage demo mentioning Triddy & Nodey |
+
+### Quick demo
+
+```bash
+# Pets art (no build)
+open demos/js-pets/index.html
+# or: python3 -m http.server 8765 --directory demos/js-pets
+
+# Catalog unit tests
+node --test data/catalog.test.js
+
+# Pets unit tests
+node --test demos/js-pets/src/pets.test.js
+```
+
+Java `src/` from Data is preserved; JS demos live under `demos/` so they do not overwrite the Java engine/map/story trees.
+
+---
 
 ## Data branch (Wonil)
 

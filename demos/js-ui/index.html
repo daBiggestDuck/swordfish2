@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Payload Pets — intro</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-phase="intro">
+    <a class="skip" id="skip" href="#intro-title">Skip to content</a>
+    <header class="top">
+      <p class="eyebrow">CLPS payload pets</p>
+      <p class="wordmark">Payload Pets</p>
+    </header>
+
+    <section id="intro" aria-labelledby="intro-title">
+      <h1 id="intro-title" tabindex="-1">Look after one instrument for a lunar day.</h1>
+      <p class="lede">
+        Pick a real landing site and one CLPS instrument — including Triddy or
+        Nodey. A lunar day is about 14 Earth days. This demo plays that day in
+        about half a minute so you can see the screen move from dawn to night.
+      </p>
+      <ol class="steps">
+        <li>Choose a home on the Moon.</li>
+        <li>Choose the instrument you are looking after.</li>
+        <li>Play the day and watch the layout follow the sun.</li>
+      </ol>
+
+      <h2>Landing site</h2>
+      <div id="intro-sites" class="choices" role="group" aria-label="Landing site"></div>
+      <h2>Instrument</h2>
+      <div
+        id="intro-instruments"
+        class="choices"
+        role="group"
+        aria-label="Instrument"
+      ></div>
+      <p id="intro-notice" class="notice" role="status"></p>
+      <button id="start" type="button">Start the demo</button>
+      <p class="hint">Enter starts. Space pauses or resumes. R replays. Esc comes back here. Keys 1 to 4 pick a site.</p>
+    </section>
+
+    <section id="demo" hidden aria-labelledby="demo-title">
+      <div class="layout">
+        <div class="stage-column">
+          <h1 id="demo-title" tabindex="-1">One lunar day</h1>
+          <div id="sky" class="sky" aria-hidden="true">
+            <div class="stars"></div>
+            <div class="sun-disk"></div>
+            <div class="ground"></div>
+          </div>
+          <p id="instrument-name" class="instrument"></p>
+          <p id="instrument-line" class="line"></p>
+          <p id="place-line" class="line"></p>
+          <p id="end-banner" class="end-banner" tabindex="-1" hidden></p>
+        </div>
+        <aside class="panel">
+          <p id="day-label" class="day"></p>
+          <p id="phase-label" class="phase"></p>
+          <p id="sun-readout" class="sun-readout"></p>
+          <div class="sun-track" aria-hidden="true"><span class="sun-fill"></span></div>
+          <h2>Landing site</h2>
+          <div id="demo-sites" class="choices" role="group" aria-label="Landing site"></div>
+          <h2>Instrument</h2>
+          <div
+            id="demo-instruments"
+            class="choices"
+            role="group"
+            aria-label="Instrument"
+          ></div>
+          <p id="demo-notice" class="notice" role="status"></p>
+          <div class="controls">
+            <button id="toggle" type="button">Pause</button>
+            <button id="replay" type="button">Replay</button>
+            <button id="back" type="button">Back to intro</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <p id="live" class="sr-only" aria-live="polite"></p>
+    <footer class="fine">
+      <p>
+        Layout demo for the intro screen. The sunlight bar follows this clock.
+        It is not the lander's power, warmth, or signal model.
+      </p>
+      <p>
+        <a href="https://www.nasa.gov/commercial-lunar-payload-services/">NASA CLPS</a>
+      </p>
+    </footer>
+    <noscript>
+      <p>This demo needs JavaScript to play the lunar-day clock.</p>
+    </noscript>
+    <script type="module" src="src/screen.js"></script>
+  </body>
+</html>
