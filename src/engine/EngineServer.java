@@ -31,6 +31,8 @@ import java.util.concurrent.Executors;
  *   GET /api/engine/state?id=                     current state
  *   GET /api/engine/tick?id=&hours=               advance time -> {events, state}
  *   GET /api/engine/act?id=&action=               press a button -> {result, state}
+ *   GET /api/engine/drive?id=&to=                 Rover Run: start driving to another site -> {result, state}
+ *   GET /api/engine/routes                        distance and drive time for every pair of sites
  *   everything else                               static files from ./web (engine.html at /)
  */
 public class EngineServer {
@@ -76,7 +78,31 @@ public class EngineServer {
         route(server, "/api/engine/facts", ex -> json(ex, 200, Json.obj(
                 "facts", Json.array(Sources.FACTS, Sources.Fact::toJson),
                 "sources", Json.array(Sources.ALL, Sources.Source::toJson),
-                "milestones", Json.array(Rules.MILESTONES, Rules.Milestone::toJson))));
+                "milestones", Json.array(Rules.MILESTONES, Rules.Milestone::toJson),
+                "rules", Json.obj(
+                        "dayHours", Json.n(Rules.DAY_HOURS),
+                        "nightHours", Json.n(Rules.NIGHT_HOURS),
+                        "gameHours", Json.n(Rules.GAME_HOURS),
+                        "roverKmh", Json.n4(Rules.ROVER_KMH),
+                        "moonRadiusKm", Json.n(Rules.MOON_RADIUS_KM),
+                        "driveDustPerHour", Json.n(Rules.DRIVE_DUST_PER_HOUR),
+                        "dustyAt", Json.n(Rules.DUSTY),
+                        "powerLow", Json.n(Rules.POWER_LOW),
+                        "powerCritical", Json.n(Rules.POWER_CRITICAL)))));
+
+        // Every site-to-site rover leg, measured by the engine (great circle, Apollo 17 rover pace).
+        route(server, "/api/engine/routes", ex -> {
+            List<String> legs = new java.util.ArrayList<>();
+            for (Site a : Sites.ALL) {
+                for (Site b : Sites.ALL) {
+                    if (a == b) continue;
+                    double km = a.distanceKm(b);
+                    legs.add(Json.obj("from", Json.q(a.id()), "to", Json.q(b.id()),
+                            "distanceKm", Json.n(km), "hours", Json.n(km / Rules.ROVER_KMH)));
+                }
+            }
+            json(ex, 200, "[" + String.join(",", legs) + "]");
+        });
 
         route(server, "/api/engine/new", ex -> {
             Map<String, String> q = query(ex);
@@ -109,6 +135,11 @@ public class EngineServer {
 
         route(server, "/api/engine/act", ex -> withGame(ex, (game, q) -> {
             Game.Result r = game.act(q.getOrDefault("action", ""));
+            return Json.obj("result", r.toJson(), "state", game.toJson());
+        }));
+
+        route(server, "/api/engine/drive", ex -> withGame(ex, (game, q) -> {
+            Game.Result r = game.drive(q.getOrDefault("to", ""));
             return Json.obj("result", r.toJson(), "state", game.toJson());
         }));
 

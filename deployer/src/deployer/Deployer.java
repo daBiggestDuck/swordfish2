@@ -114,7 +114,7 @@ public final class Deployer {
     }
 
     /** A random team password, saved inside .git so it stays the same between runs (never committed). */
-    static String savedPassword(Path repo) throws IOException {
+    static String savedPassword(Path re IOException {
         Git.Out gd = Git.runIn(repo, 10, "rev-parse", "--git-common-dir");
         Path gitDir = repo.resolve(gd.text().strip());
         Path f = gitDir.resolve("deployer-password");

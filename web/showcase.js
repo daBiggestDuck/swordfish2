@@ -16,6 +16,11 @@
       health: "http://localhost:8081/api/missions",
       need: "./run-story.sh",
       port: 8081,
+      // Healthy = API answers AND the page exists (a server left running after its folder was
+      // deleted still answers its API but 404s every page). 8084 is run-v0.sh's backup port.
+      ports: [8081, 8084],
+      healthPath: "/api/missions",
+      pagePath: "/",
       fallback: "./web/story/index.html",
     },
     {
@@ -26,6 +31,9 @@
       health: "http://localhost:8082/api/engine/facts",
       need: "./run-engine.sh",
       port: 8082,
+      ports: [8082, 8083],
+      healthPath: "/api/engine/facts",
+      pagePath: "/engine.html",
       fallback: "./demos/js-engine/index.html",
     },
     {
@@ -100,6 +108,28 @@
       setDot(tab.id, "static");
       return true;
     }
+    if (tab.ports) {
+      // Try the main port then the backup, on localhost and 127.0.0.1 (Java binds IPv4 loopback).
+      // Only use a server whose page loads, so a stale server never shows up as a "Not found" tab.
+      delete tab.brokenPort;
+      for (const port of tab.ports) {
+        for (const host of ["localhost", "127.0.0.1"]) {
+          const base = `http://${host}:${port}`;
+          if (!(await probeUrl(base + tab.healthPath))) continue;
+          if (await probeUrl(base + tab.pagePath)) {
+            tab.resolvedSrc = `${base}/`;
+            tab.activePort = port;
+            setDot(tab.id, "ok");
+            return true;
+          }
+          tab.brokenPort = port;
+          break; // same server on the other hostname; try the next port
+        }
+      }
+      delete tab.resolvedSrc;
+      setDot(tab.id, "warn");
+      return false;
+    }
     if (await probeUrl(tab.health)) {
       tab.resolvedSrc = tab.src;
       setDot(tab.id, "ok");
@@ -124,6 +154,16 @@
     if (!down.length) {
       bannerEl.dataset.show = "0";
       bannerEl.textContent = "";
+      return;
+    }
+    const stale = down.filter((t) => t.brokenPort);
+    if (stale.length) {
+      bannerEl.dataset.show = "1";
+      bannerEl.innerHTML =
+        stale
+          .map((t) => `An old ${t.label} server is still on :${t.brokenPort} but its files are gone (pages 404). Stop it with <code>lsof -ti tcp:${t.brokenPort} | xargs kill</code>.`)
+          .join(" ") +
+        " Then run <code>./run-v0.sh</code> (it also starts fresh servers on :8083 / :8084 if a port stays busy). Showing the built-in fallbacks meanwhile.";
       return;
     }
     const needBackend = down.filter((t) => !t.fallback);
@@ -354,7 +394,9 @@
       src = tab.fallback;
       note.dataset.show = "1";
       note.className = "panel-note";
-      note.innerHTML = `${tab.label} server is not on <code>localhost:${tab.port}</code>. Showing the static demo fallback. Start <code>${tab.need}</code> for the full Java surface.`;
+      note.innerHTML = tab.brokenPort
+        ? `The ${tab.label} server on <code>:${tab.brokenPort}</code> is running from a deleted folder, so its page is missing. Showing the built-in fallback. Stop it with <code>lsof -ti tcp:${tab.brokenPort} | xargs kill</code> and run <code>${tab.need}</code>.`
+        : `${tab.label} server is not on <code>localhost:${tab.port}</code>. Showing the static demo fallback. Start <code>${tab.need}</code> for the full Java surface.`;
     } else if (!ok && tab.need) {
       note.dataset.show = "1";
       note.className = "panel-note";

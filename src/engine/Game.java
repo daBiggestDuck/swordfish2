@@ -14,6 +14,10 @@ import java.util.Set;
  * with how many game hours passed, and {@link #act(String)} when the player presses a button.
  * Both return the events that happened.
  *
+ * Rover Run: {@link #drive(String)} puts the pet on a rover headed for another site. While a trip
+ * is under way, {@link #tick(double)} moves the rover, never past the destination: the tick that
+ * reaches it stops there, switches the site and reports {@code arrived}.
+ *
  * Story hook: {@code storyEngine.advance(game.dayProgress())} every tick.
  */
 public class Game {
@@ -29,10 +33,47 @@ public class Game {
         }
     }
 
+    /** A rover drive in progress. Conditions blend from {@code from} to {@code to} as it goes. */
+    public static final class Trip {
+        public final Site from;
+        public final Site to;
+        public final double distanceKm;
+        public final double totalHours;
+        private double doneHours;
+
+        Trip(Site from, Site to) {
+            this.from = from;
+            this.to = to;
+            this.distanceKm = from.distanceKm(to);
+            this.totalHours = distanceKm / Rules.ROVER_KMH;
+        }
+
+        public double doneHours() { return doneHours; }
+
+        public double hoursLeft() { return Math.max(0, totalHours - doneHours); }
+
+        /** 0 at departure .. 1 at arrival. */
+        public double progress() {
+            return totalHours <= 0 ? 1 : Math.min(1, doneHours / totalHours);
+        }
+
+        String toJson() {
+            return Json.obj(
+                    "from", Json.q(from.id()), "to", Json.q(to.id()),
+                    "distanceKm", Json.n(distanceKm), "totalHours", Json.n(totalHours),
+                    "doneHours", Json.n(doneHours), "hoursLeft", Json.n(hoursLeft()),
+                    "progress", Json.n4(progress()));
+        }
+    }
+
     public final Pet pet;
-    public final Site site;
     public final String petName;
     public final boolean tipped;
+
+    private Site site;
+    private Trip trip = null;
+    private double kmDriven = 0;
+    private int legs = 0;
 
     private double hour = 0;
     private double health = 100;
@@ -63,11 +104,39 @@ public class Game {
 
     // ------------------------------------------------------------------ environment
 
+    /** Where the pet is (the departure site while a trip is under way). */
+    public Site site() {
+        return site;
+    }
+
+    public Trip trip() {
+        return trip;
+    }
+
+    /** Blends a site value from the trip's start to its destination by progress; just the site's value when parked. */
+    private double env(double atSite, double atDestination) {
+        if (trip == null) return atSite;
+        return atSite + (atDestination - atSite) * trip.progress();
+    }
+
+    /** 0..1 how well solar panels charge here right now (blended while driving). */
+    public double sunlightHere() {
+        return trip == null ? site.sunlight() : env(trip.from.sunlight(), trip.to.sunlight());
+    }
+
+    public double dayMaxKHere() {
+        return trip == null ? site.dayMaxK() : env(trip.from.dayMaxK(), trip.to.dayMaxK());
+    }
+
+    public double nightMinKHere() {
+        return trip == null ? site.nightMinK() : env(trip.from.nightMinK(), trip.to.nightMinK());
+    }
+
     /** Surface temperature at this game hour, in Kelvin. */
     public double surfaceTempK(double atHour) {
-        if (atHour >= Rules.DAY_HOURS) return site.nightMinK();
+        if (atHour >= Rules.DAY_HOURS) return nightMinKHere();
         double sun = sunElevation(atHour);
-        return site.nightMinK() + (site.dayMaxK() - site.nightMinK()) * Math.pow(sun, Rules.TEMP_CURVE);
+        return nightMinKHere() + (dayMaxKHere() - nightMinKHere()) * Math.pow(sun, Rules.TEMP_CURVE);
     }
 
     /** 0 at sunrise/sunset and all night, 1 at noon. */
@@ -87,7 +156,7 @@ public class Game {
 
     /** Solar charge per hour right now. */
     public double solarPerHour() {
-        double charge = Rules.SOLAR_PER_HOUR * site.sunlight() * sunElevation(hour) * (1 - dust / 100);
+        double charge = Rules.SOLAR_PER_HOUR * sunlightHere() * sunElevation(hour) * (1 - dust / 100);
         if (shadeOn) charge *= Rules.SHADE_SOLAR;
         if (tipped) charge *= Rules.TIPPED_SOLAR;
         return charge;
@@ -125,18 +194,41 @@ public class Game {
         return "happy";
     }
 
+    // ------------------------------------------------------------------ rover
+
+    /** Put the pet on the rover, headed for another site. Time only passes when {@link #tick(double)} is called. */
+    public Result drive(String siteId) {
+        if (!alive) return Result.fail(petName + " has fainted");
+        if (won) return Result.fail("The game is over: you won!");
+        if (trip != null) return Result.fail("Already driving to " + trip.to.name());
+        Site to = Sites.byId(siteId == null ? "" : siteId.strip()).orElse(null);
+        if (to == null) return Result.fail("Unknown site: " + siteId);
+        if (to.id().equals(site.id())) return Result.fail("Already at " + to.name());
+        trip = new Trip(site, to);
+        return new Result(true, null, List.of(new Event("departed", to.id(), hour)));
+    }
+
     // ------------------------------------------------------------------ time
 
-    /** Advance the game by {@code hours}. Returns what happened. */
+    /**
+     * Advance the game by {@code hours}. Returns what happened.
+     * While driving, time stops at the destination: the rest of {@code hours} is not used.
+     */
     public List<Event> tick(double hours) {
         List<Event> events = new ArrayList<>();
         if (!alive || won || hours <= 0) return events;
         String moodBefore = mood();
-        double left = hours;
+        double left = trip == null ? hours : Math.min(hours, trip.hoursLeft());
         while (left > 1e-9 && alive && !won) {
             double dt = Math.min(left, Rules.STEP_HOURS);
             step(dt, events);
             left -= dt;
+        }
+        if (trip != null && alive && !won && trip.hoursLeft() <= 1e-9) {
+            site = trip.to;
+            trip = null;
+            legs++;
+            events.add(new Event("arrived", site.id(), hour));
         }
         addMoodChange(moodBefore, events);
         return events;
@@ -158,8 +250,9 @@ public class Game {
             }
         }
 
-        // Dust
-        dust = clamp(dust + Rules.DUST_PER_HOUR * dt, 0, 100);
+        // Dust (driving kicks up more)
+        double dustRate = Rules.DUST_PER_HOUR + (trip != null ? Rules.DRIVE_DUST_PER_HOUR : 0);
+        dust = clamp(dust + dustRate * dt, 0, 100);
 
         // Temperature drifts toward target
         petTempK += (targetTempK() - petTempK) * (1 - Math.exp(-Rules.THERMAL_RATE * dt));
@@ -176,6 +269,12 @@ public class Game {
         // Cooldowns
         cooldowns.replaceAll((k, v) -> v - dt);
         cooldowns.values().removeIf(v -> v <= 1e-9);
+
+        // Rover
+        if (trip != null) {
+            trip.doneHours = Math.min(trip.totalHours, trip.doneHours + dt);
+            kmDriven += Rules.ROVER_KMH * dt;
+        }
 
         hour += dt;
 
@@ -256,6 +355,7 @@ public class Game {
         if (!alive) return petName + " has fainted";
         if (won) return "The game is over: you won!";
         if (!actionIds().contains(actionId)) return "Unknown action for " + pet.name() + ": " + actionId;
+        if (actionId.equals("work") && trip != null) return "Science needs the rover parked. Wait until you arrive.";
         if (cooldowns.containsKey(actionId)) return "Ready in " + Json.n(cooldowns.get(actionId)) + " h";
         boolean turningOff = (actionId.equals("heater") && heaterOn) || (actionId.equals("shade") && shadeOn);
         if (!turningOff && !hasPower()) return "No power. Wait for sunlight to recharge.";
@@ -359,6 +459,8 @@ public class Game {
     public boolean shadeOn() { return shadeOn; }
     public boolean alive() { return alive; }
     public boolean won() { return won; }
+    public double kmDriven() { return kmDriven; }
+    public int legs() { return legs; }
     public Set<String> milestones() { return Set.copyOf(milestones); }
     public Map<String, Double> cooldowns() { return Map.copyOf(cooldowns); }
 
@@ -393,6 +495,8 @@ public class Game {
             actions.add(Json.obj("id", Json.q(id), "label", Json.q(label),
                     "powerCost", Json.n(powerCost(id)), "blockedBy", Json.q(whyNot(id))));
         }
+        List<String> cd = new ArrayList<>();
+        cooldowns.forEach((k, v) -> cd.add(Json.q(k) + ":" + Json.n(v)));
         return Json.obj(
                 "petName", Json.q(petName),
                 "pet", pet.toJson(),
@@ -409,6 +513,7 @@ public class Game {
                 "health", Json.n(health),
                 "power", Json.n(power()),
                 "solarPerHour", Json.n(solarPerHour()),
+                "sunlightHere", Json.n(sunlightHere()),
                 "dust", Json.n(dust),
                 "dataBuffer", Json.n(dataBuffer),
                 "dataSent", Json.n(dataSent),
@@ -421,6 +526,10 @@ public class Game {
                 "mood", Json.q(mood()),
                 "milestones", Json.array(milestones, Json::q),
                 "actions", "[" + String.join(",", actions) + "]",
+                "cooldowns", "{" + String.join(",", cd) + "}",
+                "trip", trip == null ? "null" : trip.toJson(),
+                "kmDriven", Json.n(kmDriven),
+                "legs", Integer.toString(legs),
                 "gameHours", Json.n(Rules.GAME_HOURS),
                 "dayHours", Json.n(Rules.DAY_HOURS));
     }
