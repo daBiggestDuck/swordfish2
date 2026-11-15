@@ -93,7 +93,7 @@ button, select, input { font-family: inherit; color: var(--text); }
     align-items: start;
   }
   .adopt { grid-area: adopt; }
-  .stage-card { grid-area: stage; position: sticky; top: 1rem; }
+  .stage-card { grid-area: stage; }
   .sky-card { grid-area: sky; }
   .timeline-card { grid-area: timeline; }
 }
