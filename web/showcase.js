@@ -129,7 +129,7 @@
           <header class="data-head">
             <div class="data-head-copy">
               <h1>Data / Missions</h1>
-              <p class="judge-tip"><strong style="color:var(--text)">What to do here.</strong> This is the offline NASA CLPS spine — missions, south-pole sites, and instrument pets. Switch View to <em>Sites</em> (polar / Malapert / Mons Mouton) or <em>Pets</em> (Triddy = Power, Nodey = Signal), then return to Navigator / Map with the ids verified.</p>
+              <p class="judge-tip"><strong style="color:var(--text)">What to do here.</strong> This is the offline NASA CLPS spine — missions, south-pole sites, and instrument pets. Switch View to <em>Sites</em> (polar / Malapert / Mons Mouton) or <em>Pets</em> (the real instruments: LISTER, TRIDENT, EDS, LN-1, LRA/NGLR), then return to Navigator / Map with the ids verified.</p>
               <p class="lede">Baked facts from <code>data/catalog.json</code> (as-of stamped). Every pet maps to a flown or planned instrument — use this tab to prove provenance before the demo. Hover a mission card for its delivery summary and sources.</p>
             </div>
             <figure class="data-moon" id="data-moon" aria-label="Moon map of CLPS mission target regions"></figure>
@@ -337,8 +337,8 @@
     renderDataMoon(catalog);
 
     let rows = [];
+    const sourceById = new Map((catalog.sources || []).map((s) => [s.id, s]));
     if (view === "missions") {
-      const sourceById = new Map((catalog.sources || []).map((s) => [s.id, s]));
       rows = (catalog.missions || [])
         .filter((m) => !statusFilter || m.status === statusFilter)
         .filter((m) => {
@@ -412,25 +412,54 @@
           <div class="tags"><span class="tag">${escapeHtml(s.id)}</span></div>
         </article>`);
     } else {
+      const missionById = new Map((catalog.missions || []).map((m) => [m.id, m]));
+      const siteById = new Map((catalog.sites || []).map((s) => [s.id, s]));
+      const payloadById = new Map((catalog.payloads || []).map((p) => [p.id, p]));
       rows = (catalog.pets || [])
         .filter((p) => {
           if (!q) return true;
-          const hay = [p.id, p.name, p.vibe, p.passport, ...(p.payloadIds || [])]
-            .filter(Boolean)
+          const hay = [
+            p.id, p.name, p.instrument, p.summary, p.vibe, p.passport,
+            ...(p.care || []),
+            ...(p.payloadIds || []),
+            ...(p.payloadIds || []).map((id) => payloadById.get(id)?.name),
+            p.homeMissionId ? missionById.get(p.homeMissionId)?.name : "",
+            p.homeSiteId ? siteById.get(p.homeSiteId)?.name : "",
+          ].filter(Boolean)
             .join(" ")
             .toLowerCase();
           return hay.includes(q);
         })
-        .map((p) => `<article class="card">
-          <h3>${escapeHtml(p.name || p.id)}</h3>
-          <p class="meta">${escapeHtml(p.vibe || p.passport || "")}</p>
-          <div class="tags">
-            <span class="tag">${escapeHtml(p.id)}</span>
-            ${p.rarity ? `<span class="tag">${escapeHtml(p.rarity)}</span>` : ""}
-            ${p.homeMissionId ? `<span class="tag">${escapeHtml(p.homeMissionId)}</span>` : ""}
-            ${p.homeSiteId ? `<span class="tag">${escapeHtml(p.homeSiteId)}</span>` : ""}
-          </div>
-        </article>`);
+        .map((p) => {
+          const mission = p.homeMissionId ? missionById.get(p.homeMissionId) : null;
+          const site = p.homeSiteId ? siteById.get(p.homeSiteId) : null;
+          const payloadNames = (p.payloadIds || []).map((id) => payloadById.get(id)?.name).filter(Boolean);
+          const passive = p.passive || p.nightBehavior === "passive";
+          const night = passive ? "Night: sleeps, needs no power" : "Night: needs lander power";
+          const careChips = (p.care || [])
+            .map((c) => `<span class="care-chip care-${escapeHtml(c.toLowerCase())}">${escapeHtml(c)}</span>`)
+            .join("");
+          const sources = (p.sourceIds || [])
+            .map((id) => sourceById.get(id))
+            .filter(Boolean)
+            .map((s) => `<a class="source-chip" href="${escapeHtml(s.url)}" target="_blank" rel="noopener">${escapeHtml(s.publisher || s.title || s.id)}</a>`)
+            .join("");
+          return `<article class="card pet-card">
+            <div class="pet-head">
+              <h3>${escapeHtml(p.name || p.id)}</h3>
+              <span class="pet-model" title="Model of the real ${escapeHtml(p.instrument || p.name || p.id)} instrument">${petModelSvg(p.id)}</span>
+            </div>
+            ${p.instrument ? `<p class="pet-instr">${escapeHtml(p.instrument)}${payloadNames.length ? " · " + escapeHtml(payloadNames.join(" · ")) : ""}</p>` : payloadNames.length ? `<p class="pet-instr">${escapeHtml(payloadNames.join(" · "))}</p>` : ""}
+            ${p.summary ? `<p class="meta">${escapeHtml(p.summary)}</p>` : ""}
+            ${mission || site ? `<p class="meta">Home: ${mission ? escapeHtml(mission.name || mission.id) : ""}${mission && site ? " · " : ""}${site ? escapeHtml(site.name || site.id) : ""}</p>` : ""}
+            <div class="tags">
+              ${careChips}
+              <span class="tag">${escapeHtml(night)}</span>
+              ${passive ? `<span class="tag">passive</span>` : ""}
+            </div>
+            ${sources ? `<div class="detail-sources">${sources}</div>` : ""}
+          </article>`;
+        });
     }
 
     grid.innerHTML = rows.join("") || `<p class="meta">No matches.</p>`;
@@ -442,6 +471,59 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  /**
+   * Flat pet "model" per real instrument, drawn in the pets branch's
+   * lander-mascot style (Moon Pals: blue lander body, white eyes with ink
+   * pupils, pink cheeks). The instrument's own part gives each pet its
+   * silhouette: LISTER's drill, the retroreflector's corner-cube plate,
+   * EDS's dust shield, TRIDENT's twin drills, LN-1's navigation mast.
+   */
+  function petModelSvg(id) {
+    const face = `
+      <ellipse cx="26" cy="19" rx="4.5" ry="5.5" fill="#eef4fb"/>
+      <ellipse cx="38" cy="19" rx="4.5" ry="5.5" fill="#eef4fb"/>
+      <ellipse cx="27.5" cy="20" rx="1.8" ry="2.6" fill="#1f2f46"/>
+      <ellipse cx="39.5" cy="20" rx="1.8" ry="2.6" fill="#1f2f46"/>
+      <ellipse cx="20" cy="26" rx="3.5" ry="2" fill="#ffbeba"/>
+      <ellipse cx="44" cy="26" rx="3.5" ry="2" fill="#ffbeba"/>`;
+    const parts = {
+      "heat-flow-drill": `
+        <rect x="16" y="8" width="32" height="22" rx="6" fill="#3d5a80"/>
+        ${face}
+        <rect x="30" y="30" width="4" height="9" fill="#8c9bbd"/>
+        <path d="M28 39 L36 39 L32 46 Z" fill="#44e2ff"/>`,
+      retroreflector: `
+        <rect x="13" y="7" width="38" height="27" rx="3" fill="#3d5a80"/>
+        <g fill="#44e2ff" opacity="0.85">
+          <rect x="18" y="10" width="6" height="5"/><rect x="29" y="10" width="6" height="5"/><rect x="40" y="10" width="6" height="5"/>
+          <rect x="18" y="17" width="6" height="5"/><rect x="40" y="17" width="6" height="5"/>
+        </g>
+        <rect x="19" y="40" width="5" height="4" fill="#8c9bbd"/>
+        <rect x="40" y="40" width="5" height="4" fill="#8c9bbd"/>
+        ${face}`,
+      "dust-shield": `
+        <path d="M12 14 Q32 0 52 14 L52 18 Q32 6 12 18 Z" fill="#44e2ff" opacity="0.55"/>
+        <rect x="16" y="16" width="32" height="20" rx="6" fill="#3d5a80"/>
+        ${face}`,
+      trident: `
+        <rect x="18" y="6" width="28" height="22" rx="6" fill="#3d5a80"/>
+        ${face}
+        <path d="M49 4 L57 4 L53 12 Z" fill="#8c9bbd"/>
+        <rect x="23" y="28" width="3" height="11" fill="#8c9bbd"/>
+        <rect x="38" y="28" width="3" height="11" fill="#8c9bbd"/>
+        <path d="M21 39 L27 39 L24 46 Z" fill="#44e2ff"/>
+        <path d="M37 39 L43 39 L40 46 Z" fill="#44e2ff"/>`,
+      "ln-1": `
+        <rect x="16" y="12" width="32" height="20" rx="6" fill="#3d5a80"/>
+        ${face}
+        <rect x="30" y="2" width="3" height="10" fill="#8c9bbd"/>
+        <circle cx="31.5" cy="4" r="3.5" fill="#44e2ff"/>
+        <path d="M24 4 Q31.5 -2 39 4" stroke="#44e2ff" stroke-width="1.5" fill="none" opacity="0.7"/>
+        <rect x="20" y="32" width="24" height="4" rx="2" fill="#8c9bbd"/>`,
+    };
+    return `<svg viewBox="0 0 64 48" role="img" aria-label="Model of the pet's real instrument">${parts[id] || parts["heat-flow-drill"]}</svg>`;
   }
 
   /**
