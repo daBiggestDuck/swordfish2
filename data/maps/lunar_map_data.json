@@ -41,7 +41,8 @@
       "albedo": 0.08,
       "scienceGoal": "Mare volcanism, regolith heat flow, X-ray magnetosphere imaging, and dust electrodynamics.",
       "recommendedPayloadTypes": ["GEOPHYSICS_HEAT", "DUST_REGOLITH", "PLASMA_MAGNETIC", "RETROREFLECTOR_NAV"],
-      "decayMultipliers": { "power": 1.0, "warmth": 1.0, "signal": 0.8 },
+      "decayMultipliers": { "power": 1.0, "oxygen": 1.0, "food": 1.0, "happiness": 0.8 },
+      "careMultipliers": { "power": 1.0, "warmth": 1.0, "signal": 0.8 },
       "quickmapUrl": "https://quickmap.lroc.im-ldi.com/?extent=54.1,11.18,64.1,21.18&proj=10&earthShadowEnabled=true&stack=3314&defs=N4IgzGCMAsIFygPYAcCGBjAlgFwJ70gF9Cg",
       "trekUrl": "https://trek.nasa.gov/moon/#v=0.1&x=59.10&y=16.18&z=5&p=urn%3Aogc%3Adef%3Acrs%3AEPSG%3A%3A104903&b=moon",
       "sourceUrl": "https://science.nasa.gov/mission/clps-to19d/"
@@ -68,7 +69,8 @@
       "albedo": 0.13,
       "scienceGoal": "South polar plume-surface interaction, precision landing navigation, and low-angle comms testing.",
       "recommendedPayloadTypes": ["RETROREFLECTOR_NAV", "DUST_REGOLITH", "PLASMA_MAGNETIC"],
-      "decayMultipliers": { "power": 1.35, "warmth": 1.25, "signal": 1.1 },
+      "decayMultipliers": { "power": 1.35, "oxygen": 1.25, "food": 1.0, "happiness": 1.1 },
+      "careMultipliers": { "power": 1.35, "warmth": 1.25, "signal": 1.1 },
       "quickmapUrl": "https://quickmap.lroc.im-ldi.com/?extent=-3.56,-85.13,6.44,-75.13&proj=10&earthShadowEnabled=true&stack=3314&defs=N4IgzGCMAsIFygPYAcCGBjAlgFwJ70gF9Cg",
       "trekUrl": "https://trek.nasa.gov/moon/#v=0.1&x=1.44&y=-80.13&z=5&p=urn%3Aogc%3Adef%3Acrs%3AEPSG%3A%3A104903&b=moon",
       "sourceUrl": "https://science.nasa.gov/mission/clps-to2-im/"
@@ -95,7 +97,8 @@
       "albedo": 0.14,
       "scienceGoal": "Subsurface water-ice volatile prospecting (PRIME-1 drill + MSolo) adjacent to Nobile & Shoemaker PSRs.",
       "recommendedPayloadTypes": ["VOLATILES_ICE", "RETROREFLECTOR_NAV", "GEOPHYSICS_HEAT"],
-      "decayMultipliers": { "power": 0.85, "warmth": 1.2, "signal": 1.25 },
+      "decayMultipliers": { "power": 0.85, "oxygen": 1.2, "food": 1.0, "happiness": 1.25 },
+      "careMultipliers": { "power": 0.85, "warmth": 1.2, "signal": 1.25 },
       "quickmapUrl": "https://quickmap.lroc.im-ldi.com/?extent=24.2,-89.8,34.2,-79.8&proj=10&earthShadowEnabled=true&stack=3314&defs=N4IgzGCMAsIFygPYAcCGBjAlgFwJ70gF9Cg",
       "trekUrl": "https://trek.nasa.gov/moon/#v=0.1&x=29.20&y=-84.80&z=5&p=urn%3Aogc%3Adef%3Acrs%3AEPSG%3A%3A104903&b=moon",
       "sourceUrl": "https://science.nasa.gov/mission/clps-prime-1/"
@@ -122,7 +125,8 @@
       "albedo": 0.19,
       "scienceGoal": "Investigating localized crustal magnetic anomalies (mini-magnetosphere) and solar-wind shielding.",
       "recommendedPayloadTypes": ["PLASMA_MAGNETIC", "RETROREFLECTOR_NAV", "DUST_REGOLITH"],
-      "decayMultipliers": { "power": 0.95, "warmth": 1.0, "signal": 0.8 },
+      "decayMultipliers": { "power": 0.95, "oxygen": 1.0, "food": 1.0, "happiness": 0.8 },
+      "careMultipliers": { "power": 0.95, "warmth": 1.0, "signal": 0.8 },
       "quickmapUrl": "https://quickmap.lroc.im-ldi.com/?extent=-63.96,2.39,-53.96,12.39&proj=10&earthShadowEnabled=true&stack=3314&defs=N4IgzGCMAsIFygPYAcCGBjAlgFwJ70gF9Cg",
       "trekUrl": "https://trek.nasa.gov/moon/#v=0.1&x=-58.96&y=7.39&z=5&p=urn%3Aogc%3Adef%3Acrs%3AEPSG%3A%3A104903&b=moon",
       "sourceUrl": "https://science.nasa.gov/mission/clps-cp-11/"
@@ -149,7 +153,8 @@
       "albedo": 0.12,
       "scienceGoal": "Origin of silica-rich non-mare lunar volcanism and evolved crustal magma chemistry.",
       "recommendedPayloadTypes": ["GEOPHYSICS_HEAT", "DUST_REGOLITH", "VOLATILES_ICE"],
-      "decayMultipliers": { "power": 1.05, "warmth": 1.05, "signal": 0.9 },
+      "decayMultipliers": { "power": 1.05, "oxygen": 1.05, "food": 1.0, "happiness": 0.9 },
+      "careMultipliers": { "power": 1.05, "warmth": 1.05, "signal": 0.9 },
       "quickmapUrl": "https://quickmap.lroc.im-ldi.com/?extent=-45.2,31.3,-35.2,41.3&proj=10&earthShadowEnabled=true&stack=3314&defs=N4IgzGCMAsIFygPYAcCGBjAlgFwJ70gF9Cg",
       "trekUrl": "https://trek.nasa.gov/moon/#v=0.1&x=-40.20&y=36.30&z=5&p=urn%3Aogc%3Adef%3Acrs%3AEPSG%3A%3A104903&b=moon",
       "sourceUrl": "https://science.nasa.gov/mission/clps-cp-21/"
@@ -176,7 +181,8 @@
       "albedo": 0.15,
       "scienceGoal": "Low-frequency dark-ages radio cosmology (LuSEE-Night) and far-side seismic/heat-flow interior sounding.",
       "recommendedPayloadTypes": ["RADIO_FARSIDE", "GEOPHYSICS_HEAT", "RETROREFLECTOR_NAV"],
-      "decayMultipliers": { "power": 1.2, "warmth": 1.35, "signal": 2.0 },
+      "decayMultipliers": { "power": 1.2, "oxygen": 1.35, "food": 1.0, "happiness": 2.0 },
+      "careMultipliers": { "power": 1.2, "warmth": 1.35, "signal": 2.0 },
       "quickmapUrl": "https://quickmap.lroc.im-ldi.com/?extent=127.93,-79.73,137.93,-69.73&proj=10&earthShadowEnabled=true&stack=3314&defs=N4IgzGCMAsIFygPYAcCGBjAlgFwJ70gF9Cg",
       "trekUrl": "https://trek.nasa.gov/moon/#v=0.1&x=132.93&y=-74.73&z=5&p=urn%3Aogc%3Adef%3Acrs%3AEPSG%3A%3A104903&b=moon",
       "sourceUrl": "https://science.nasa.gov/mission/clps-cs-11/"
@@ -203,7 +209,8 @@
       "albedo": 0.09,
       "scienceGoal": "Original Peregrine TO2-AB target for radiation, exosphere mass spectrometry, and LRA laser ranging.",
       "recommendedPayloadTypes": ["PLASMA_MAGNETIC", "RETROREFLECTOR_NAV", "VOLATILES_ICE"],
-      "decayMultipliers": { "power": 1.0, "warmth": 1.0, "signal": 0.85 },
+      "decayMultipliers": { "power": 1.0, "oxygen": 1.0, "food": 1.0, "happiness": 0.85 },
+      "careMultipliers": { "power": 1.0, "warmth": 1.0, "signal": 0.85 },
       "quickmapUrl": "https://quickmap.lroc.im-ldi.com/?extent=-45.99,30.26,-35.99,40.26&proj=10&earthShadowEnabled=true&stack=3314&defs=N4IgzGCMAsIFygPYAcCGBjAlgFwJ70gF9Cg",
       "trekUrl": "https://trek.nasa.gov/moon/#v=0.1&x=-40.99&y=35.26&z=5&p=urn%3Aogc%3Adef%3Acrs%3AEPSG%3A%3A104903&b=moon",
       "sourceUrl": "https://science.nasa.gov/mission/clps-to2-ab/"
@@ -230,7 +237,8 @@
       "albedo": 0.16,
       "scienceGoal": "Artemis & South Pole power ridge overlooking Shackleton cold-trap water ice reserves.",
       "recommendedPayloadTypes": ["VOLATILES_ICE", "RETROREFLECTOR_NAV", "DUST_REGOLITH"],
-      "decayMultipliers": { "power": 0.6, "warmth": 1.15, "signal": 1.5 },
+      "decayMultipliers": { "power": 0.6, "oxygen": 1.15, "food": 1.0, "happiness": 1.5 },
+      "careMultipliers": { "power": 0.6, "warmth": 1.15, "signal": 1.5 },
       "quickmapUrl": "https://quickmap.lroc.im-ldi.com/?extent=127.32,-90.0,137.32,-84.63&proj=10&earthShadowEnabled=true&stack=3314&defs=N4IgzGCMAsIFygPYAcCGBjAlgFwJ70gF9Cg",
       "trekUrl": "https://trek.nasa.gov/moon/#v=0.1&x=132.32&y=-89.63&z=5&p=urn%3Aogc%3Adef%3Acrs%3AEPSG%3A%3A104903&b=moon",
       "sourceUrl": "https://www.nasa.gov/commercial-lunar-payload-services/"

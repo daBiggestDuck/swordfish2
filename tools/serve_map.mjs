@@ -20,6 +20,8 @@ import {
   simulateCascade,
   recommendRecipe,
   dispatchMapApi,
+  normalizeSiteId,
+  findSite,
 } from '../web/map_engine_client.js';
 
 export {
@@ -40,6 +42,8 @@ export {
   simulateCascade,
   recommendRecipe,
   dispatchMapApi,
+  normalizeSiteId,
+  findSite,
 };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -54,6 +58,8 @@ const MIME_TYPES = {
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
 };
 
 function readJsonOrNull(filePath) {
@@ -107,7 +113,12 @@ export function createMapRequestHandler(mapsRoot = DEFAULT_MAPS_ROOT, webRoot = 
       return;
     }
 
-    const relPath = url.pathname === '/' ? '/index.html' : url.pathname;
+    let relPath = url.pathname;
+    if (relPath === '/') {
+      relPath = fs.existsSync(path.join(webRoot, 'index.html')) ? '/index.html' : '/map.html';
+    } else if (relPath === '/map') {
+      relPath = '/map.html';
+    }
     const resolved = path.resolve(webRoot, '.' + relPath);
     if (!resolved.startsWith(webRoot) || !fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });

@@ -257,9 +257,11 @@ public final class MapDataLoader {
 
             Map<String, Double> decayMap = new LinkedHashMap<>();
             Map<String, Object> rawDecay = asMap(s.get("decayMultipliers"));
-            decayMap.put("power", asDouble(rawDecay.get("power"), 1.0));
-            decayMap.put("warmth", asDouble(rawDecay.get("warmth"), 1.0));
-            decayMap.put("signal", asDouble(rawDecay.get("signal"), 1.0));
+            Map<String, Object> rawCare = asMap(s.get("careMultipliers"));
+            decayMap.put("power", asDouble(rawDecay.get("power"), asDouble(rawCare.get("power"), 1.0)));
+            decayMap.put("oxygen", asDouble(rawDecay.get("oxygen"), asDouble(rawDecay.get("warmth"), asDouble(rawCare.get("warmth"), 1.0))));
+            decayMap.put("food", asDouble(rawDecay.get("food"), 1.0));
+            decayMap.put("happiness", asDouble(rawDecay.get("happiness"), asDouble(rawDecay.get("signal"), asDouble(rawCare.get("signal"), 1.0))));
 
             double earthVis = asDouble(s.get("earthVisibilityPct"), Math.abs(lon) > 90.0 ? 0.0 : 100.0);
             if (!ephemeris.isEmpty()) {

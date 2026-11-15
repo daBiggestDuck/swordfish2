@@ -1,5 +1,5 @@
 import { LunarGlobeGL } from './globe_gl.js';
-import { handleClientApi } from './map_engine_client.js';
+import { handleClientApi, normalizeSiteId } from './map_engine_client.js';
 
 const $ = (sel) => document.querySelector(sel);
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -24,7 +24,9 @@ const state = {
   failedMissionId: null,
   impactedMissionIds: new Set(),
   globe: null,
-  stagedDrop: null, // { lat, lon, evalData }
+  stagedDrop: null, // { lat, lon, evalData, animStartTime }
+  storyboardRaf: null,
+  stageSeq: 0,
 };
 
 function svgEl(tag, attrs = {}, parent = null) {
@@ -79,6 +81,94 @@ function formatCoords(lat, lon) {
   const latStr = `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? 'N' : 'S'}`;
   const lonStr = `${Math.abs(lon).toFixed(2)}°${lon >= 0 ? 'E' : 'W'}`;
   return `${latStr} / ${lonStr}`;
+}
+
+function kelvinToCelsius(k) {
+  return Math.round(k - 273.15);
+}
+
+function formatTempPlain(k) {
+  const c = kelvinToCelsius(k);
+  const f = Math.round((c * 9) / 5 + 32);
+  return `${c}°C (${f}°F)`;
+}
+
+function formatTempRangePlain(minK, maxK) {
+  return `${kelvinToCelsius(minK)}°C to ${kelvinToCelsius(maxK)}°C`;
+}
+
+function formatSlopePlain(deg) {
+  if (deg <= 4) return `Flat (${deg.toFixed(1)}°)`;
+  if (deg <= 10) return `Moderate (${deg.toFixed(1)}°)`;
+  return `Steep (${deg.toFixed(1)}°)`;
+}
+
+function formatElevationPlain(meters) {
+  const km = meters / 1000;
+  return `${km >= 0 ? '+' : ''}${km.toFixed(1)} km`;
+}
+
+function translateWarningPlain(w) {
+  return String(w || '')
+    .replace(/\bLOS\b/g, 'direct signal')
+    .replace(/\bDTE\b/g, 'Earth signal')
+    .replace(/\bPSR\b/g, 'permanently shadowed crater');
+}
+
+const FULL_MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function formatIsoDatePlain(isoStr, short = false) {
+  if (!isoStr) return '';
+  const parts = String(isoStr).split('-');
+  if (parts.length !== 3) return String(isoStr);
+  const yr = parts[0];
+  const mIdx = Number(parts[1]) - 1;
+  const day = Number(parts[2]);
+  const mName = (short ? SHORT_MONTHS : FULL_MONTHS)[mIdx];
+  if (!mName || Number.isNaN(day)) return String(isoStr);
+  return short ? `${mName} ${yr}` : `${mName} ${day}, ${yr}`;
+}
+
+function getSiteMissions(siteId) {
+  const canon = normalizeSiteId(siteId);
+  if (!canon) return [];
+  return (state.data?.missions || []).filter((m) => normalizeSiteId(m.siteId) === canon);
+}
+
+function formatMissionWhenPlain(m) {
+  if (!m) return '';
+  if (m.status === 'LANDED' && m.landed) return `Landed ${formatIsoDatePlain(m.landed)}`;
+  if (m.status === 'NO_LANDING') {
+    return m.launched
+      ? `Launched ${formatIsoDatePlain(m.launched)} (Did not land — propellant issue)`
+      : `${m.year} (Did not land)`;
+  }
+  return `Planned for ${m.year}`;
+}
+
+function formatSiteShortSchedule(siteId) {
+  const missions = getSiteMissions(siteId);
+  if (!missions.length) return 'NASA Candidate Site';
+  const parts = missions.map((m) => {
+    if (m.status === 'LANDED' && m.landed) return `Landed ${formatIsoDatePlain(m.landed, true)}`;
+    if (m.status === 'NO_LANDING') return `Missed ${m.year}`;
+    return `Planned ${m.year}`;
+  });
+  const vendors = [...new Set(missions.map((m) => m.vendor))].join(' / ');
+  return `${parts.join(' · ')} (${vendors})`;
+}
+
+function describeSiteNasaPlan(site) {
+  const missions = getSiteMissions(site.id);
+  if (!missions.length) {
+    return `${site.name} is an official NASA candidate landing area. Future Artemis or CLPS landing dates have not been announced yet.`;
+  }
+  const lines = missions.map((m) => `${m.name} (${m.vendor}) — ${formatMissionWhenPlain(m)}. ${m.note}`);
+  return `${site.name} is a real NASA Commercial Lunar Payload Services (CLPS) landing site. ${lines.join(' ')}`;
 }
 
 function quickSunElevation(lat, lon, ep) {
@@ -153,9 +243,10 @@ async function loadSiteSky() {
 }
 
 async function selectSite(siteId) {
+  const canonicalId = normalizeSiteId(siteId) || siteId;
   state.confirmedDrop = null;
-  state.selectedSiteId = siteId;
-  const site = (state.data?.sites || []).find((s) => s.id === siteId);
+  state.selectedSiteId = canonicalId;
+  const site = (state.data?.sites || []).find((s) => normalizeSiteId(s.id) === canonicalId);
   if (site && state.globe && state.projection === '3d') {
     state.globe.focusLatLon(site.lat, site.lon);
   }
@@ -165,13 +256,19 @@ async function selectSite(siteId) {
   if ($('#tab-recipe').classList.contains('active')) {
     await refreshRecipe();
   }
+  if (site) {
+    window.dispatchEvent(
+      new CustomEvent('payloadpets:site-selected', { detail: { siteId: site.id, site, sky: state.sky } })
+    );
+  }
 }
 
 function updateClockDisplay() {
   const ep = state.ephemeris[state.sampleIndex];
   const utcText = ep ? `${ep.timestampUtc} UTC` : (state.sky?.timestampUtc || '—');
+  const dayNum = Math.floor((state.sampleIndex * 4) / 24) + 1;
   $('#clock-utc').textContent = utcText;
-  $('#clock-sample').textContent = `Sample ${state.sampleIndex + 1} / ${state.ephemeris.length || 178} · 4h step`;
+  $('#clock-sample').textContent = `Day ${dayNum} of 29.5 (Lunar Cycle)`;
   $('#time-slider').value = String(state.sampleIndex);
 }
 
@@ -194,12 +291,12 @@ function renderSiteList() {
     name.textContent = s.name + (state.pickedPetSiteId === s.id ? ' ★' : '');
     const coord = document.createElement('span');
     coord.className = 'scoord';
-    coord.textContent = `${formatCoords(s.lat, s.lon)} · ${s.illuminationTerrainPct}% sun`;
+    coord.textContent = `${formatSiteShortSchedule(s.id)} · ${s.illuminationTerrainPct}% sunlit`;
     left.append(name, coord);
 
     const pill = document.createElement('span');
     pill.className = `status-pill ${status}`;
-    pill.textContent = status.replace('_', ' ');
+    pill.textContent = status === 'NO_LANDING' ? 'TOO RISKY' : status.replace('_', ' ');
     btn.append(left, pill);
     li.append(btn);
     ul.append(li);
@@ -215,14 +312,18 @@ function renderDossier() {
   $('#dossier-coords').textContent = formatCoords(site.lat, site.lon);
   $('#dossier-terrain').textContent = site.terrainSummary;
 
-  const siteMissions = (state.data?.missions || []).filter((m) => m.siteId === site.id);
+  const siteMissions = getSiteMissions(site.id);
+  $('#dossier-nasa-kicker').textContent = 'OFFICIAL NASA CLPS / ARTEMIS LANDING SITE';
+  $('#dossier-nasa-schedule').textContent = describeSiteNasaPlan(site);
+  $('#dossier-nasa-box').classList.remove('is-custom');
+
   $('#dossier-missions').textContent = siteMissions.length
-    ? siteMissions.map((m) => `${m.name} (${m.taskOrder})`).join(' · ')
-    : 'Artemis III / Practice Candidate';
-  $('#dossier-lighting').textContent = `${site.lightingCondition} (${site.illuminationTerrainPct}% terrain vs ${site.illuminationFlatPct}% flat)`;
-  $('#dossier-elev').textContent = `${(site.elevationMeters / 1000).toFixed(2)} km · Slope ${site.slopeDegrees.toFixed(1)}°`;
-  $('#dossier-psr').textContent = `${site.nearestPsrName} (${site.nearestPsrKm.toFixed(1)} km)`;
-  $('#dossier-temp').textContent = `${site.divinerMinTempK}–${site.divinerMaxTempK} K (Diviner-calibrated)`;
+    ? siteMissions.map((m) => `${m.name} (${m.vendor} — ${formatMissionWhenPlain(m)})`).join(' · ')
+    : 'Official NASA Candidate Site';
+  $('#dossier-lighting').textContent = `${site.lightingCondition} (${site.illuminationTerrainPct}% sunlit per month)`;
+  $('#dossier-elev').textContent = `${formatSlopePlain(site.slopeDegrees)} · Height ${formatElevationPlain(site.elevationMeters)}`;
+  $('#dossier-psr').textContent = `${site.nearestPsrName} (${site.nearestPsrKm.toFixed(1)} km away)`;
+  $('#dossier-temp').textContent = formatTempRangePlain(site.divinerMinTempK, site.divinerMaxTempK);
   $('#dossier-science').textContent = site.scienceGoal;
 
   $('#link-quickmap').href = site.quickmapUrl;
@@ -232,7 +333,7 @@ function renderDossier() {
   const banner = $('#picked-banner');
   if (state.pickedPetSiteId === site.id) {
     banner.hidden = false;
-    banner.textContent = `Confirmed Payload Pet Drop Site: ${site.shortName} (${formatCoords(site.lat, site.lon)})`;
+    banner.textContent = `Selected Spot: ${site.shortName} (${formatCoords(site.lat, site.lon)})`;
   } else {
     banner.hidden = true;
   }
@@ -243,14 +344,34 @@ function renderDossierFromEval(ev) {
   $('#dossier-title').textContent = ev.name;
   $('#dossier-coords').textContent = formatCoords(ev.lat, ev.lon);
   $('#dossier-terrain').textContent = ev.terrainSummary;
-  $('#dossier-missions').textContent = ev.nearestSiteName
-    ? `Nearest CLPS: ${ev.nearestSiteName} (${ev.nearestSiteKm} km away)`
-    : 'Custom cursor drop zone';
-  $('#dossier-lighting').textContent = `${ev.lightingCondition} (${ev.sky.windows.computedSunlitTerrainPct}% sunlit)`;
-  $('#dossier-elev').textContent = `${(ev.elevationMeters / 1000).toFixed(2)} km · Slope ${ev.slopeDegrees.toFixed(1)}°`;
-  $('#dossier-psr').textContent = `${ev.nearestPsrName} (${ev.nearestPsrKm.toFixed(1)} km)`;
-  $('#dossier-temp').textContent = `${ev.divinerMinTempK}–${ev.divinerMaxTempK} K`;
-  $('#dossier-science').textContent = ev.warnings.join(' ');
+
+  const matchedSite = ev.matchedKnownSite && ev.nearestSiteId
+    ? (state.data?.sites || []).find((s) => normalizeSiteId(s.id) === normalizeSiteId(ev.nearestSiteId))
+    : null;
+  if (matchedSite) {
+    const siteMissions = getSiteMissions(matchedSite.id);
+    $('#dossier-nasa-kicker').textContent = 'OFFICIAL NASA CLPS / ARTEMIS LANDING SITE';
+    $('#dossier-nasa-schedule').textContent = describeSiteNasaPlan(matchedSite);
+    $('#dossier-nasa-box').classList.remove('is-custom');
+    $('#dossier-missions').textContent = siteMissions.length
+      ? siteMissions.map((m) => `${m.name} (${m.vendor} — ${formatMissionWhenPlain(m)})`).join(' · ')
+      : 'Official NASA Candidate Site';
+  } else {
+    $('#dossier-nasa-kicker').textContent = 'CUSTOM MOON SPOT (NOT AN OFFICIAL NASA SITE)';
+    $('#dossier-nasa-schedule').textContent = ev.nearestSiteName
+      ? `You picked a custom spot on the Moon. NASA has not scheduled a mission here — the closest real NASA landing site is ${ev.nearestSiteName} (${ev.nearestSiteKm} km away · ${formatSiteShortSchedule(ev.nearestSiteId)}).`
+      : 'You picked a custom spot on the Moon. NASA does not have a landing scheduled at these exact coordinates.';
+    $('#dossier-nasa-box').classList.add('is-custom');
+    $('#dossier-missions').textContent = ev.nearestSiteName
+      ? `None here (Closest NASA site: ${ev.nearestSiteName}, ${ev.nearestSiteKm} km away)`
+      : 'Custom spot on Moon (no scheduled NASA mission)';
+  }
+
+  $('#dossier-lighting').textContent = `${ev.lightingCondition} (${ev.sky.windows.computedSunlitTerrainPct}% sunlit per month)`;
+  $('#dossier-elev').textContent = `${formatSlopePlain(ev.slopeDegrees)} · Height ${formatElevationPlain(ev.elevationMeters)}`;
+  $('#dossier-psr').textContent = `${ev.nearestPsrName} (${ev.nearestPsrKm.toFixed(1)} km away)`;
+  $('#dossier-temp').textContent = formatTempRangePlain(ev.divinerMinTempK, ev.divinerMaxTempK);
+  $('#dossier-science').textContent = (ev.warnings || []).map(translateWarningPlain).join(' ');
 
   $('#link-quickmap').href =
     `https://quickmap.lroc.im-ldi.com/?extent=${ev.lon - 5},${ev.lat - 5},${ev.lon + 5},${ev.lat + 5}&proj=10&earthShadowEnabled=true&stack=3314`;
@@ -260,7 +381,7 @@ function renderDossierFromEval(ev) {
 
   const banner = $('#picked-banner');
   banner.hidden = false;
-  banner.textContent = `Confirmed Custom Drop at ${formatCoords(ev.lat, ev.lon)} (Suitability ${ev.scores.overall}/100)`;
+  banner.textContent = `Selected Spot: ${formatCoords(ev.lat, ev.lon)} (Score ${ev.scores.overall}/100)`;
 }
 
 function renderTelemetry() {
@@ -268,26 +389,31 @@ function renderTelemetry() {
   const cur = state.sky.current;
   const win = state.sky.windows;
 
-  const sunSign = cur.sunElevationDeg >= 0 ? '+' : '';
-  $('#tele-sun-elev').textContent = `${sunSign}${cur.sunElevationDeg.toFixed(1)}°`;
-  $('#tele-sun-sub').textContent = `Azimuth ${cur.sunAzimuthDeg.toFixed(0)}° · Panel Power ${cur.panelPowerPct.toFixed(0)}%`;
+  $('#tele-sun-elev').textContent = cur.sunlit ? 'Daytime (Sunlit)' : 'Nighttime (Dark)';
+  $('#tele-sun-sub').textContent = cur.sunlit
+    ? `Solar power ${cur.panelPowerPct.toFixed(0)}% · Sun ${cur.sunElevationDeg.toFixed(0)}° up`
+    : 'No sunlight right now — relies on battery';
   $('#tele-next-sunset').textContent = cur.nextSunset;
   const sunBadge = $('#tele-sun-badge');
-  sunBadge.textContent = cur.sunlit ? 'SUNLIT' : 'SHADOW';
+  sunBadge.textContent = cur.sunlit ? 'DAYTIME' : 'NIGHTTIME';
   sunBadge.className = `badge ${cur.sunlit ? 'good' : 'warn'}`;
 
-  $('#tele-dte-status').textContent = cur.earthVisible ? 'LOS' : 'BLOCKED';
-  $('#tele-dte-sub').textContent = `Earth elev ${cur.earthElevationDeg >= 0 ? '+' : ''}${cur.earthElevationDeg.toFixed(1)}° · DTE ${win.dteCoveragePct}%`;
+  $('#tele-dte-status').textContent = cur.earthVisible ? 'Clear View' : 'Blocked';
+  $('#tele-dte-sub').textContent = cur.earthVisible
+    ? `Direct Earth signal ${win.dteCoveragePct}% of month`
+    : 'Hidden from Earth — needs satellite relay';
   $('#tele-next-earthset').textContent = cur.nextEarthset;
   const dteBadge = $('#tele-dte-badge');
-  dteBadge.textContent = cur.earthVisible ? 'LINE OF SIGHT' : 'FAR-SIDE RELAY REQ';
+  dteBadge.textContent = cur.earthVisible ? 'DIRECT SIGNAL' : 'NEEDS RELAY';
   dteBadge.className = `badge ${cur.earthVisible ? 'info' : 'bad'}`;
 
-  $('#tele-op-state').textContent = cur.operationalState;
-  $('#tele-op-sub').textContent = `Surface Temp ~${cur.surfaceTempK.toFixed(0)} K`;
-  $('#tele-illum-cmp').textContent = `${win.computedSunlitTerrainPct}% / ${win.computedSunlitFlatPct}%`;
+  $('#tele-op-state').textContent = cur.dualViable
+    ? 'Good to Operate'
+    : (cur.sunlit ? 'Sunlit, No Signal' : 'Dark & Freezing');
+  $('#tele-op-sub').textContent = `Surface temp ~${formatTempPlain(cur.surfaceTempK)}`;
+  $('#tele-illum-cmp').textContent = `${win.computedSunlitTerrainPct}% of month`;
   const opBadge = $('#tele-op-badge');
-  opBadge.textContent = cur.dualViable ? 'DUAL VIABLE' : (cur.sunlit ? 'SOLAR ONLY' : 'SURVIVAL');
+  opBadge.textContent = cur.dualViable ? 'GREAT' : (cur.sunlit ? 'SUN ONLY' : 'NIGHT');
   opBadge.className = `badge ${cur.dualViable ? 'good' : (cur.sunlit ? 'warn' : 'bad')}`;
 
   $('#win-sunlit').textContent = win.sunlitDaysText;
@@ -295,16 +421,56 @@ function renderTelemetry() {
   $('#win-dual').textContent = win.dualViableDaysText;
 }
 
+function cancelStoryboardAnim() {
+  if (state.storyboardRaf !== null && typeof cancelAnimationFrame === 'function') {
+    cancelAnimationFrame(state.storyboardRaf);
+  }
+  state.storyboardRaf = null;
+}
+
+function startStoryboardLineLoop() {
+  cancelStoryboardAnim();
+  if (typeof requestAnimationFrame !== 'function') return;
+  const tick = () => {
+    render3DOverlay();
+    const start = state.stagedDrop?.animStartTime;
+    if (start && performance.now() - start < 210) {
+      state.storyboardRaf = requestAnimationFrame(tick);
+    } else {
+      state.storyboardRaf = null;
+      render3DOverlay();
+    }
+  };
+  state.storyboardRaf = requestAnimationFrame(tick);
+}
+
 // ---- Pre-Drop Staging & Environmental Context Callout ----
 async function stageDropPoint(lat, lon, fetchNew = true) {
+  const seq = ++state.stageSeq;
+  const card = $('#predrop-card');
+
+  if (fetchNew) {
+    cancelStoryboardAnim();
+    card.classList.remove('story-active');
+    card.hidden = true;
+  }
+
   const ev =
     !fetchNew && state.stagedDrop?.evalData
       ? state.stagedDrop.evalData
       : await api(`/api/map/evaluate?lat=${lat.toFixed(3)}&lon=${lon.toFixed(3)}&sample=${state.sampleIndex}`);
+  if (seq !== state.stageSeq) return;
 
-  state.stagedDrop = { lat: ev.lat, lon: ev.lon, evalData: ev };
+  const existingAnimStart = !fetchNew ? (state.stagedDrop?.animStartTime || 0) : null;
+  state.stagedDrop = { lat: ev.lat, lon: ev.lon, evalData: ev, animStartTime: existingAnimStart };
   if (state.globe) {
     state.globe.setStagedPoint(ev.lat, ev.lon);
+  }
+
+  if (fetchNew && state.globe && state.projection === '3d') {
+    renderMap();
+    await state.globe.focusLatLon(ev.lat, ev.lon, { duration: 250, yawOffsetRad: 0.22 });
+    if (seq !== state.stageSeq) return;
   }
 
   const cur = ev.sky.current;
@@ -314,46 +480,77 @@ async function stageDropPoint(lat, lon, fetchNew = true) {
   $('#pd-coords').textContent = `${formatCoords(ev.lat, ev.lon)} · ${ev.region.replace('_', ' ')}`;
   $('#pd-summary').textContent = ev.terrainSummary;
 
+  const pdPlan = $('#pd-nasa-plan');
+  if (ev.matchedKnownSite && ev.nearestSiteId) {
+    const siteMissions = getSiteMissions(ev.nearestSiteId);
+    const missionText = siteMissions.length
+      ? siteMissions.map((m) => `${m.name} (${m.vendor} — ${formatMissionWhenPlain(m)})`).join('; ')
+      : 'Official NASA candidate landing site';
+    pdPlan.textContent = `Official NASA Landing Site: ${missionText}.`;
+    pdPlan.classList.remove('is-custom');
+  } else {
+    pdPlan.textContent = ev.nearestSiteName
+      ? `Custom Moon Spot (not a scheduled NASA site). Closest real NASA site: ${ev.nearestSiteName} (${ev.nearestSiteKm} km away — ${formatSiteShortSchedule(ev.nearestSiteId)}).`
+      : 'Custom Moon Spot: NASA does not have a mission scheduled at these exact coordinates.';
+    pdPlan.classList.add('is-custom');
+  }
+
   const pill = $('#pd-score-pill');
-  pill.textContent = `Suitability ${ev.scores.overall}/100`;
+  pill.textContent = `Score ${ev.scores.overall}/100`;
   pill.className = `badge ${ev.scores.overall >= 75 ? 'good' : ev.scores.overall >= 55 ? 'warn' : 'bad'}`;
 
-  $('#pd-sun').textContent = `${cur.sunElevationDeg >= 0 ? '+' : ''}${cur.sunElevationDeg.toFixed(1)}° (${cur.sunlit ? 'SUNLIT' : 'SHADOW'})`;
-  $('#pd-sun-sub').textContent = `${win.computedSunlitTerrainPct}% 29.5d sun · Array ${cur.panelPowerPct.toFixed(0)}%`;
+  $('#pd-sun').textContent = cur.sunlit ? `Daytime (${cur.panelPowerPct.toFixed(0)}% solar)` : 'In Shadow (Dark)';
+  $('#pd-sun-sub').textContent = `Sunlit ${win.computedSunlitTerrainPct}% of month`;
 
-  const tempC = Math.round(cur.surfaceTempK - 273.15);
-  $('#pd-temp').textContent = `${Math.round(cur.surfaceTempK)} K (${tempC}°C)`;
-  $('#pd-temp-sub').textContent = `Diviner ${ev.divinerMinTempK}–${ev.divinerMaxTempK} K`;
+  $('#pd-temp').textContent = formatTempPlain(cur.surfaceTempK);
+  $('#pd-temp-sub').textContent = `Range: ${formatTempRangePlain(ev.divinerMinTempK, ev.divinerMaxTempK)}`;
 
-  $('#pd-terrain').textContent = `${(ev.elevationMeters / 1000).toFixed(2)} km · ${ev.slopeDegrees.toFixed(1)}° slope`;
-  $('#pd-terrain-sub').textContent = `Safety Score ${ev.scores.safety}/100`;
+  $('#pd-terrain').textContent = formatSlopePlain(ev.slopeDegrees);
+  $('#pd-terrain-sub').textContent = `Safety ${ev.scores.safety}/100 · Height ${formatElevationPlain(ev.elevationMeters)}`;
 
-  $('#pd-comms').textContent = cur.earthVisible ? `LOS (${win.dteCoveragePct}% DTE)` : 'BLOCKED (0% DTE)';
+  $('#pd-comms').textContent = cur.earthVisible ? 'Direct Signal' : 'Needs Relay';
   $('#pd-comms-sub').textContent = cur.earthVisible
-    ? `Earth ${cur.earthElevationDeg >= 0 ? '+' : ''}${cur.earthElevationDeg.toFixed(1)}° up`
-    : 'Orbital relay required';
+    ? `Clear view ${win.dteCoveragePct}% of month`
+    : 'On the Moon’s far side from Earth';
 
   $('#pd-psr').textContent = `${ev.nearestPsrKm.toFixed(1)} km`;
   $('#pd-psr-sub').textContent = ev.nearestPsrName;
 
-  $('#pd-pet').textContent = `P ×${ev.decayMultipliers.power} · W ×${ev.decayMultipliers.warmth} · S ×${ev.decayMultipliers.signal}`;
+  const mult = ev.careMultipliers ?? ev.decayMultipliers;
+  const warmthMult = mult.warmth ?? mult.oxygen ?? 1;
+  const signalMult = mult.signal ?? mult.happiness ?? 1;
+  $('#pd-pet').textContent = `Power ×${mult.power} · Heat ×${warmthMult} · Signal ×${signalMult}`;
   $('#pd-pet-sub').textContent = `Next sunset: ${cur.nextSunset}`;
 
   const warnUl = $('#pd-warnings');
   warnUl.replaceChildren();
   for (const w of ev.warnings) {
     const li = document.createElement('li');
-    li.textContent = w;
+    li.textContent = translateWarningPlain(w);
     warnUl.appendChild(li);
   }
 
-  $('#predrop-card').hidden = false;
-  renderMap();
+  if (fetchNew) {
+    state.stagedDrop.animStartTime = typeof performance !== 'undefined' ? performance.now() : 0;
+    card.classList.remove('story-active');
+    card.hidden = false;
+    void card.offsetWidth;
+    card.classList.add('story-active');
+    renderMap();
+    startStoryboardLineLoop();
+  } else {
+    card.hidden = false;
+    renderMap();
+  }
 }
 
 function clearStagedDrop() {
+  state.stageSeq++;
+  cancelStoryboardAnim();
   state.stagedDrop = null;
-  $('#predrop-card').hidden = true;
+  const card = $('#predrop-card');
+  card.classList.remove('story-active');
+  card.hidden = true;
   if (state.globe) state.globe.setStagedPoint(null, null);
   renderMap();
 }
@@ -390,6 +587,7 @@ async function confirmStagedDrop() {
   renderSiteList();
   renderMap();
   window.dispatchEvent(new CustomEvent('payloadPets:siteSelected', { detail: dropRecord }));
+  window.dispatchEvent(new CustomEvent('payloadpets:site-selected', { detail: dropRecord }));
 }
 
 // ---- Map Projection Helpers ----
@@ -440,7 +638,9 @@ function render3DOverlay() {
   svg.replaceChildren();
   if (!state.globe || state.projection !== '3d') return;
 
-  const ep = state.ephemeris[state.sampleIndex] || { sunSubLon: 121.2, sunSubLat: -1.35, obsSubLon: -4.2, obsSubLat: -5.9 };
+  const { width: vw, height: vh } = state.globe.getViewportSize();
+  svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
+
   const showPsr = $('#lyr-psr').checked;
   const showLinks = $('#lyr-links').checked;
 
@@ -480,18 +680,6 @@ function render3DOverlay() {
     }
   }
 
-  // Sub-Solar & Sub-Earth pins
-  const sunP = state.globe.latLonToScreen(ep.sunSubLat, ep.sunSubLon);
-  if (sunP.visible) {
-    svgEl('circle', { cx: sunP.x.toFixed(1), cy: sunP.y.toFixed(1), r: 6, fill: '#ffb84d', stroke: '#fff', 'stroke-width': '1.2' }, svg);
-    svgEl('text', { x: (sunP.x + 8).toFixed(1), y: (sunP.y + 3).toFixed(1), fill: '#ffb84d', 'font-size': '9.5', 'font-family': 'monospace' }, svg).textContent = 'SUN';
-  }
-  const earthP = state.globe.latLonToScreen(ep.obsSubLat, ep.obsSubLon);
-  if (earthP.visible) {
-    svgEl('circle', { cx: earthP.x.toFixed(1), cy: earthP.y.toFixed(1), r: 5, fill: '#58a6ff', stroke: '#fff', 'stroke-width': '1.2' }, svg);
-    svgEl('text', { x: (earthP.x + 8).toFixed(1), y: (earthP.y + 3).toFixed(1), fill: '#58a6ff', 'font-size': '9.5', 'font-family': 'monospace' }, svg).textContent = 'EARTH';
-  }
-
   // Clickable CLPS Landing Sites on 3D Globe
   for (const s of state.filteredSites) {
     const p = state.globe.latLonToScreen(s.lat, s.lon);
@@ -529,26 +717,66 @@ function render3DOverlay() {
     const cp = state.globe.latLonToScreen(state.confirmedDrop.lat, state.confirmedDrop.lon);
     if (cp.visible) {
       svgEl('circle', { cx: cp.x.toFixed(1), cy: cp.y.toFixed(1), r: 7, fill: '#45d48a', stroke: '#ffffff', 'stroke-width': '2' }, svg);
-      svgEl('text', { x: (cp.x + 10).toFixed(1), y: (cp.y + 4).toFixed(1), fill: '#45d48a', 'font-size': '10.5', 'font-weight': '700' }, svg).textContent = 'DROPPED ★';
+      svgEl('text', { x: (cp.x + 10).toFixed(1), y: (cp.y + 4).toFixed(1), fill: '#45d48a', 'font-size': '10.5', 'font-weight': '700' }, svg).textContent = 'SELECTED ★';
     }
   }
 
-  // Staged Drop Pin + Leader Line to #predrop-card (matches user sketch!)
+  // Staged Drop Pin + Animated Storyboard Leader Line to Top Edge of #predrop-card
   if (state.stagedDrop) {
     const sp = state.globe.latLonToScreen(state.stagedDrop.lat, state.stagedDrop.lon);
     const card = $('#predrop-card');
-    const dockLeft = sp.visible && sp.x > 480;
+    const dockLeft = sp.visible && sp.x > vw * 0.5;
     card.classList.toggle('dock-left', dockLeft);
     if (sp.visible) {
-      const targetX = dockLeft ? 336 : 624;
-      const targetY = 120;
-      const elbowX = sp.x + (targetX - sp.x) * 0.45;
-      svgEl('polyline', {
-        points: `${sp.x.toFixed(1)},${sp.y.toFixed(1)} ${elbowX.toFixed(1)},${targetY} ${targetX},${targetY}`,
-        fill: 'none', stroke: '#ffb84d', 'stroke-width': '1.8', 'stroke-dasharray': '4 2',
-      }, svg);
       svgEl('circle', { cx: sp.x.toFixed(1), cy: sp.y.toFixed(1), r: 11, fill: 'none', stroke: '#ffb84d', 'stroke-width': '1.8' }, svg);
       svgEl('circle', { cx: sp.x.toFixed(1), cy: sp.y.toFixed(1), r: 4.5, fill: '#ffffff', stroke: '#ffb84d', 'stroke-width': '1.5' }, svg);
+
+      // Draw storyboard connector once camera glide is finished and card staging begins
+      if (state.stagedDrop.animStartTime !== null) {
+        const cardWidth = Math.min(320, Math.max(200, vw - 24));
+        const anchorX = dockLeft ? 12 + cardWidth * 0.52 : vw - 12 - cardWidth * 0.52;
+        const cardTopY = 58;
+        const elbowY = Math.max(14, Math.min(cardTopY - 14, sp.y - 24));
+
+        const seg1 = Math.hypot(anchorX - sp.x, elbowY - sp.y);
+        const seg2 = Math.abs(cardTopY - elbowY);
+        const totalLen = Math.max(1, seg1 + seg2);
+
+        const rawT = state.stagedDrop.animStartTime > 0
+          ? Math.min(1, (performance.now() - state.stagedDrop.animStartTime) / 180)
+          : 1;
+        // Fast-out, slow-in speed curve matching cubic-bezier(0.16, 1, 0.3, 1)
+        const lineProgress = 1 - Math.pow(1 - rawT, 3.5);
+        const drawnLen = totalLen * lineProgress;
+
+        let pts;
+        let tipX = anchorX;
+        let tipY = cardTopY;
+        if (drawnLen <= seg1) {
+          const u = drawnLen / Math.max(0.001, seg1);
+          tipX = sp.x + (anchorX - sp.x) * u;
+          tipY = sp.y + (elbowY - sp.y) * u;
+          pts = `${sp.x.toFixed(1)},${sp.y.toFixed(1)} ${tipX.toFixed(1)},${tipY.toFixed(1)}`;
+        } else {
+          const v = (drawnLen - seg1) / Math.max(0.001, seg2);
+          tipX = anchorX;
+          tipY = elbowY + (cardTopY - elbowY) * v;
+          pts = `${sp.x.toFixed(1)},${sp.y.toFixed(1)} ${anchorX.toFixed(1)},${elbowY.toFixed(1)} ${tipX.toFixed(1)},${tipY.toFixed(1)}`;
+        }
+
+        svgEl('polyline', {
+          points: pts,
+          fill: 'none', stroke: 'rgba(255, 184, 77, 0.25)', 'stroke-width': '4.5', 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+        }, svg);
+        svgEl('polyline', {
+          points: pts,
+          fill: 'none', stroke: '#ffb84d', 'stroke-width': '1.9', 'stroke-dasharray': '4 2.5', 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+        }, svg);
+        svgEl('circle', {
+          cx: tipX.toFixed(1), cy: tipY.toFixed(1), r: lineProgress < 1 ? 3.8 : 3.0,
+          fill: '#ffb84d', stroke: '#ffffff', 'stroke-width': '1.2',
+        }, svg);
+      }
     }
   }
 }
@@ -561,6 +789,7 @@ function renderMap() {
 
   if (is3D) {
     if (state.globe) {
+      state.globe.resize();
       state.globe.setLayers({
         showTerminator: $('#lyr-terminator').checked,
         showGraticule: $('#lyr-graticule').checked,
@@ -581,18 +810,20 @@ function renderMap() {
   svgEl('rect', { x: 0, y: 0, width: 960, height: 480, fill: '#090e1b' }, svg);
 
   if (state.projection === 'global') {
-    svgEl('rect', { x: 240, y: 0, width: 480, height: 480, fill: '#10182d', opacity: '0.55' }, svg);
+    if (state.globe) {
+      svgEl('image', {
+        href: state.globe.getAlbedoDataUrl(),
+        x: 0, y: 0, width: 960, height: 480,
+        preserveAspectRatio: 'none', opacity: '0.88',
+      }, svg);
+    } else {
+      svgEl('rect', { x: 240, y: 0, width: 480, height: 480, fill: '#10182d', opacity: '0.55' }, svg);
+    }
     for (const f of state.data?.quickmap?.notableAlbedoFeatures || []) {
       const p = projectGlobal(f.lat, f.lon > 180 ? f.lon - 360 : f.lon);
-      const r = f.radiusDeg * 2.55;
-      const isMare = f.albedo.includes('mare');
-      svgEl('circle', {
-        cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: r.toFixed(1),
-        fill: isMare ? '#070b14' : '#2a3758', opacity: isMare ? '0.68' : '0.3',
-      }, svg);
       svgEl('text', {
         x: p.x.toFixed(1), y: (p.y + 3).toFixed(1),
-        fill: '#495a82', 'font-size': '9', 'text-anchor': 'middle', 'font-family': 'monospace',
+        fill: '#9ab0e0', opacity: '0.68', 'font-size': '8.5', 'text-anchor': 'middle', 'font-family': 'monospace',
       }, svg).textContent = f.name;
     }
 
@@ -696,13 +927,6 @@ function renderMap() {
         }, svg);
       }
     }
-  }
-
-  if (state.projection === 'global') {
-    const subSun = projectGlobal(ep.sunSubLat, ep.sunSubLon);
-    svgEl('circle', { cx: subSun.x.toFixed(1), cy: subSun.y.toFixed(1), r: 6.5, fill: '#ffb84d', stroke: '#fff', 'stroke-width': '1.2' }, svg);
-    const subEarth = projectGlobal(ep.obsSubLat, ep.obsSubLon);
-    svgEl('circle', { cx: subEarth.x.toFixed(1), cy: subEarth.y.toFixed(1), r: 5.5, fill: '#58a6ff', stroke: '#fff', 'stroke-width': '1.2' }, svg);
   }
 
   for (const s of state.filteredSites) {
@@ -1195,21 +1419,22 @@ async function init() {
 
   const pStats = data.metadata?.programSummary || {};
   $('#program-stats').textContent =
-    `${pStats.deliveriesPlannedThrough2028 || 17} CLPS Deliveries Planned · ${pStats.payloadCount || '60+'} Payloads · `
-    + `${pStats.contractValueCeiling || '$2.6B'} Program Ceiling · OpenGL 3D Solar Globe + Cursor Drop`;
+    `${pStats.deliveriesPlannedThrough2028 || 17} planned NASA Moon landings · Drag to spin the Moon, click any spot to check conditions`;
 
   state.globe = new LunarGlobeGL($('#lunar-globe-gl'), {
+    quickmap: data.quickmap || {},
     quickmapFeatures: data.quickmap?.notableAlbedoFeatures || [],
     psrZones: data.psrZones || [],
+    sites: data.sites || [],
     onHover: (hit) => {
       const hud = $('#cursor-hud');
       if (!hit) {
-        hud.textContent = 'Drag to orbit · Scroll to zoom · Click anywhere on the Moon to inspect environmental conditions before dropping';
+        hud.textContent = 'Drag to spin · Scroll to zoom · Click anywhere on the Moon to inspect a spot';
         return;
       }
       const ep = state.ephemeris[state.sampleIndex];
       const sunEl = ep ? quickSunElevation(hit.lat, hit.lon, ep) : 0;
-      hud.textContent = `Cursor: ${formatCoords(hit.lat, hit.lon)} · Sun ${sunEl >= 0 ? '+' : ''}${sunEl.toFixed(1)}° (${sunEl > 0 ? 'SUNLIT' : 'SHADOW'}) — Click to inspect drop site`;
+      hud.textContent = `${formatCoords(hit.lat, hit.lon)} · ${sunEl > 0 ? 'Daytime (Sunlit)' : 'Nighttime (Dark)'} — Click to check this spot`;
     },
     onSelectPoint: (hit) => {
       stageDropPoint(hit.lat, hit.lon);
@@ -1218,6 +1443,28 @@ async function init() {
       render3DOverlay();
     },
   });
+
+window.PayloadPetsMap = {
+  normalizeSiteId,
+  getSelectedSite() {
+    const canonical = normalizeSiteId(state.selectedSiteId);
+    return (state.data?.sites || []).find((s) => normalizeSiteId(s.id) === canonical) || null;
+  },
+  getConfirmedDrop() {
+    return state.confirmedDrop ? { ...state.confirmedDrop } : null;
+  },
+  evaluateDrop(lat, lon, sample = state.sampleIndex) {
+    return api(
+      `/api/map/evaluate?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&sample=${encodeURIComponent(sample)}`
+    );
+  },
+  getSky(siteId = state.selectedSiteId, sample = state.sampleIndex) {
+    const canonical = normalizeSiteId(siteId) || siteId;
+    return api(
+      `/api/map/sky?site=${encodeURIComponent(canonical)}&sample=${encodeURIComponent(sample)}`
+    );
+  },
+};
 
   renderSiteList();
   renderSources();

@@ -50,10 +50,16 @@ public final class MapDataTest {
         assertTrue(bundle.psrZones().size() >= 8, "Expected at least 8 PSR cold traps");
         assertTrue(bundle.ephemeris().size() == 178, "Expected 178 JPL Horizons ephemeris samples");
 
+        assertTrue(MapFilterService.normalizeSiteId("SHACKLETON_RIDGE").equals("SHACKLETON_RIM"),
+                "Site alias SHACKLETON_RIDGE must normalize to SHACKLETON_RIM");
+        List<String> engineMeterKeys = List.of("power", "oxygen", "food", "happiness");
         for (MapModels.LandingSite site : bundle.sites()) {
             assertTrue(site.lat() >= -90.0 && site.lat() <= 90.0, "Valid latitude for " + site.id());
             assertTrue(site.lon() >= -180.0 && site.lon() <= 180.0, "Valid longitude for " + site.id());
             assertTrue(site.horizonProfileDeg().size() == 36, "Expected 36-bin LOLA horizon profile");
+            assertTrue(site.decayMultipliers().keySet().size() == 4
+                    && site.decayMultipliers().keySet().containsAll(engineMeterKeys),
+                    "Site decayMultipliers must match engine METER_KEYS for " + site.id());
         }
     }
 
@@ -115,6 +121,11 @@ public final class MapDataTest {
         @SuppressWarnings("unchecked")
         List<String> warnings = (List<String>) farCustom.get("warnings");
         assertTrue(!warnings.isEmpty(), "Pre-drop evaluation must include environmental context warnings");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> evalMult = (Map<String, Object>) farCustom.get("decayMultipliers");
+        assertTrue(evalMult.keySet().size() == 4
+                && evalMult.keySet().containsAll(List.of("power", "oxygen", "food", "happiness")),
+                "evaluateDropPoint decayMultipliers must contain exact engine METER_KEYS");
     }
 
     private static void assertTrue(boolean cond, String message) {

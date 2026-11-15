@@ -18,6 +18,65 @@ const round2 = (v) => Math.round(v * 100.0) / 100.0;
 const norm = (s) => (s || '').trim().toUpperCase();
 const isAll = (s) => !s || s === 'ALL';
 
+const SITE_ID_ALIASES = {
+  SHACKLETON_RIM: 'SHACKLETON_RIM',
+  SHACKLETON_RIDGE: 'SHACKLETON_RIM',
+  'SHACKLETON-RIM': 'SHACKLETON_RIM',
+  'SHACKLETON-RIDGE': 'SHACKLETON_RIM',
+  MARE_CRISIUM: 'MARE_CRISIUM',
+  'MARE-CRISIUM': 'MARE_CRISIUM',
+  MALAPERT_A: 'MALAPERT_A',
+  'MALAPERT-A': 'MALAPERT_A',
+  MONS_MOUTON: 'MONS_MOUTON',
+  'MONS-MOUTON': 'MONS_MOUTON',
+  REINER_GAMMA: 'REINER_GAMMA',
+  'REINER-GAMMA': 'REINER_GAMMA',
+  FAR_SIDE: 'FAR_SIDE',
+  SCHRODINGER_BASIN: 'FAR_SIDE',
+  'SCHRODINGER-BASIN': 'FAR_SIDE',
+  LUNAR_FARSIDE: 'FAR_SIDE',
+  'LUNAR-FARSIDE': 'FAR_SIDE',
+  NOBILE_RIM: 'NOBILE_RIM',
+  NOBILE_REGION: 'NOBILE_RIM',
+  'NOBILE-REGION': 'NOBILE_RIM',
+  SINUS_VISCOSITATIS: 'SINUS_VISCOSITATIS',
+  'SINUS-VISCOSITATIS': 'SINUS_VISCOSITATIS',
+  GRUITHUISEN_DOMES: 'GRUITHUISEN_DOMES',
+  'GRUITHUISEN-DOMES': 'GRUITHUISEN_DOMES',
+};
+
+const MONTH_MAP = {
+  Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
+  Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12',
+};
+
+function toIsoDate(horizonsTs) {
+  if (!horizonsTs) return '2026-11-10';
+  const datePart = String(horizonsTs).trim().split(/\s+/)[0];
+  const parts = datePart.split('-');
+  if (parts.length !== 3) return '2026-11-10';
+  const mm = MONTH_MAP[parts[1]] || '11';
+  const dd = parts[2].length === 1 ? `0${parts[2]}` : parts[2];
+  return `${parts[0]}-${mm}-${dd}`;
+}
+
+export function normalizeSiteId(id) {
+  if (!id) return '';
+  const upper = String(id).trim().toUpperCase();
+  if (SITE_ID_ALIASES[upper]) return SITE_ID_ALIASES[upper];
+  const underscored = upper.replace(/-/g, '_');
+  return SITE_ID_ALIASES[underscored] || upper;
+}
+
+export function findSite(bundle, siteId) {
+  const canon = normalizeSiteId(siteId);
+  if (!canon) return null;
+  const rawLower = String(siteId || '').trim().toLowerCase();
+  return (bundle.sites || []).find(
+    (s) => normalizeSiteId(s.id) === canon || s.id.toLowerCase() === rawLower
+  ) || null;
+}
+
 export function elevationDeg(siteLatDeg, siteLonDeg, subLatDeg, subLonDeg) {
   const rad = Math.PI / 180.0;
   const phi = siteLatDeg * rad;
@@ -176,7 +235,8 @@ export function buildMapDataset({ main = {}, quickmap = {}, trekSites = {}, trek
         lightingCondition: Math.abs(lat) >= 75 ? 'Polar Grazing' : 'Lunar Day/Night Cycle',
         scienceGoal: `Lunar exploration target (${attr.Task_Order || 'CLPS'}).`,
         recommendedPayloadTypes: ['RETROREFLECTOR_NAV'],
-        decayMultipliers: { power: 1.0, warmth: 1.0, signal: 1.0 },
+        decayMultipliers: { power: 1.0, oxygen: 1.0, food: 1.0, happiness: 1.0 },
+        careMultipliers: { power: 1.0, warmth: 1.0, signal: 1.0 },
         sourceUrl: attr.URL || 'https://trek.nasa.gov/moon/',
       };
       mergedById.set(rawId, target);
@@ -219,15 +279,28 @@ export function buildMapDataset({ main = {}, quickmap = {}, trekSites = {}, trek
       earthVis = round1((ok * 100.0) / ephemeris.length);
     }
 
+    const rawDecay = s.decayMultipliers || {};
+    const rawCare = s.careMultipliers || {};
+    const powerM = Number(rawDecay.power ?? rawCare.power ?? 1.0);
+    const oxygenM = Number(rawDecay.oxygen ?? rawDecay.warmth ?? rawCare.warmth ?? 1.0);
+    const foodM = Number(rawDecay.food ?? 1.0);
+    const happinessM = Number(rawDecay.happiness ?? rawDecay.signal ?? rawCare.signal ?? 1.0);
+    const elevM = lp.elevationMeters ?? s.elevationMeters ?? 0;
+    const slopeDeg = lp.slopeDegrees ?? s.slopeDegrees ?? 2.0;
+    const illumTerrain = lp.illuminationTerrainPct ?? s.illuminationTerrainPct ?? 50.0;
+
     sites.push({
       ...s,
-      elevationMeters: lp.elevationMeters ?? s.elevationMeters ?? 0,
-      slopeDegrees: lp.slopeDegrees ?? s.slopeDegrees ?? 2.0,
+      elevationMeters: elevM,
+      elevationM: elevM,
+      slopeDegrees: slopeDeg,
+      slopeDegs: slopeDeg,
       roughnessIndex: lp.roughnessIndex ?? s.roughnessIndex ?? 0.2,
       terrainSummary: lp.terrainType || s.terrainSummary || '',
       lightingCondition: lp.lightingCondition || s.lightingCondition || '',
       illuminationFlatPct: lp.illuminationFlatPct ?? s.illuminationFlatPct ?? 50.0,
-      illuminationTerrainPct: lp.illuminationTerrainPct ?? s.illuminationTerrainPct ?? 50.0,
+      illuminationTerrainPct: illumTerrain,
+      illuminationPct: illumTerrain,
       illuminationMethod: s.illuminationMethod || 'horizon-raycast',
       illuminationSource: s.illuminationSource || 'MOON_TREK:LOLA + JPL_HORIZONS:301',
       earthVisibilityPct: earthVis,
@@ -235,6 +308,9 @@ export function buildMapDataset({ main = {}, quickmap = {}, trekSites = {}, trek
       divinerMaxTempK: lp.divinerMaxTempK ?? s.divinerMaxTempK ?? 360,
       albedo: lp.albedo ?? s.albedo ?? 0.12,
       horizonProfileDeg: horizonBins,
+      horizonProfile: horizonBins,
+      decayMultipliers: { power: powerM, oxygen: oxygenM, food: foodM, happiness: happinessM },
+      careMultipliers: { power: powerM, warmth: oxygenM, signal: happinessM },
       nearestPsrId,
       nearestPsrName,
       nearestPsrKm: round1(nearestPsrKm),
@@ -243,11 +319,19 @@ export function buildMapDataset({ main = {}, quickmap = {}, trekSites = {}, trek
     });
   }
 
+  const missions = (main.missions || []).map((m) => ({
+    ...m,
+    duration: m.duration ?? 60,
+    requires: m.requires || { power: 25, oxygen: 20 },
+    cost: m.cost || { power: -15, oxygen: -10 },
+    reward: m.reward || { happiness: 20, food: 10 },
+  }));
+
   return {
     metadata: main.metadata || {},
     quickmap,
     sites,
-    missions: main.missions || [],
+    missions,
     payloads: main.payloads || [],
     psrZones,
     ephemeris,
@@ -264,6 +348,7 @@ export function computeSiteSky(site, ephemeris, currentIndex = 141) {
   const sunAzSeries = [];
   const earthElevSeries = [];
   const earthAzSeries = [];
+  const powerSeries = [];
   const sunlitSeries = [];
   const dteSeries = [];
   const dualSeries = [];
@@ -272,6 +357,7 @@ export function computeSiteSky(site, ephemeris, currentIndex = 141) {
   let flatSunlitCount = 0;
   let dteCount = 0;
   let dualCount = 0;
+  let powerSum = 0;
 
   for (const ep of ephemeris) {
     const sunEl = elevationDeg(site.lat, site.lon, ep.sunSubLat, ep.sunSubLon);
@@ -281,6 +367,7 @@ export function computeSiteSky(site, ephemeris, currentIndex = 141) {
 
     const sunHoriz = horizonElevationAtAzimuth(site.horizonProfileDeg, sunAz);
     const earthHoriz = horizonElevationAtAzimuth(site.horizonProfileDeg, earthAz);
+    const samplePwr = solarPanelPowerPct(sunEl, sunHoriz, site.slopeDegrees);
 
     const isFlatSun = sunEl > 0.0;
     const isSunlit = sunEl > sunHoriz;
@@ -291,11 +378,13 @@ export function computeSiteSky(site, ephemeris, currentIndex = 141) {
     if (isSunlit) sunlitCount++;
     if (isDte) dteCount++;
     if (isDual) dualCount++;
+    powerSum += samplePwr;
 
     sunElevSeries.push(round1(sunEl));
     sunAzSeries.push(round1(sunAz));
     earthElevSeries.push(round1(earthEl));
     earthAzSeries.push(round1(earthAz));
+    powerSeries.push(samplePwr);
     sunlitSeries.push(isSunlit);
     dteSeries.push(isDte);
     dualSeries.push(isDual);
@@ -321,6 +410,22 @@ export function computeSiteSky(site, ephemeris, currentIndex = 141) {
 
   const sunlitHours = round1(sunlitCount * stepHours);
   const dualViableHours = round1(dualCount * stepHours);
+  const avgPowerPct = n > 0 ? round1(powerSum / n) : 0;
+  const startDate = n > 0 ? toIsoDate(ephemeris[0].timestampUtc) : '2026-11-10';
+  let bestIdx = 0;
+  if (n > 0) {
+    const win = Math.max(1, Math.floor(n / 2));
+    let bestSum = -1;
+    for (let start = 0; start < n; start++) {
+      let sum = 0;
+      for (let k = 0; k < win; k++) sum += powerSeries[(start + k) % n];
+      if (sum > bestSum) {
+        bestSum = sum;
+        bestIdx = start;
+      }
+    }
+  }
+  const bestStartDate = n > 0 ? toIsoDate(ephemeris[bestIdx].timestampUtc) : startDate;
 
   return {
     id: site.id,
@@ -357,6 +462,11 @@ export function computeSiteSky(site, ephemeris, currentIndex = 141) {
     },
     earthElevation: currentEarthEl,
     earthVisible: currentDte,
+    startDate,
+    bestStartDate,
+    gameDays: 14.77,
+    monthDays: 29.53,
+    avgPowerPct,
     sun: sunElevSeries,
     sunAzimuth: sunAzSeries,
     earth: earthElevSeries,
@@ -365,6 +475,165 @@ export function computeSiteSky(site, ephemeris, currentIndex = 141) {
     timestamps: ephemeris.map((e) => e.timestampUtc),
     model: 'JPL Horizons DE441 ephemeris + LOLA DEM 36-bin horizon profile',
   };
+}
+
+function matchQuickmapFeature(quickmap, lat, lon) {
+  const craters = quickmap?.cratersAndMassifs || [];
+  let bestCrater = null;
+  let bestCraterNormR = Infinity;
+  let bestCraterRadiusKm = 0;
+
+  for (const c of craters) {
+    const distKm = greatCircleDistanceKm(lat, lon, c.lat, c.lon);
+    const radiusKm = Math.max(8, (c.radiusDeg || 1.2) * 30.3233);
+    if (distKm <= radiusKm * 1.35) {
+      const normR = distKm / radiusKm;
+      if (normR < bestCraterNormR) {
+        bestCraterNormR = normR;
+        bestCrater = c;
+        bestCraterRadiusKm = radiusKm;
+      }
+    }
+  }
+
+  if (bestCrater) {
+    const c = bestCrater;
+    const normR = bestCraterNormR;
+    const radiusKm = bestCraterRadiusKm;
+    const type = c.type || 'crater';
+
+    if (type === 'massif-arc' || type === 'polar-massif' || type === 'plateau' || type === 'volcanic-dome') {
+      const elevKm = c.elevKm || c.rimKm || 3.0;
+      const elevationMeters = Math.round(elevKm * 1000 * Math.max(0.4, 1 - normR * 0.45));
+      const slopeDegrees = round1(8.5 + (c.elevKm || 2.5) * 1.4);
+      const roughnessIndex = 0.36;
+      const albedo = type === 'plateau' || type === 'volcanic-dome' ? 0.13 : 0.16;
+      const horizonDeg = 0.5;
+      return {
+        featureName: c.name,
+        featureLabel: c.name,
+        elevationMeters,
+        slopeDegrees,
+        roughnessIndex,
+        albedo,
+        horizonDeg,
+        terrainSummary: `${c.name} (${type.replace(/-/g, ' ')}); LOLA relief ~${(elevationMeters / 1000).toFixed(2)} km with unobstructed ridge horizon.`,
+      };
+    }
+
+    if (type === 'magnetic-swirl') {
+      return {
+        featureName: c.name,
+        featureLabel: c.name,
+        elevationMeters: -2140,
+        slopeDegrees: 1.4,
+        roughnessIndex: 0.14,
+        albedo: 0.21,
+        horizonDeg: 0.5,
+        terrainSummary: `${c.name} magnetic anomaly swirl across Oceanus Procellarum mare basalt; high optical albedo.`,
+      };
+    }
+
+    const depthKm = c.depthKm || 3.0;
+    const rimKm = c.rimKm || 1.2;
+    const isBright = String(c.albedo || '').includes('bright');
+    const isDarkFloor = String(c.albedo || '').includes('low-mare') || String(c.albedo || '').includes('dark-floor');
+
+    if (c.hasPeak && normR <= 0.25) {
+      const elevationMeters = Math.round((-depthKm * 0.45 + 1.2) * 1000);
+      return {
+        featureName: c.name,
+        featureLabel: `${c.name} Central Peak`,
+        elevationMeters,
+        slopeDegrees: 14.2,
+        roughnessIndex: 0.42,
+        albedo: isBright ? 0.18 : 0.15,
+        horizonDeg: 4.5,
+        terrainSummary: `${c.name} central peak massif rising inside a ${depthKm.toFixed(1)} km deep crater basin; steep rocky slopes.`,
+      };
+    }
+
+    if (normR < 0.72) {
+      const elevationMeters = Math.round(-depthKm * 1000);
+      const slopeDegrees = round1(3.2 + depthKm * 0.6);
+      const horizonDeg = round1(
+        Math.min(18.0, (Math.atan2(depthKm + rimKm, Math.max(4.0, radiusKm * (1.0 - normR))) * 180) / Math.PI)
+      );
+      return {
+        featureName: c.name,
+        featureLabel: `${c.name} Floor`,
+        elevationMeters,
+        slopeDegrees,
+        roughnessIndex: isDarkFloor ? 0.20 : 0.28,
+        albedo: isDarkFloor ? 0.09 : isBright ? 0.17 : 0.14,
+        horizonDeg,
+        terrainSummary: `${c.name} interior floor (~${(elevationMeters / 1000).toFixed(2)} km LOLA elevation); surrounded by a ${rimKm.toFixed(1)} km rim (~${horizonDeg} deg horizon mask).`,
+      };
+    }
+
+    const elevationMeters = Math.round((c.rimKm || 1.3) * 1000 * Math.max(0.25, 1.0 - Math.abs(normR - 0.95)));
+    const slopeDegrees = round1(11.5 + depthKm * 1.6);
+    return {
+      featureName: c.name,
+      featureLabel: `${c.name} Rim`,
+      elevationMeters,
+      slopeDegrees,
+      roughnessIndex: 0.40,
+      albedo: isBright ? 0.17 : 0.15,
+      horizonDeg: 2.8,
+      terrainSummary: `${c.name} terraced rim & upper wall (+${(elevationMeters / 1000).toFixed(2)} km LOLA elevation); steep ${slopeDegrees} deg wall slope.`,
+    };
+  }
+
+  const albedoFeatures = quickmap?.notableAlbedoFeatures || [];
+  let bestBasin = null;
+  let bestBasinRadiusKm = Infinity;
+  let bestBasinNormR = 0;
+
+  for (const f of albedoFeatures) {
+    const radiusKm = Math.max(20, (f.radiusDeg || 10) * 30.3233);
+    const distKm = greatCircleDistanceKm(lat, lon, f.lat, f.lon);
+    if (distKm <= radiusKm * 1.15 && radiusKm < bestBasinRadiusKm) {
+      bestBasinRadiusKm = radiusKm;
+      bestBasin = f;
+      bestBasinNormR = distKm / radiusKm;
+    }
+  }
+
+  if (bestBasin) {
+    const f = bestBasin;
+    const normR = bestBasinNormR;
+    const isMare = String(f.albedo || '').includes('mare');
+    if (normR > 0.85 && (f.rimKm || 0) >= 1.0) {
+      const elevationMeters = Math.round(f.rimKm * 1000);
+      return {
+        featureName: f.name,
+        featureLabel: `${f.name} Rim`,
+        elevationMeters,
+        slopeDegrees: round1(7.5 + f.rimKm * 2.2),
+        roughnessIndex: 0.35,
+        albedo: 0.14,
+        horizonDeg: 2.0,
+        terrainSummary: `${f.name} outer topographic basin ring (+${(elevationMeters / 1000).toFixed(2)} km LOLA rim uplift).`,
+      };
+    }
+
+    const elevationMeters = Math.round((f.elevKm !== undefined ? f.elevKm : -2.0) * 1000);
+    return {
+      featureName: f.name,
+      featureLabel: f.name,
+      elevationMeters,
+      slopeDegrees: isMare ? 2.1 : 5.2,
+      roughnessIndex: isMare ? 0.14 : 0.31,
+      albedo: isMare ? 0.08 : 0.13,
+      horizonDeg: isMare ? 0.6 : 2.2,
+      terrainSummary: isMare
+        ? `${f.name} basaltic mare floor (${(elevationMeters / 1000).toFixed(2)} km LOLA elevation); low-albedo volcanic plain.`
+        : `${f.name} deep impact basin interior (${(elevationMeters / 1000).toFixed(2)} km LOLA elevation).`,
+    };
+  }
+
+  return null;
 }
 
 export function evaluateDropPoint(bundle, rawLat, rawLon, sampleIndex = 141) {
@@ -405,6 +674,8 @@ export function evaluateDropPoint(bundle, rawLat, rawLon, sampleIndex = 141) {
   let lightingCondition;
   let horizonProfileDeg;
 
+  let matchedFeature = null;
+
   if (matchedKnownSite) {
     region = nearestSite.region;
     elevationMeters = nearestSite.elevationMeters;
@@ -428,46 +699,61 @@ export function evaluateDropPoint(bundle, rawLat, rawLon, sampleIndex = 141) {
       terrainSummary = `Inside or bordering Permanently Shadowed Region (${nearestPsr.name}).`;
       lightingCondition = 'Permanently Shadowed Cold Trap';
       horizonProfileDeg = new Array(36).fill(7.5);
-    } else if (region === 'SOUTH_POLE') {
-      elevationMeters = Math.round(1200 * Math.cos((lon * Math.PI) / 180) + 400);
-      slopeDegrees = round1(7.5 + 4.5 * Math.abs(Math.sin((lat * 3 * Math.PI) / 180)));
-      roughnessIndex = 0.38;
-      divinerMinTempK = 65;
-      divinerMaxTempK = 230;
-      albedo = 0.14;
-      terrainSummary = 'South polar cratered highlands; low solar grazing angles cast long terrain shadows.';
-      lightingCondition = 'Polar Grazing Illumination';
-      horizonProfileDeg = new Array(36).fill(2.2);
-    } else if (region === 'FAR_SIDE') {
-      elevationMeters = 1650;
-      slopeDegrees = 6.2;
-      roughnessIndex = 0.34;
-      divinerMinTempK = 86;
-      divinerMaxTempK = 355;
-      albedo = 0.15;
-      terrainSummary = 'Ancient feldspathic far-side highlands; Earth permanently below the horizon.';
-      lightingCondition = 'Far-Side Day/Night (No Direct Earth)';
-      horizonProfileDeg = new Array(36).fill(2.4);
     } else {
-      const mareZone = lon > -70 && lon < 65 && lat > -35 && lat < 45;
-      elevationMeters = mareZone ? -2200 : 950;
-      slopeDegrees = mareZone ? 2.4 : 5.4;
-      roughnessIndex = mareZone ? 0.16 : 0.31;
-      divinerMinTempK = mareZone ? 95 : 90;
-      divinerMaxTempK = mareZone ? 385 : 370;
-      albedo = mareZone ? 0.09 : 0.13;
-      terrainSummary = mareZone
-        ? 'Smooth near-side basaltic mare plains with gentle landing slopes.'
-        : 'Cratered near-side highland terrain with moderate relief.';
-      lightingCondition = 'Near-Side Solar Cycle (Continuous DTE)';
-      horizonProfileDeg = new Array(36).fill(mareZone ? 0.6 : 1.8);
+      if (region === 'SOUTH_POLE') {
+        elevationMeters = Math.round(1200 * Math.cos((lon * Math.PI) / 180) + 400);
+        slopeDegrees = round1(7.5 + 4.5 * Math.abs(Math.sin((lat * 3 * Math.PI) / 180)));
+        roughnessIndex = 0.38;
+        divinerMinTempK = 65;
+        divinerMaxTempK = 230;
+        albedo = 0.14;
+        terrainSummary = 'South polar cratered highlands; low solar grazing angles cast long terrain shadows.';
+        lightingCondition = 'Polar Grazing Illumination';
+        horizonProfileDeg = new Array(36).fill(2.2);
+      } else if (region === 'FAR_SIDE') {
+        elevationMeters = 1650;
+        slopeDegrees = 6.2;
+        roughnessIndex = 0.34;
+        divinerMinTempK = 86;
+        divinerMaxTempK = 355;
+        albedo = 0.15;
+        terrainSummary = 'Ancient feldspathic far-side highlands; Earth permanently below the horizon.';
+        lightingCondition = 'Far-Side Day/Night (No Direct Earth)';
+        horizonProfileDeg = new Array(36).fill(2.4);
+      } else {
+        const mareZone = lon > -70 && lon < 65 && lat > -35 && lat < 45;
+        elevationMeters = mareZone ? -2200 : 950;
+        slopeDegrees = mareZone ? 2.4 : 5.4;
+        roughnessIndex = mareZone ? 0.16 : 0.31;
+        divinerMinTempK = mareZone ? 95 : 90;
+        divinerMaxTempK = mareZone ? 385 : 370;
+        albedo = mareZone ? 0.09 : 0.13;
+        terrainSummary = mareZone
+          ? 'Smooth near-side basaltic mare plains with gentle landing slopes.'
+          : 'Cratered near-side highland terrain with moderate relief.';
+        lightingCondition = 'Near-Side Solar Cycle (Continuous DTE)';
+        horizonProfileDeg = new Array(36).fill(mareZone ? 0.6 : 1.8);
+      }
+
+      matchedFeature = matchQuickmapFeature(bundle.quickmap, lat, lon);
+      if (matchedFeature) {
+        elevationMeters = matchedFeature.elevationMeters;
+        slopeDegrees = matchedFeature.slopeDegrees;
+        roughnessIndex = matchedFeature.roughnessIndex;
+        albedo = matchedFeature.albedo;
+        terrainSummary = matchedFeature.terrainSummary;
+        horizonProfileDeg = new Array(36).fill(matchedFeature.horizonDeg);
+      }
     }
   }
 
+  const coordLabel = `${Math.abs(lat).toFixed(2)}${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(2)}${lon >= 0 ? 'E' : 'W'}`;
   const id = matchedKnownSite ? nearestSite.id : `CUSTOM_${lat.toFixed(2)}_${lon.toFixed(2)}`;
   const name = matchedKnownSite
     ? nearestSite.name
-    : `Custom Drop Point (${Math.abs(lat).toFixed(2)}${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(2)}${lon >= 0 ? 'E' : 'W'})`;
+    : matchedFeature
+      ? `${matchedFeature.featureLabel} (${coordLabel})`
+      : `Custom Drop Point (${coordLabel})`;
 
   const synthetic = {
     id,
@@ -476,7 +762,10 @@ export function evaluateDropPoint(bundle, rawLat, rawLon, sampleIndex = 141) {
     lon: round2(lon),
     region,
     elevationMeters,
+    elevationM: elevationMeters,
     slopeDegrees,
+    slopeDegs: slopeDegrees,
+    horizonProfile: horizonProfileDeg,
     roughnessIndex,
     albedo,
     divinerMinTempK,
@@ -503,10 +792,19 @@ export function evaluateDropPoint(bundle, rawLat, rawLon, sampleIndex = 141) {
   const comms = Math.round(clamp(win.dteCoveragePct, 0, 100));
   const overall = Math.round(safety * 0.4 + science * 0.35 + comms * 0.25);
 
+  const powerMult = round2(clamp(1.55 - (win.computedSunlitTerrainPct / 100) * 0.9, 0.55, 1.8));
+  const warmthMult = round2(clamp(1.65 - (divinerMinTempK / 180) * 0.75, 0.85, 1.85));
+  const signalMult = round2(clamp(2.0 - (win.dteCoveragePct / 100) * 1.2, 0.8, 2.0));
   const decayMultipliers = {
-    power: round2(clamp(1.55 - (win.computedSunlitTerrainPct / 100) * 0.9, 0.55, 1.8)),
-    warmth: round2(clamp(1.65 - (divinerMinTempK / 180) * 0.75, 0.85, 1.85)),
-    signal: round2(clamp(2.0 - (win.dteCoveragePct / 100) * 1.2, 0.8, 2.0)),
+    power: powerMult,
+    oxygen: warmthMult,
+    food: 1.0,
+    happiness: signalMult,
+  };
+  const careMultipliers = {
+    power: powerMult,
+    warmth: warmthMult,
+    signal: signalMult,
   };
 
   const warnings = [];
@@ -538,7 +836,10 @@ export function evaluateDropPoint(bundle, rawLat, rawLon, sampleIndex = 141) {
     lon: round2(lon),
     region,
     elevationMeters,
+    elevationM: elevationMeters,
     slopeDegrees,
+    slopeDegs: slopeDegrees,
+    horizonProfile: horizonProfileDeg,
     roughnessIndex,
     terrainSummary,
     lightingCondition,
@@ -549,6 +850,7 @@ export function evaluateDropPoint(bundle, rawLat, rawLon, sampleIndex = 141) {
     nearestPsrKm: round1(nearestPsrKm),
     scores: { safety, science, comms, overall },
     decayMultipliers,
+    careMultipliers,
     warnings,
     sky,
   };
@@ -560,7 +862,8 @@ export function filterMissions(bundle, params = {}) {
   const region = norm(params.region);
   const status = norm(params.status);
   const payloadType = norm(params.payloadType);
-  const siteId = norm(params.site || params.siteId);
+  const rawSiteId = norm(params.site || params.siteId);
+  const siteId = isAll(rawSiteId) ? rawSiteId : normalizeSiteId(rawSiteId);
   const q = (params.q || '').trim().toLowerCase();
 
   return bundle.missions.filter((m) => {
@@ -568,7 +871,7 @@ export function filterMissions(bundle, params = {}) {
     if (!isAll(year) && String(m.year) !== year) return false;
     if (!isAll(region) && norm(m.region) !== region) return false;
     if (!isAll(status) && norm(m.status) !== status) return false;
-    if (!isAll(siteId) && norm(m.siteId) !== siteId) return false;
+    if (!isAll(siteId) && normalizeSiteId(m.siteId) !== siteId) return false;
     if (!isAll(payloadType) && !(m.payloadTypes || []).some((pt) => norm(pt) === payloadType)) return false;
     if (q) {
       const hay = `${m.name} ${m.vendor} ${m.taskOrder} ${m.note} ${m.siteId}`.toLowerCase();
@@ -584,16 +887,19 @@ export function filterSites(bundle, params = {}) {
   const region = norm(params.region);
   const status = norm(params.status);
   const payloadType = norm(params.payloadType);
+  const rawSiteId = norm(params.site || params.siteId);
+  const siteId = isAll(rawSiteId) ? rawSiteId : normalizeSiteId(rawSiteId);
   const q = (params.q || '').trim().toLowerCase();
 
   const hasMissionFilter = !isAll(timeWindow) || !isAll(year) || !isAll(status) || !isAll(payloadType);
   const matchedSites = new Set(
-    hasMissionFilter ? filterMissions(bundle, params).map((m) => norm(m.siteId)).filter(Boolean) : []
+    hasMissionFilter ? filterMissions(bundle, params).map((m) => normalizeSiteId(m.siteId)).filter(Boolean) : []
   );
 
   return bundle.sites.filter((s) => {
+    if (!isAll(siteId) && normalizeSiteId(s.id) !== siteId) return false;
     if (!isAll(region) && norm(s.region) !== region) return false;
-    if (hasMissionFilter && !matchedSites.has(norm(s.id))) return false;
+    if (hasMissionFilter && !matchedSites.has(normalizeSiteId(s.id))) return false;
     if (q) {
       const hay = `${s.id} ${s.name} ${s.terrainSummary} ${s.scienceGoal}`.toLowerCase();
       if (!hay.includes(q)) return false;
@@ -605,8 +911,8 @@ export function filterSites(bundle, params = {}) {
 export function compareSites(bundle, siteIds = []) {
   const chosen = [];
   for (const id of siteIds) {
-    const found = bundle.sites.find((s) => s.id.toUpperCase() === id.trim().toUpperCase());
-    if (found) chosen.push(found);
+    const found = findSite(bundle, id);
+    if (found && !chosen.includes(found)) chosen.push(found);
   }
   if (chosen.length === 0) {
     chosen.push(...bundle.sites.slice(0, 3));
@@ -667,8 +973,7 @@ export function simulateCascade(bundle, failedMissionId) {
 }
 
 export function recommendRecipe(bundle, siteId, maxMassKg = 25, maxPowerW = 90) {
-  const site =
-    bundle.sites.find((s) => s.id.toUpperCase() === String(siteId).toUpperCase()) || bundle.sites[0];
+  const site = findSite(bundle, siteId) || bundle.sites[0];
   const siteHasDte = site.earthVisibilityPct > 10.0;
   const recommended = [];
   const otherPayloads = [];
@@ -756,7 +1061,7 @@ export function dispatchMapApi(bundle, rawSources, urlPathAndQuery) {
   if (pathname === '/api/map/sky' || pathname === '/api/sky') {
     const siteId = params.site || 'SHACKLETON_RIM';
     const sample = Number.parseInt(params.sample ?? '141', 10);
-    const site = bundle.sites.find((s) => s.id.toUpperCase() === siteId.toUpperCase());
+    const site = findSite(bundle, siteId);
     if (!site) return { status: 404, body: { error: 'unknown site' } };
     return { status: 200, body: computeSiteSky(site, bundle.ephemeris, Number.isNaN(sample) ? 141 : sample) };
   }

@@ -111,10 +111,7 @@ public class MapServer {
         Map<String, String> q = query(ex);
         String siteId = q.getOrDefault("site", "SHACKLETON_RIM");
         int sample = (int) parseDouble(q.get("sample"), 141);
-        MapModels.LandingSite site = bundle.sites().stream()
-                .filter(s -> s.id().equalsIgnoreCase(siteId))
-                .findFirst()
-                .orElse(null);
+        MapModels.LandingSite site = MapFilterService.findSite(bundle, siteId);
         if (site == null) {
             send(ex, 404, "application/json; charset=utf-8",
                     "{\"error\":\"unknown site\"}".getBytes(StandardCharsets.UTF_8));
@@ -151,7 +148,11 @@ public class MapServer {
 
     private static void serveStatic(HttpExchange ex) throws IOException {
         String path = ex.getRequestURI().getPath();
-        if (path.equals("/")) path = "/index.html";
+        if (path.equals("/")) {
+            path = Files.isRegularFile(WEB_ROOT.resolve("index.html")) ? "/index.html" : "/map.html";
+        } else if (path.equals("/map")) {
+            path = "/map.html";
+        }
         Path file = WEB_ROOT.resolve(path.substring(1)).normalize();
         if (!file.startsWith(WEB_ROOT) || !Files.isRegularFile(file)) {
             send(ex, 404, "text/plain; charset=utf-8", "Not found".getBytes(StandardCharsets.UTF_8));
@@ -164,6 +165,7 @@ public class MapServer {
                 : name.endsWith(".json") ? "application/json; charset=utf-8"
                 : name.endsWith(".svg") ? "image/svg+xml"
                 : name.endsWith(".png") ? "image/png"
+                : (name.endsWith(".jpg") || name.endsWith(".jpeg")) ? "image/jpeg"
                 : "application/octet-stream";
         send(ex, 200, type, Files.readAllBytes(file));
     }

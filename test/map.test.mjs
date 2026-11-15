@@ -13,6 +13,7 @@ import {
   compareSites,
   simulateCascade,
   recommendRecipe,
+  normalizeSiteId,
   createMapRequestHandler,
 } from '../tools/serve_map.mjs';
 import { handleClientApi } from '../web/map_engine_client.js';
@@ -151,9 +152,11 @@ function invokeHandler(handler, url) {
 test('HTTP server endpoints and static UI files serve cleanly', async () => {
   const handler = createMapRequestHandler(MAPS_ROOT, path.join(REPO_ROOT, 'web'));
 
-  const htmlRes = await invokeHandler(handler, '/');
-  assert.equal(htmlRes.status, 200);
-  assert.match(htmlRes.text, /Lunar Map/);
+  for (const route of ['/', '/map', '/map.html']) {
+    const htmlRes = await invokeHandler(handler, route);
+    assert.equal(htmlRes.status, 200);
+    assert.match(htmlRes.text, /Lunar Map/);
+  }
 
   const jsRes = await invokeHandler(handler, '/map.js');
   assert.equal(jsRes.status, 200);
@@ -196,23 +199,57 @@ test('HTTP server endpoints and static UI files serve cleanly', async () => {
   assert.equal(evalFar.sky.earthVisible, false);
   assert.ok(evalFar.warnings.some((w) => /relay/i.test(w)));
   assert.ok(evalFar.scores.overall >= 0 && evalFar.scores.overall <= 100);
-  assert.ok(evalFar.decayMultipliers.signal > 1.5);
+  assert.ok(evalFar.decayMultipliers.happiness > 1.5);
+  assert.ok(evalFar.careMultipliers.signal > 1.5);
 
   const globeJsRes = await invokeHandler(handler, '/globe_gl.js');
   assert.equal(globeJsRes.status, 200);
   assert.match(globeJsRes.text, /LunarGlobeGL/);
 
+  for (const rasterFile of ['lroc_wac_global.jpg', 'lola_dem_global.jpg']) {
+    const rasterPath = path.join(REPO_ROOT, 'web', 'assets', rasterFile);
+    assert.ok(fs.existsSync(rasterPath), `Missing NASA raster on disk: ${rasterPath}`);
+    assert.ok(fs.statSync(rasterPath).size > 100000, `Expected ${rasterFile} > 100KB`);
+    const assetRes = await invokeHandler(handler, `/assets/${rasterFile}`);
+    assert.equal(assetRes.status, 200);
+    const contentType = assetRes.headers['Content-Type'] || assetRes.headers['content-type'];
+    assert.equal(contentType, 'image/jpeg');
+  }
+
   const badSky = await invokeHandler(handler, '/api/map/sky?site=NONEXISTENT');
   assert.equal(badSky.status, 404);
 });
 
-test('evaluateDropPoint provides pre-drop environmental context for arbitrary lunar coordinates', () => {
+test('evaluateDropPoint provides pre-drop environmental context for arbitrary lunar coordinates and NASA QuickMap features', () => {
   const bundle = loadMapDataset(MAPS_ROOT);
   const southPoleCustom = evaluateDropPoint(bundle, -86.2, -20.0, 141);
   assert.equal(southPoleCustom.region, 'SOUTH_POLE');
   assert.ok(southPoleCustom.nearestPsrKm >= 0);
   assert.ok(southPoleCustom.warnings.length >= 1);
   assert.equal(southPoleCustom.sky.sun.length, 178);
+
+  const tychoPeak = evaluateDropPoint(bundle, -43.31, -11.36, 141);
+  assert.match(tychoPeak.name, /Tycho Crater Central Peak/);
+  assert.equal(tychoPeak.elevationMeters, -915);
+  assert.ok(tychoPeak.slopeDegrees > 10);
+
+  const tychoFloor = evaluateDropPoint(bundle, -43.80, -11.36, 141);
+  assert.match(tychoFloor.name, /Tycho Crater Floor/);
+  assert.equal(tychoFloor.elevationMeters, -4700);
+  assert.ok(tychoFloor.horizonProfile[0] > 5);
+
+  const tychoRim = evaluateDropPoint(bundle, -44.65, -11.36, 141);
+  assert.match(tychoRim.name, /Tycho Crater Rim/);
+  assert.ok(tychoRim.elevationMeters > 1000);
+
+  const apenninus = evaluateDropPoint(bundle, 19.87, -3.70, 141);
+  assert.match(apenninus.name, /Montes Apenninus/);
+  assert.ok(apenninus.elevationMeters > 2000);
+
+  const spaBasin = evaluateDropPoint(bundle, -53.0, -169.0, 141);
+  assert.equal(spaBasin.region, 'FAR_SIDE');
+  assert.match(spaBasin.name, /South Pole-Aitken Basin/);
+  assert.equal(spaBasin.elevationMeters, -6200);
 });
 
 test('handleClientApi serves static Live Server fallback routes matching backend output', async () => {
@@ -239,4 +276,102 @@ test('handleClientApi serves static Live Server fallback routes matching backend
   assert.match(horizonsRaw.result, /\$\$SOE/);
 
   await assert.rejects(() => handleClientApi('/api/map/sky?site=NONEXISTENT'), /404/);
+});
+
+test('NASA QuickMap catalog includes craters/massifs & Moon Trek rasters and 3D globe shader supports Steep POM parallax', () => {
+  const qm = JSON.parse(fs.readFileSync(path.join(MAPS_ROOT, 'raw', 'quickmap_lroc_stack3314.json'), 'utf8'));
+  assert.ok(Array.isArray(qm.notableAlbedoFeatures) && qm.notableAlbedoFeatures.length >= 22);
+  assert.ok(Array.isArray(qm.cratersAndMassifs) && qm.cratersAndMassifs.length >= 40);
+  assert.ok(qm.trekRasterEndpoints?.wacGlobal?.includes('LRO_WAC_Mosaic_Global'));
+  assert.ok(qm.trekRasterEndpoints?.lolaDemGlobal?.includes('LRO_LOLA_DEM_Global'));
+
+  const globeSrc = fs.readFileSync(path.join(REPO_ROOT, 'web', 'globe_gl.js'), 'utf8');
+  assert.match(globeSrc, /uHeightTex/);
+  assert.match(globeSrc, /uCamPos/);
+  assert.match(globeSrc, /createRealisticMoonMaps/);
+});
+
+test('cross-branch compatibility: site aliases, engine METER_KEYS/mission schema, and story /api/sky fields', async () => {
+  const ENGINE_METER_KEYS = ['food', 'happiness', 'oxygen', 'power'];
+  const CARE_KEYS = ['power', 'signal', 'warmth'];
+
+  assert.equal(normalizeSiteId('SHACKLETON_RIDGE'), 'SHACKLETON_RIM');
+  assert.equal(normalizeSiteId('shackleton-ridge'), 'SHACKLETON_RIM');
+  assert.equal(normalizeSiteId('mare-crisium'), 'MARE_CRISIUM');
+  assert.equal(normalizeSiteId('schrodinger-basin'), 'FAR_SIDE');
+
+  const handler = createMapRequestHandler(MAPS_ROOT, path.join(REPO_ROOT, 'web'));
+
+  const sitesRes = await invokeHandler(handler, '/api/sites');
+  assert.equal(sitesRes.status, 200);
+  const sites = JSON.parse(sitesRes.text);
+  assert.ok(sites.length >= 8);
+  for (const site of sites) {
+    assert.ok(Number.isFinite(site.elevationM));
+    assert.ok(Number.isFinite(site.slopeDegs));
+    assert.ok(Array.isArray(site.horizonProfile) && site.horizonProfile.length === 36);
+    assert.deepEqual(Object.keys(site.decayMultipliers).sort(), ENGINE_METER_KEYS);
+    for (const k of ENGINE_METER_KEYS) {
+      assert.ok(Number.isFinite(site.decayMultipliers[k]) && site.decayMultipliers[k] >= 0);
+    }
+    assert.deepEqual(Object.keys(site.careMultipliers).sort(), CARE_KEYS);
+  }
+
+  const bundle = loadMapDataset(MAPS_ROOT);
+  const ev = evaluateDropPoint(bundle, -86.2, -20.0, 141);
+  assert.ok(Number.isFinite(ev.elevationM));
+  assert.ok(Number.isFinite(ev.slopeDegs));
+  assert.ok(Array.isArray(ev.horizonProfile) && ev.horizonProfile.length === 36);
+  assert.deepEqual(Object.keys(ev.decayMultipliers).sort(), ENGINE_METER_KEYS);
+  for (const k of ENGINE_METER_KEYS) {
+    assert.ok(Number.isFinite(ev.decayMultipliers[k]) && ev.decayMultipliers[k] >= 0);
+  }
+  assert.deepEqual(Object.keys(ev.careMultipliers).sort(), CARE_KEYS);
+
+  const missionsRes = await invokeHandler(handler, '/api/missions');
+  assert.equal(missionsRes.status, 200);
+  const missions = JSON.parse(missionsRes.text);
+  assert.ok(missions.length >= 11);
+  for (const m of missions) {
+    assert.ok(Number.isFinite(m.duration) && m.duration > 0);
+    for (const bucket of [m.requires, m.cost, m.reward]) {
+      assert.ok(bucket && typeof bucket === 'object');
+      for (const [k, v] of Object.entries(bucket)) {
+        assert.ok(ENGINE_METER_KEYS.includes(k), `Unexpected meter key ${k} on mission ${m.id}`);
+        assert.ok(Number.isFinite(v));
+      }
+    }
+  }
+
+  const skyAliasRes = await invokeHandler(handler, '/api/sky?site=SHACKLETON_RIDGE&date=2026-10-19');
+  assert.equal(skyAliasRes.status, 200);
+  const skyAlias = JSON.parse(skyAliasRes.text);
+  assert.equal(skyAlias.id, 'SHACKLETON_RIM');
+  assert.match(skyAlias.startDate, /^\d{4}-\d{2}-\d{2}$/);
+  assert.match(skyAlias.bestStartDate, /^\d{4}-\d{2}-\d{2}$/);
+  assert.ok(Number.isFinite(skyAlias.gameDays) && skyAlias.gameDays > 0);
+  assert.ok(Number.isFinite(skyAlias.monthDays) && skyAlias.monthDays > 0);
+  assert.ok(Number.isFinite(skyAlias.avgPowerPct));
+
+  const siteAliasRes = await invokeHandler(handler, '/api/sites?site=shackleton-ridge');
+  assert.equal(siteAliasRes.status, 200);
+  const siteAliasList = JSON.parse(siteAliasRes.text);
+  assert.equal(siteAliasList.length, 1);
+  assert.equal(siteAliasList[0].id, 'SHACKLETON_RIM');
+
+  const mareRes = await invokeHandler(handler, '/api/map/recipe?site=mare-crisium');
+  assert.equal(mareRes.status, 200);
+  assert.equal(JSON.parse(mareRes.text).siteId, 'MARE_CRISIUM');
+
+  const cmpAliasRes = await invokeHandler(handler, '/api/map/compare?sites=shackleton-ridge,schrodinger-basin');
+  assert.equal(cmpAliasRes.status, 200);
+  const cmpAlias = JSON.parse(cmpAliasRes.text);
+  assert.deepEqual(
+    cmpAlias.sites.map((s) => s.id),
+    ['SHACKLETON_RIM', 'FAR_SIDE']
+  );
+
+  const clientSky = await handleClientApi('/api/sky?site=schrodinger-basin&date=2026-10-19');
+  assert.equal(clientSky.id, 'FAR_SIDE');
+  assert.ok(Number.isFinite(clientSky.avgPowerPct));
 });
