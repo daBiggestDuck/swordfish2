@@ -28,6 +28,8 @@ import java.util.Map;
 public class StoryServer {
 
     private static final Path ROOT = Path.of("web", "story").toAbsolutePath().normalize();
+    /** Shared web files from the other branches (e.g. the map's spinning Moon, globe_gl.js + assets/). */
+    private static final Path WEB = Path.of("web").toAbsolutePath().normalize();
 
     /** Built-in moments, plus the data branch's pop-up stories when data/ is present. */
     private static List<MissionMoment> moments = MissionMoments.ALL;
@@ -162,9 +164,13 @@ public class StoryServer {
 
     private static void serveStatic(HttpExchange ex) throws IOException {
         String path = ex.getRequestURI().getPath();
-        if (path.equals("/")) path = "/index.html";
+        if (path.equals("/")) path = "/rover.html"; // the moving-on-the-Moon game; the older page is /index.html
         Path file = ROOT.resolve(path.substring(1)).normalize();
         if (!file.startsWith(ROOT) || !Files.isRegularFile(file)) {
+            Path shared = WEB.resolve(path.substring(1)).normalize();
+            if (shared.startsWith(WEB) && Files.isRegularFile(shared)) file = shared;
+        }
+        if (!(file.startsWith(ROOT) || file.startsWith(WEB)) || !Files.isRegularFile(file)) {
             send(ex, 404, "text/plain; charset=utf-8", "Not found".getBytes(StandardCharsets.UTF_8));
             return;
         }

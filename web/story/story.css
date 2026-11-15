@@ -1,28 +1,19 @@
 /* Payload Pets: story page. Shares the map branch's palette and "mission control" look. */
 :root {
-  --maroon: #7f1d1d;
-  --orange: #ea580c;
-  --amber: #f59e0b;
-  --cream: #fef3c7;
-  --space: #111827;
-
-  --bg: var(--space);
-  --panel: #1a2234;
-  --panel-alt: #222b40;
-  --border: #3a4258;
-  --text: var(--cream);
-  --muted: #c4b896;
-  --accent: var(--orange);
+  --bg: #0b0e14;
+  --panel: #141922;
+  --panel-alt: #1a212e;
+  --border: #2a3244;
+  --text: #e6ecf8;
+  --muted: #8c9bbd;
+  --accent: #62b0ff;
   --good: #45d48a;
-  --warn: var(--amber);
-  --bad: #f87171;
-  --ice: #fde68a;
-  --sun: #f59e0b;
-  --plan: #ea580c;
+  --warn: #ffb84d;
+  --bad: #ff6b6b;
+  --ice: #44e2ff;
+  --sun: #ffd45e;
+  --plan: #8e9bff;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --title-font: "Bruno Ace SC", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --subtext-font: "Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --curve-out: cubic-bezier(0.16, 1, 0.3, 1);
   --pet: var(--accent);           /* each pet sets its own colour (data-pet) */
   color-scheme: dark;
@@ -31,36 +22,30 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
 body {
-  font-family: var(--font);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.45;
   min-height: 100vh;
   background:
-    radial-gradient(900px 420px at 80% -8%, rgba(234, 88, 12, 0.12), transparent 60%),
-    radial-gradient(700px 380px at 10% 90%, rgba(127, 29, 29, 0.22), transparent 55%),
+    radial-gradient(900px 420px at 80% -8%, rgba(98, 176, 255, 0.10), transparent 60%),
     var(--bg);
-}
-h1, h2, h3, h4, .pc-name {
-  font-family: var(--title-font);
-  font-weight: 400;
-  letter-spacing: 0.02em;
 }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 button, select, input { font-family: inherit; color: var(--text); }
 
-[data-pet="BLUE_GHOST"], [data-pet="LISTER"], [data-pet="GHOST"] { --pet: #fde68a; }
-[data-pet="BLUE_MOON"], [data-pet="LRA"], [data-pet="RETRO"], [data-pet="LUNA"] { --pet: #ea580c; }
-[data-pet="TRIDENT"], [data-pet="TRIDDY"], [data-pet="EDS"] { --pet: #f59e0b; }
-[data-pet="LN-1"], [data-pet="LN1"], [data-pet="NODEY"] { --pet: #45d48a; }
+[data-pet="eds"] { --pet: #a9b6ff; }
+[data-pet="retro"] { --pet: #62b0ff; }
+[data-pet="lister"] { --pet: #ffb84d; }
+[data-pet="ln-1"] { --pet: #45d48a; }
 
 .starfield {
-  position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .5;
+  position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .45;
   background-image:
-    radial-gradient(1px 1px at 20px 30px, #fef3c7 50%, transparent 51%),
-    radial-gradient(1px 1px at 140px 90px, #f59e0b 50%, transparent 51%),
-    radial-gradient(1.4px 1.4px at 230px 170px, #fef3c7 50%, transparent 51%),
-    radial-gradient(1px 1px at 70px 210px, #ea580c 50%, transparent 51%),
-    radial-gradient(1px 1px at 300px 50px, #fef3c7 50%, transparent 51%);
+    radial-gradient(1px 1px at 20px 30px, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 140px 90px, #cfe4ff 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 230px 170px, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 70px 210px, #ffe9c4 50%, transparent 51%),
+    radial-gradient(1px 1px at 300px 50px, #fff 50%, transparent 51%);
   background-size: 340px 260px;
 }
 .topbar, .layout, .foot { position: relative; z-index: 1; }
@@ -72,8 +57,8 @@ button, select, input { font-family: inherit; color: var(--text); }
   max-width: 1240px; margin: 0 auto; padding: .95rem 1.25rem;
 }
 .brand-badge { font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; color: var(--accent); }
-.brand h1 { margin: .15rem 0 0; font-size: 1.35rem; }
-.brand p { margin: .2rem 0 0; font-family: var(--subtext-font); font-size: .86rem; color: var(--muted); max-width: 46rem; }
+.brand h1 { margin: .15rem 0 0; font-size: 1.35rem; letter-spacing: -.01em; }
+.brand p { margin: .2rem 0 0; font-size: .86rem; color: var(--muted); max-width: 46rem; }
 .topbar-stats { display: flex; flex-wrap: wrap; gap: .4rem; }
 .stat {
   font-family: var(--mono); font-size: .75rem; color: var(--muted);
@@ -93,7 +78,7 @@ button, select, input { font-family: inherit; color: var(--text); }
     align-items: start;
   }
   .adopt { grid-area: adopt; }
-  .stage-card { grid-area: stage; }
+  .stage-card { grid-area: stage; position: sticky; top: 1rem; }
   .sky-card { grid-area: sky; }
   .timeline-card { grid-area: timeline; }
 }
@@ -105,8 +90,8 @@ button, select, input { font-family: inherit; color: var(--text); }
   display: inline-grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 8px;
   font-family: var(--mono); font-size: .8rem; color: #051024; background: var(--accent);
 }
-.lead { margin: -.35rem 0 .9rem; color: var(--muted); font-family: var(--subtext-font); font-size: .9rem; }
-.fine { color: var(--muted); font-family: var(--subtext-font); font-size: .78rem; margin: .55rem 0 0; }
+.lead { margin: -.35rem 0 .9rem; color: var(--muted); font-size: .9rem; }
+.fine { color: var(--muted); font-size: .78rem; margin: .55rem 0 0; }
 .center { text-align: center; }
 
 /* ---------------------------------------------------------------- controls */
@@ -150,14 +135,14 @@ button:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visi
 }
 .pet-card .avatar { --size: 44px; }
 .pc-text { display: grid; min-width: 0; }
-.pc-name { font-weight: 400; }
-.pc-mission { color: var(--muted); font-family: var(--subtext-font); font-size: .75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-name { font-weight: 700; }
+.pc-mission { color: var(--muted); font-size: .75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pet-card:hover { border-color: var(--pet); }
 .pet-card[aria-pressed="true"] {
   border-color: var(--pet);
   background: linear-gradient(135deg, color-mix(in srgb, var(--pet) 16%, var(--panel-alt)), var(--panel-alt));
 }
-.bio { margin: 0 0 .9rem; color: var(--muted); font-family: var(--subtext-font); font-size: .86rem; min-height: 2.5em; }
+.bio { margin: 0 0 .9rem; color: var(--muted); font-size: .86rem; min-height: 2.5em; }
 
 /* ---------------------------------------------------------------- stage */
 .stage {
@@ -216,7 +201,7 @@ button:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visi
 .mood-emoji { position: absolute; right: -8px; top: -6px; font-size: 1.6rem; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .6)); }
 .mood {
   position: absolute; left: 50%; top: 14px; transform: translateX(-50%); max-width: calc(100% - 24px);
-  padding: .38rem .85rem; border-radius: 999px; font-family: var(--subtext-font); font-size: .86rem; text-align: center;
+  padding: .38rem .85rem; border-radius: 999px; font-size: .86rem; text-align: center;
   background: rgba(20, 25, 34, .85); border: 1px solid var(--border);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -242,7 +227,7 @@ input[type=range] { padding: 0; border: 0; background: transparent; accent-color
 .skybox { background: var(--panel-alt); border: 1px solid var(--border); border-radius: 10px; padding: .65rem; }
 .skybox h4 { margin: 0 0 .35rem; font-size: .92rem; }
 .skybox svg { width: 100%; height: auto; display: block; border-radius: 6px; }
-.skybox p { margin: .35rem 0 0; font-family: var(--subtext-font); font-size: .82rem; color: var(--muted); }
+.skybox p { margin: .35rem 0 0; font-size: .82rem; color: var(--muted); }
 .skybox p + p { margin-top: .15rem; }
 
 /* ---------------------------------------------------------------- timeline */
@@ -251,7 +236,7 @@ input[type=range] { padding: 0; border: 0; background: transparent; accent-color
   display: flex; flex-wrap: wrap; gap: .55rem; align-items: baseline;
   padding: .5rem .65rem; border-radius: 8px; background: var(--panel-alt); border: 1px solid transparent; font-size: .9rem;
 }
-#timeline li > span:nth-child(2) { flex: 1 1 10rem; min-width: 0; font-family: var(--subtext-font); }
+#timeline li > span:nth-child(2) { flex: 1 1 10rem; min-width: 0; }
 #timeline li.here { border-color: var(--accent); }
 .tag { font-family: var(--mono); font-size: .66rem; font-weight: 800; padding: .1rem .45rem; border-radius: 4px; color: #051024; white-space: nowrap; }
 .LANDED { background: var(--good); }
@@ -260,7 +245,7 @@ input[type=range] { padding: 0; border: 0; background: transparent; accent-color
 .when { font-family: var(--mono); color: var(--muted); margin-left: auto; font-size: .76rem; white-space: nowrap; }
 @media (max-width: 520px) { .when { margin-left: 0; width: 100%; white-space: normal; } }
 
-.foot { text-align: center; color: var(--muted); font-family: var(--subtext-font); font-size: .78rem; padding: 1.25rem 1rem 2.25rem; }
+.foot { text-align: center; color: var(--muted); font-size: .78rem; padding: 1.25rem 1rem 2.25rem; }
 
 /* ---------------------------------------------------------------- pop-up and passport */
 .overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 1rem; background: rgba(4, 6, 10, .74); backdrop-filter: blur(3px); }
@@ -273,12 +258,11 @@ input[type=range] { padding: 0; border: 0; background: transparent; accent-color
 .postcard { position: relative; background: var(--panel); border: 1px solid var(--border); border-top: 3px solid var(--accent); }
 .postcard::after {
   content: ""; position: absolute; top: 1rem; right: 1rem; width: 50px; height: 60px; border-radius: 6px;
-  border: 2px dashed rgba(234, 88, 12, .5);
-  background: radial-gradient(circle at 50% 45%, #fef3c7 0 32%, transparent 33%), rgba(234, 88, 12, .12);
+  border: 2px dashed rgba(98, 176, 255, .5);
+  background: radial-gradient(circle at 50% 45%, #d9d9e6 0 32%, transparent 33%), rgba(98, 176, 255, .1);
 }
 .postmark { margin: 0 0 .35rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
 .postcard h3, .postcard #popup-text { padding-right: 66px; }
-.postcard #popup-text { font-family: var(--subtext-font); }
 .mission { font-family: var(--mono); font-size: .8rem; color: var(--warn); margin-bottom: 0; }
 
 .passport { max-width: 540px; padding: 0; overflow: hidden; color: #1c1d2e; background: linear-gradient(180deg, #f6f1e3, #ece4cf); border: 1px solid #d8cba6; }
@@ -293,7 +277,7 @@ input[type=range] { padding: 0; border: 0; background: transparent; accent-color
 .pp-face .avatar { --size: 70px; }
 .passport dl { display: grid; grid-template-columns: auto 1fr; gap: .25rem .8rem; margin: 0; font-size: .88rem; }
 .passport dt { font-family: var(--mono); color: #6b6450; font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; padding-top: .15rem; }
-.passport dd { margin: 0; font-family: var(--subtext-font); }
+.passport dd { margin: 0; }
 .passport .srclink { color: #2c4bb8; margin-right: .6rem; }
 .stamp {
   position: absolute; right: 1rem; bottom: .5rem; transform: rotate(-12deg);
@@ -363,7 +347,7 @@ button:disabled { opacity: .45; cursor: not-allowed; filter: none; }
 .dot { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; margin-right: .45rem; box-shadow: inset 0 -2px 2px rgba(0,0,0,.35), 0 0 8px currentColor; }
 .d-sun { background: var(--sun); color: var(--sun); } .d-warm { background: var(--bad); color: var(--bad); } .d-sig { background: var(--accent); color: var(--accent); }
 
-body { background: radial-gradient(1000px 500px at 85% -10%, rgba(234,88,12,.16), transparent 60%), radial-gradient(800px 500px at -10% 40%, rgba(127,29,29,.18), transparent 60%), #111827; }
+body { background: radial-gradient(1000px 500px at 85% -10%, rgba(98,176,255,.16), transparent 60%), radial-gradient(800px 500px at -10% 40%, rgba(142,155,255,.10), transparent 60%), #070a11; }
 .card {
   border-radius: 16px;
   background: linear-gradient(180deg, #1b2230 0%, #121722 100%);
@@ -418,7 +402,7 @@ body {
 .pp-main { padding-bottom: 2.6rem; }
 
 /* ---------------------------------------------------------------- chapters + designed passport */
-.chapter { position: absolute; left: 12px; bottom: 10px; font-family: var(--mono); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--warn); background: rgba(0,0,0,.6); border: 1px solid rgba(245, 158, 11,.45); border-radius: 6px; padding: .2rem .55rem; }
+.chapter { position: absolute; left: 12px; bottom: 10px; font-family: var(--mono); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--warn); background: rgba(0,0,0,.6); border: 1px solid rgba(255,184,77,.45); border-radius: 6px; padding: .2rem .55rem; }
 .passport { max-width: 600px; background: repeating-linear-gradient(135deg, rgba(31,75,143,.035) 0 12px, transparent 12px 24px), linear-gradient(180deg, #f8f3e6, #ebe2ca); }
 .pp-band { background: linear-gradient(90deg, #0f2550, #1f4b8f 60%, #3a6fc0); border-bottom: 3px solid #d9b65a; }
 .pp-main { padding-bottom: 1rem; }
@@ -426,13 +410,13 @@ body {
 .pp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; padding: 0 1.2rem; }
 .pp-stats div { text-align: center; padding: .55rem .4rem; border-radius: 10px; background: #fff; border: 1px solid #d8cba6; box-shadow: 0 3px 0 #d8cba6; }
 .pp-stats b { display: block; font-family: var(--mono); font-size: 1.35rem; color: #1f4b8f; }
-.pp-stats span { font-family: var(--subtext-font); font-size: .7rem; color: #6b6450; }
+.pp-stats span { font-size: .7rem; color: #6b6450; }
 .pp-journey { position: relative; margin: 1rem 1.2rem .2rem; height: 8px; border-radius: 99px; background: #d8cba6; display: flex; justify-content: space-between; }
 .pp-journey i { position: absolute; left: 0; top: 0; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #f09a1a, #ffd45e, #b0303a); }
 .pp-journey span { position: relative; top: 11px; font-family: var(--mono); font-size: .62rem; color: #6b6450; text-transform: uppercase; }
 .pp-fate { margin: 1.6rem 1.2rem 0; padding: .7rem .85rem; border-left: 4px solid #1f4b8f; border-radius: 0 10px 10px 0; background: rgba(31,75,143,.08); }
 .pp-fate b { font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: #1f4b8f; }
-.pp-fate p { margin: .2rem 0 0; font-family: var(--subtext-font); font-size: .9rem; }
+.pp-fate p { margin: .2rem 0 0; font-size: .9rem; }
 .pp-mrz { margin: .9rem 0 0; padding: .5rem 1.2rem; font-family: var(--mono); font-size: .78rem; letter-spacing: .12em; color: #4a4636; background: rgba(0,0,0,.05); border-top: 1px dashed #c9bc95; overflow: hidden; white-space: nowrap; }
 .passport .row { padding: 1rem 1.2rem 1.2rem; }
 .overlay { overflow-y: auto; }
@@ -453,3 +437,6 @@ body {
 .pc-mission { white-space: normal; overflow: visible; line-height: 1.25; }
 .card h2 { letter-spacing: .01em; }
 .lead, .bio { line-height: 1.55; }
+
+/* matches main (9b9b2ab): the stage card does not stick while scrolling */
+.stage-card { position: static !important; }

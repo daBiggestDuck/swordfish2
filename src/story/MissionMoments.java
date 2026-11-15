@@ -92,74 +92,61 @@ public final class MissionMoments {
                             + "antenna points right. Real operators wait for the link too.",
                     0.50, DELIVERIES),
 
-            // ---- Pet: Ghost (Blue Ghost Mission 1, Firefly Aerospace) ----
-            new MissionMoment("ghost-touchdown", "ANY", "Blue Ghost Mission 1",
-                    "Touchdown!",
-                    "Ghost is based on Firefly's Blue Ghost 1. Landing safely is the hardest part "
-                            + "of any lunar mission, and your pet just did it!",
-                    0.03, BG1_LANDING, Pets.BLUE_GHOST),
-            new MissionMoment("ghost-payloads", "ANY", "Blue Ghost Mission 1",
-                    "A backpack of experiments",
-                    "The real Blue Ghost 1 carried 10 NASA instruments, and all 10 switched on and "
-                            + "collected data on the Moon. Keep Ghost powered so they keep working!",
-                    0.25, BG1_END, Pets.BLUE_GHOST),
-            new MissionMoment("ghost-night", "ANY", "Blue Ghost Mission 1",
+            // ---- Pet: LISTER (heat-flow drill on Blue Ghost Mission 1, Firefly Aerospace) ----
+            new MissionMoment("lister-hello", "ANY", "Blue Ghost Mission 1",
+                    "Meet LISTER",
+                    "LISTER is a heat-flow drill that rode to the Moon on Firefly's Blue Ghost 1. "
+                            + "Landing safely is the hardest part, and you just did it!",
+                    0.03, BG1_LANDING, Pets.LISTER),
+            new MissionMoment("lister-backpack", "ANY", "Blue Ghost Mission 1",
+                    "One of ten",
+                    "Blue Ghost 1 carried 10 NASA instruments, and all 10 switched on and collected "
+                            + "data on the Moon. LISTER was one of them!",
+                    0.25, BG1_END, Pets.LISTER),
+            new MissionMoment("lister-night", "ANY", "Blue Ghost Mission 1",
                     "Into the night",
                     "Blue Ghost 1 kept working through sunset and into the lunar night. "
-                            + "Its mission ended on Mar. 16, 2025. Keep Ghost cozy!",
-                    0.92, BG1_END, Pets.BLUE_GHOST),
+                            + "Its mission ended on Mar. 16, 2025. Keep LISTER cozy!",
+                    0.92, BG1_END, Pets.LISTER),
 
-            // ---- Pet: Luna (Blue Moon Mark 1, Blue Origin) ----
-            new MissionMoment("luna-waiting", "ANY", "Blue Moon Mark 1 Mission",
-                    "Still waiting for liftoff",
-                    "Luna is based on Blue Origin's Blue Moon Mark 1, a planned CLPS delivery that "
-                            + "will carry two NASA instruments to the Moon's south pole. "
-                            + "This day is a practice run!",
-                    0.03, CT3, Pets.BLUE_MOON),
-            new MissionMoment("luna-cameras", "ANY", "Blue Moon Mark 1 Mission",
-                    "Filming the landing",
-                    "One of Luna's instruments, SCALPSS, uses cameras to film the lander and the "
-                            + "ground during descent, to show how the engine plume disturbs the surface.",
-                    0.30, CT3, Pets.BLUE_MOON),
+            // ---- Pet: Retro (laser retroreflector) ----
+            new MissionMoment("retro-hello", "ANY", "Laser Retroreflector Array",
+                    "Meet Retro",
+                    "Retro is a laser retroreflector: a cluster of mirrors that bounce laser light "
+                            + "straight back to where it came from.",
+                    0.03, CT3, Pets.RETRO),
+            new MissionMoment("retro-mirror", "ANY", "Blue Moon Mark 1 Mission",
+                    "A mirror for orbiters",
+                    "A retroreflector helps spacecraft in orbit pinpoint exactly where a lander is. "
+                            + "Blue Moon Mark 1 will carry one to the south pole.",
+                    0.35, CT3, Pets.RETRO),
             new MissionMoment("luna-learns", "ANY", "Earlier CLPS flights",
                     "Learning from friends",
                     "Earlier landers taught the whole program a lot: IM-1 landed tilted, "
-                            + "Peregrine never landed, and Blue Ghost 1 worked through a lunar day. "
-                            + "Luna gets to learn from all of them.",
-                    0.50, DELIVERIES, Pets.BLUE_MOON),
-            new MissionMoment("luna-mirror", "ANY", "Blue Moon Mark 1 Mission",
-                    "A mirror for orbiters",
-                    "Luna's other instrument is a laser retroreflector (LRA). "
-                            + "It helps spacecraft in orbit pinpoint exactly where the lander is.",
-                    0.70, CT3, Pets.BLUE_MOON),
-            new MissionMoment("luna-night", "ANY", "Blue Moon Mark 1 Mission",
-                    "Big dreams, long night",
-                    "Every lander faces the cold lunar night. Luna dreams of the day it really "
-                            + "flies. For now, keep it warm and the Earth link steady!",
-                    0.92, CLPS_PAGE, Pets.BLUE_MOON),
+                            + "Peregrine never landed, and Blue Ghost 1 worked through a lunar day.",
+                    0.55, DELIVERIES, Pets.RETRO),
+            new MissionMoment("retro-nap", "ANY", "Laser Retroreflector Array",
+                    "Nap time",
+                    "Retro is just mirrors, so it needs no power at all. When night comes, it simply "
+                            + "naps and waits for the next laser ping.",
+                    0.95, CT3, Pets.RETRO),
 
-            // ---- Pet: Triddy (TRIDENT drill, PRIME-1 on IM-2, Intuitive Machines) ----
-            new MissionMoment("triddy-hello", "ANY", "IM-2 Mission",
-                    "Meet Triddy",
-                    "Triddy is based on TRIDENT, the drill in NASA's PRIME-1 experiment. It flew on "
-                            + "IM-2 together with MSolo, an instrument that sniffs soil for gases.",
-                    0.03, PRIME1, Pets.TRIDDY),
-            new MissionMoment("triddy-drill", "ANY", "IM-2 Mission",
-                    "Drilling down",
-                    "TRIDENT is built to drill up to 1 meter into the Moon, bringing up soil about "
-                            + "10 cm at a time by spinning and hammering. Drilling is hungry work, so "
-                            + "keep Triddy powered!",
-                    0.30, TRIDENT_DRILL, Pets.TRIDDY),
-            new MissionMoment("triddy-sideways", "ANY", "IM-2 Mission",
-                    "Landing on its side",
-                    "IM-2 landed on Mar. 6, 2025, about 400 meters from its target at Mons Mouton, "
-                            + "and ended up on its side. MSolo still worked despite the rough landing.",
-                    0.55, TRIDENT_DRILL, Pets.TRIDDY),
-            new MissionMoment("triddy-ice", "ANY", "IM-2 Mission",
-                    "Sniffing for ice",
-                    "PRIME-1 was NASA's first try at drilling for ice near the Moon's south pole. "
-                            + "Water ice there could one day help astronauts live on the Moon.",
-                    0.80, PRIME1, Pets.TRIDDY),
+            // ---- Pet: EDS (Electrodynamic Dust Shield on Blue Ghost Mission 1) ----
+            new MissionMoment("eds-hello", "ANY", "Blue Ghost Mission 1",
+                    "Meet EDS",
+                    "EDS is a dust shield that flew on Blue Ghost 1. Moon dust is sharp and sticky, "
+                            + "so keeping things clean really matters.",
+                    0.03, BG1_LANDING, Pets.EDS),
+            new MissionMoment("eds-zap", "ANY", "Blue Ghost Mission 1",
+                    "Zap the dust",
+                    "EDS uses electric fields to push dust off surfaces like glass and radiators, "
+                            + "with no brushes or moving parts.",
+                    0.40, BG1_LANDING, Pets.EDS),
+            new MissionMoment("eds-ten", "ANY", "Blue Ghost Mission 1",
+                    "Team of ten",
+                    "All 10 NASA instruments on Blue Ghost 1 switched on and collected data on the "
+                            + "Moon, EDS included.",
+                    0.70, BG1_END, Pets.EDS),
 
             // ---- Pet: Nodey (LN-1 navigation beacon on IM-1, Intuitive Machines) ----
             new MissionMoment("nodey-hello", "ANY", "IM-1 Mission",

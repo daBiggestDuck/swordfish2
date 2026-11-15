@@ -1,3 +1,18 @@
+# Payload Pets story: moving on the Moon
+
+`./run-story.sh` then open http://localhost:8081. The story is now a small game (slide 4):
+
+1. Akshay's WebGL Moon (`web/globe_gl.js` from the map) spins behind the start screen.
+2. Pick **two** of the pets team's four pets (LISTER, Retro, EDS, Nodey) from the hotbar.
+3. The Moon turns to your landing site, pins it, and the lander drops in.
+4. Drive the rover with the arrow keys or A/D (Space to hop). Your two pets ride on it, animate,
+   and nap or shiver at night. Power and Warmth follow the Sun.
+5. Over 14 in-game days, real NASA mission stories pop up and fill the mission log.
+6. After day 14 the story screen shows what happened, each pet's real mission outcome, and NASA links.
+
+Files: `web/story/rover.html|css|js` (game), `src/story/*` (the story API it uses). The older
+story page is still at /index.html. The Passport is moving to the data branch.
+
 # How the story works (Payload Pets, story branch)
 
 The story turns real CLPS lander missions into a short, friendly journey. A player adopts a pet
