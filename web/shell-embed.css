@@ -1,4 +1,4 @@
-/* Same-origin iframe tabs under the v0 showcase shell.
+/* Injected into same-origin iframe tabs when hosted in the v0 showcase shell.
    Aligns secondary surfaces with Map / Sites (web/map.css) tokens. */
 html.in-shell {
   --bg: #0b0e14;
@@ -16,17 +16,23 @@ html.in-shell {
 }
 
 html.in-shell body {
-  background: var(--bg);
-  color: var(--text);
+  background: #0b0e14 !important;
+  color: #e6ecf8 !important;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif !important;
 }
 
 html.in-shell a {
-  color: var(--accent);
+  color: #62b0ff !important;
 }
 
 html.in-shell .brand-badge,
 html.in-shell .eyebrow {
-  color: var(--accent);
-  font-family: var(--mono);
-  letter-spacing: 0.08em;
+  color: #62b0ff !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase;
+}
+
+html.in-shell button {
+  border-radius: 6px;
 }

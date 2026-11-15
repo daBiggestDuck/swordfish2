@@ -272,8 +272,11 @@
         /* cross-origin Story/Engine backends — CSS files restyled at source */
       }
     };
-    iframe.addEventListener("load", apply);
-    if (iframe.contentDocument?.readyState === "complete") apply();
+    if (!iframe.dataset.shellEmbedBound) {
+      iframe.dataset.shellEmbedBound = "1";
+      iframe.addEventListener("load", apply);
+    }
+    if (iframe.getAttribute("src") && iframe.contentDocument?.readyState === "complete") apply();
   }
 
   async function activateIframe(tab, panel, ok) {
