@@ -25,6 +25,9 @@ import java.util.Set;
  *   ./deploy.sh --port 9000     different dashboard port
  *   ./deploy.sh --interval 10   check GitHub every 10 s
  *   ./deploy.sh --offline       don't fetch; use the branches already downloaded
+ *   ./deploy.sh --public        also make a public link anyone can open (asks for the team password)
+ *   ./deploy.sh --password X    require password X (the --public default is a saved random one)
+ *   ./deploy.sh --public --no-password   public link with no password: anyone with the link sees everything
  */
 public final class Deployer {
 
@@ -40,6 +43,8 @@ public final class Deployer {
     private volatile String fetchError = null;
     private volatile long lastFetch = 0;
     private volatile String activity = "Starting";
+    private Tunnel tunnel;
+    private boolean passwordProtected;
     private final Object wake = new Object();
     private boolean refreshRequested = false;
 
@@ -57,12 +62,18 @@ public final class Deployer {
         int appPort = 8100;
         int interval = 30;
         boolean offline = false;
+        boolean makePublic = false;
+        boolean noPassword = false;
+        String password = null;
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
                 case "--port" -> port = Integer.parseInt(args[++i]);
                 case "--apps-from" -> appPort = Integer.parseInt(args[++i]);
                 case "--interval" -> interval = Math.max(5, Integer.parseInt(args[++i]));
                 case "--offline" -> offline = true;
+                case "--public" -> makePublic = true;
+                case "--password" -> password = args[++i];
+                case "--no-password" -> noPassword = true;
                 default -> {
                     System.err.println("Unknown option: " + args[i]);
                     System.exit(2);
@@ -83,11 +94,38 @@ public final class Deployer {
         Builder builder = new Builder(git, workRoot, appPort);
         builder.cleanWorkRoot();
         Deployer d = new Deployer(git, builder, loadTeam(repo), offline, interval);
+        if (password == null && makePublic && !noPassword) password = savedPassword(repo);
+        if (noPassword) password = null;
+        d.passwordProtected = password != null;
         Runtime.getRuntime().addShutdownHook(new Thread(d::stopAll));
-        Dashboard.start(d, port);
-        System.out.println("Payload Pets deployer: http://localhost:" + port + "/  (local only, Ctrl+C to stop)");
+        Dashboard.start(d, port, password);
+        System.out.println("Payload Pets deployer: http://localhost:" + port + "/  (Ctrl+C to stop)");
+        if (password != null) System.out.println("Team password: " + password + "  (any username works)");
+        if (makePublic) {
+            d.tunnel = new Tunnel(port);
+            d.tunnel.start();
+            System.out.println("Opening a public link through localhost.run…");
+            if (password == null) System.out.println("WARNING: no password. Anyone with the link can see all branches and code.");
+        }
         System.out.println("Branch sites will use ports " + appPort + " and up. Builds go in " + workRoot);
         d.loop();
+    }
+
+    /** A random team password, saved inside .git so it stays the same between runs (never committed). */
+    static String savedPassword(Path repo) throws IOException {
+        Git.Out gd = Git.runIn(repo, 10, "rev-parse", "--git-common-dir");
+        Path gitDir = repo.resolve(gd.text().strip());
+        Path f = gitDir.resolve("deployer-password");
+        if (Files.exists(f)) {
+            String saved = Files.readString(f, StandardCharsets.UTF_8).strip();
+            if (!saved.isEmpty()) return saved;
+        }
+        String alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
+        java.security.SecureRandom r = new java.security.SecureRandom();
+        StringBuilder sb = new StringBuilder("moon-");
+        for (int i = 0; i < 8; i++) sb.append(alphabet.charAt(r.nextInt(alphabet.length())));
+        Files.writeString(f, sb + "\n", StandardCharsets.UTF_8);
+        return sb.toString();
     }
 
     /** branches.properties: branch = owner | role. Keys are lower case. */
@@ -227,17 +265,32 @@ public final class Deployer {
         return git;
     }
 
+    /** A running site on a branch, by branch name and site name (e.g. "engine", "Engine"). */
+    BranchState.App app(String branch, String site) {
+        BranchState st = branch(branch);
+        if (st == null) return null;
+        synchronized (st) {
+            for (BranchState.App a : st.apps) {
+                if (a.name().equalsIgnoreCase(site) && "running".equals(a.status)) return a;
+            }
+        }
+        return null;
+    }
+
     String statusJson() {
         return Json.obj(
                 "fetch", Json.obj("ok", Json.b(fetchOk), "error", Json.q(fetchError), "at", Long.toString(lastFetch),
                         "offline", Json.b(offline)),
                 "activity", Json.q(activity),
+                "public", tunnel == null ? Json.obj("enabled", "false", "protected", Json.b(passwordProtected))
+                        : tunnel.toJson(passwordProtected),
                 "intervalSeconds", Integer.toString(intervalSeconds),
                 "now", Long.toString(System.currentTimeMillis()),
                 "branches", Json.array(snapshot(), BranchState::toJson));
     }
 
     void stopAll() {
+        if (tunnel != null) tunnel.stop();
         for (BranchState st : snapshot()) builder.stop(st);
     }
 }

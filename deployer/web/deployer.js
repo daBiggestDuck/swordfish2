@@ -48,6 +48,19 @@ function commitBox(c) {
     el('div', { class: 'small muted' }, `${c.author} · ${timeAgo(c.time * 1000)} · `, el('span', { class: 'sha mono', text: c.shortSha })));
 }
 
+function publicBanner(status) {
+  const p = status.public;
+  if (!p || !p.enabled) return null;
+  if (!p.url) return el('div', { class: 'banner' }, el('b', { text: 'Public link: ' }), p.error || 'Connecting…');
+  const copy = el('button', { text: 'Copy link' });
+  copy.addEventListener('click', () => navigator.clipboard?.writeText(p.url).then(() => { copy.textContent = 'Copied!'; }));
+  return el('div', { class: 'banner' },
+    el('b', { text: 'Public link: ' }), el('a', { href: p.url, target: '_blank', rel: 'noopener', text: p.url }), ' ', copy,
+    el('div', { class: 'small muted', text: p.protected
+      ? 'Share it with your team together with the team password (shown where the deployer was started). The link changes if the deployer restarts.'
+      : 'No password: anyone with this link can see every branch and all the code. The link changes if the deployer restarts.' }));
+}
+
 function fetchBanner(status) {
   const f = status.fetch;
   if (f.offline) return el('div', { class: 'banner', text: 'Offline mode: showing branches already downloaded. Restart without --offline to follow GitHub.' });

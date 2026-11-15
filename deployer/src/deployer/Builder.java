@@ -261,7 +261,11 @@ final class Builder {
 
     /** Link for a page that no running site serves: the deployer shows the file straight from git. */
     static String previewUrl(String branch, String page) {
-        return "/preview/" + java.net.URLEncoder.encode(branch, StandardCharsets.UTF_8).replace("+", "%20") + "/" + page;
+        return "/_deployer/preview/" + enc(branch) + "/" + page;
+    }
+
+    static String enc(String s) {
+        return java.net.URLEncoder.encode(s, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
     private static List<String[]> previewLinks(String branch, List<String> pages) {
@@ -292,7 +296,7 @@ final class Builder {
                     for (String c : candidates) {
                         String url = "http://localhost:" + app.port + "/" + c;
                         if (isHtml(url)) {
-                            found = url;
+                            found = app.publicPath(st.name) + c;
                             break outer;
                         }
                     }

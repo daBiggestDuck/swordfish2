@@ -27,9 +27,15 @@ final class BranchState {
             return simple.replace("Server", "");
         }
 
-        String toJson() {
+        /** Where the site is reached through the deployer (works locally and on the public link). */
+        String publicPath(String branch) {
+            return "/site/" + Builder.enc(branch) + "/" + Builder.enc(name()) + "/";
+        }
+
+        String toJson(String branch) {
             return Json.obj("name", Json.q(name()), "mainClass", Json.q(mainClass), "port", Integer.toString(port),
-                    "url", Json.q("http://localhost:" + port + "/"), "status", Json.q(status));
+                    "url", Json.q(publicPath(branch)), "localUrl", Json.q("http://localhost:" + port + "/"),
+                    "status", Json.q(status));
         }
     }
 
@@ -71,7 +77,7 @@ final class BranchState {
                 "head", head == null ? "null" : head.toJson(),
                 "status", Json.q(status.name()),
                 "message", Json.q(message),
-                "apps", Json.array(apps, App::toJson),
+                "apps", Json.array(apps, a -> a.toJson(name)),
                 "pages", Json.array(pageLinks, p -> Json.obj("path", Json.q(p[0]), "url", Json.q(p[1]), "live", Json.b(p[2].equals("live")))),
                 "deployedAt", Long.toString(deployedAt));
     }

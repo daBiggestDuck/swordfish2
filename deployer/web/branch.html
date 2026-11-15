@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Branch · Payload Pets Deployer</title>
-  <link rel="stylesheet" href="/deployer.css">
+  <link rel="stylesheet" href="/_deployer/deployer.css">
 </head>
 <body>
   <header>
@@ -50,7 +50,7 @@
       </div>
     </div>
   </main>
-  <script src="/deployer.js"></script>
+  <script src="/_deployer/deployer.js"></script>
   <script>
     const branch = new URLSearchParams(location.search).get('b') || '';
     let shownSha = null;
@@ -107,7 +107,7 @@
 
     async function load() {
       try {
-        const d = await api(`/api/branch?b=${encodeURIComponent(branch)}`);
+        const d = await api(`/_deployer/api/branch?b=${encodeURIComponent(branch)}`);
         const b = d.branch;
         document.title = `${b.name} · Payload Pets Deployer`;
         $('#name').textContent = b.name;
@@ -141,7 +141,7 @@
     }
 
     $('#refresh').addEventListener('click', async () => {
-      await api('/api/refresh', { method: 'POST' }).catch(() => {});
+      await api('/_deployer/api/refresh', { method: 'POST' }).catch(() => {});
       setTimeout(load, 800);
     });
     load();

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Payload Pets Deployer</title>
-  <link rel="stylesheet" href="/deployer.css">
+  <link rel="stylesheet" href="/_deployer/deployer.css">
 </head>
 <body>
   <header>
@@ -18,7 +18,7 @@
     <div id="banner"></div>
     <div id="branches" class="grid"><p class="muted">Loading…</p></div>
   </main>
-  <script src="/deployer.js"></script>
+  <script src="/_deployer/deployer.js"></script>
   <script>
     function card(b) {
       const links = el('div', { class: 'links' });
@@ -37,8 +37,8 @@
 
     async function load() {
       try {
-        const s = await api('/api/status');
-        $('#banner').replaceChildren(fetchBanner(s));
+        const s = await api('/_deployer/api/status');
+        $('#banner').replaceChildren(...[publicBanner(s), fetchBanner(s)].filter(Boolean));
         const box = $('#branches');
         box.replaceChildren(...s.branches.map(card));
         if (!s.branches.length) box.replaceChildren(el('p', { class: 'muted', text: 'No branches found yet. Waiting for GitHub…' }));
@@ -48,7 +48,7 @@
     }
 
     $('#refresh').addEventListener('click', async () => {
-      await api('/api/refresh', { method: 'POST' }).catch(() => {});
+      await api('/_deployer/api/refresh', { method: 'POST' }).catch(() => {});
       setTimeout(load, 800);
     });
     load();
