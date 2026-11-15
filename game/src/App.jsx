@@ -72,7 +72,8 @@ export default function App() {
       {/* The moon sits against the right side like slide 1 of the mockup:
           centre at ~72% width, ~75% of screen height tall. The canvas is
           oversized so its deep-space starfield still covers the whole
-          viewport. Draggable: grab the empty space around it. */}
+          viewport. No drag — it spins on its own and answers the cursor
+          subtly while the cursor is on the disc. */}
       <MoonGlobe
         className="pointer-events-auto fixed top-1/2 left-[-18vw] h-[100vh] w-[180vw] -translate-y-1/2"
         distance={3.6}
@@ -137,8 +138,8 @@ export default function App() {
             className="pointer-events-auto mt-10 text-[13px] text-moonrock"
           >
             A Payload Pets game · NASA Space Apps 2026 · Moon: NASA / GSFC /
-            ASU LROC WAC + LOLA topography, rendered live in WebGL — grab the
-            sky to spin it
+            ASU LROC WAC + LOLA topography, rendered live in WebGL — move
+            your cursor across it
           </motion.p>
         </motion.div>
       </main>

@@ -7,8 +7,9 @@ import { LunarGlobeGL } from '../lib/globe_gl.js'
  * sun/terminator lighting, phase-lit Earth, solar corona, and a 3-tier
  * deep-space starfield — all inside one canvas.
  *
- * The globe draws centered in its canvas, so the caller shifts the moon
- * within the viewport by oversizing and offsetting the canvas with CSS.
+ * Interaction: no drag, no wheel zoom. The moon spins slowly on its own
+ * and answers the cursor with a subtle parallax only while the cursor
+ * ray is on the Moon's disc.
  */
 export default function MoonGlobe({ className = '', distance = 2.68, idleSpin = 0.00035 }) {
   const canvasRef = useRef(null)
@@ -24,10 +25,14 @@ export default function MoonGlobe({ className = '', distance = 2.68, idleSpin = 
       sites: [],
       psrZones: [],
       quickmapFeatures: [],
+      dragEnabled: false,
+      zoomEnabled: false,
+      parallaxOnSphere: true,
     })
     globe.setLayers({ showGraticule: false, showTerminator: true })
     globe.distance = distance
     globe.resize()
+    canvas.__globe = globe // console/debug access
 
     let raf = 0
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches

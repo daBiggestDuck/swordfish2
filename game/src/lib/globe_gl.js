@@ -936,6 +936,12 @@ export class LunarGlobeGL {
     this.stagedVec = null;
     this.showTerminator = true;
     this.showGraticule = true;
+    // Interaction flags (used by the landing screen's copy of this file):
+    // drag/orbit-select and wheel zoom default OFF; parallax can be gated
+    // to only engage while the cursor ray hits the Moon's disc.
+    this.dragEnabled = options.dragEnabled ?? false;
+    this.zoomEnabled = options.zoomEnabled ?? false;
+    this.parallaxOnSphere = options.parallaxOnSphere ?? false;
 
     this.dragging = false;
     this.movedDuringDrag = false;
@@ -1524,6 +1530,7 @@ export class LunarGlobeGL {
   _bindEvents() {
     const host = this.canvas.parentElement || this.canvas;
     host.addEventListener('mousedown', (e) => {
+      if (!this.dragEnabled) return;
       if (this.canvas.hidden) return;
       if (e.target !== this.canvas && !e.target?.closest?.('#globe-overlay')) return;
       if (e.target?.closest?.('.predrop-card')) return;
@@ -1587,33 +1594,58 @@ export class LunarGlobeGL {
 
       if (overGlobe) {
         const rect = this.canvas.getBoundingClientRect();
-        this.targetParallaxX = Math.max(-1, Math.min(1, ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1));
-        this.targetParallaxY = Math.max(-1, Math.min(1, ((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 - 1));
-        const targetSiteEl = e.target?.closest?.('[data-site-id]');
-        const targetSiteId = targetSiteEl?.dataset?.siteId || targetSiteEl?.getAttribute?.('data-site-id');
-        const siteHit = targetSiteId
-          ? this.sites.find((s) => s.id === targetSiteId)
-          : this.findNearestVisibleSite(e.clientX, e.clientY, 16);
-        let hit;
-        if (siteHit) {
-          hit = { lat: siteHit.lat, lon: siteHit.lon, siteId: siteHit.id };
-          this.hoverVec = latLonToVec3(siteHit.lat, siteHit.lon);
-          this.canvas.style.cursor = 'pointer';
+        if (this.parallaxOnSphere) {
+          // Subtle parallax only while the cursor ray hits the Moon's disc;
+          // eased back to centre when it leaves (resetHoverParallax).
+          const sphereHit = this.screenToLatLon(e.clientX, e.clientY);
+          if (sphereHit) {
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const angular = Math.asin(Math.min(1, 1 / Math.max(1.001, this.distance)));
+            const rPx = Math.max(
+              1,
+              (Math.tan(angular) / Math.tan(this.fovYDeg * 0.5 * DEG2RAD)) * (rect.height / 2),
+            );
+            this.targetParallaxX =
+              Math.max(-1, Math.min(1, (e.clientX - cx) / rPx)) * 0.7;
+            this.targetParallaxY =
+              Math.max(-1, Math.min(1, (e.clientY - cy) / rPx)) * 0.7;
+            this._startAnimLoop();
+          } else if (Math.hypot(this.targetParallaxX, this.targetParallaxY) > 0.0006) {
+            resetHoverParallax();
+          }
         } else {
-          hit = this.screenToLatLon(e.clientX, e.clientY);
-          this.hoverVec = hit ? latLonToVec3(hit.lat, hit.lon) : null;
-          this.canvas.style.cursor = hit ? 'crosshair' : 'grab';
+          this.targetParallaxX = Math.max(-1, Math.min(1, ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1));
+          this.targetParallaxY = Math.max(-1, Math.min(1, ((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 - 1));
+          this._startAnimLoop();
         }
-        this.render();
-        this.onViewChange();
-        this.onHover(hit);
-        this._startAnimLoop();
+        if (this.dragEnabled) {
+          const targetSiteEl = e.target?.closest?.('[data-site-id]');
+          const targetSiteId = targetSiteEl?.dataset?.siteId || targetSiteEl?.getAttribute?.('data-site-id');
+          const siteHit = targetSiteId
+            ? this.sites.find((s) => s.id === targetSiteId)
+            : this.findNearestVisibleSite(e.clientX, e.clientY, 16);
+          let hit;
+          if (siteHit) {
+            hit = { lat: siteHit.lat, lon: siteHit.lon, siteId: siteHit.id };
+            this.hoverVec = latLonToVec3(siteHit.lat, siteHit.lon);
+            this.canvas.style.cursor = 'pointer';
+          } else {
+            hit = this.screenToLatLon(e.clientX, e.clientY);
+            this.hoverVec = hit ? latLonToVec3(hit.lat, hit.lon) : null;
+            this.canvas.style.cursor = hit ? 'crosshair' : 'grab';
+          }
+          this.render();
+          this.onViewChange();
+          this.onHover(hit);
+        }
       } else if (this.hoverVec !== null || Math.hypot(this.targetParallaxX, this.targetParallaxY) > 0.0006) {
         resetHoverParallax();
       }
     });
 
     window.addEventListener('mouseup', (e) => {
+      if (!this.dragEnabled) return;
       const wasClick = this.dragging && !this.movedDuringDrag && !this.canvas.hidden;
       const sinceMove = performance.now() - this._lastDragMoveTime;
       const pressedSite = this._pressedSite;
@@ -1654,7 +1686,7 @@ export class LunarGlobeGL {
     }
 
     host.addEventListener('wheel', (e) => {
-      if (this.canvas.hidden) return;
+      if (!this.zoomEnabled || this.canvas.hidden) return;
       if (e.target !== this.canvas && !e.target?.closest?.('#globe-overlay')) return;
       e.preventDefault();
       this.distance = Math.max(1.38, Math.min(4.6, this.distance + e.deltaY * 0.0018));
