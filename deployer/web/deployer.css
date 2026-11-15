@@ -1,15 +1,15 @@
 :root {
-  --bg: #0b1020;
-  --card: #141b31;
-  --card2: #0f1528;
-  --line: #26304f;
-  --text: #e8ecf8;
-  --muted: #9aa5c4;
-  --accent: #7cc4ff;
+  --bg: #0b0b0c;
+  --card: #141415;
+  --card2: #1b1b1d;
+  --line: #2c2c30;
+  --text: #ececee;
+  --muted: #a3a3ab;
+  --accent: #5b9bff;
   --ok: #4cd18a;
   --warn: #ffc24b;
   --bad: #ff6b6b;
-  --idle: #8892b0;
+  --idle: #8b8b94;
 }
 
 * { box-sizing: border-box; }
@@ -78,5 +78,53 @@ pre.log { background: var(--card2); border-radius: 8px; padding: 10px; max-heigh
 .code table { border-collapse: collapse; width: 100%; }
 .code td { padding: 0 12px; vertical-align: top; white-space: pre; }
 .code td.n { color: var(--idle); text-align: right; user-select: none; width: 1%; border-right: 1px solid var(--line); }
-.code tr:target td { background: #233056; }
+.code tr:target td { background: #1d2b45; }
 .crumbs { word-break: break-all; }
+
+/* ---- Dashboard: branch table (index.html) ---- */
+.button.small { font-size: 13px; padding: 3px 10px; }
+.banner.good { border-color: var(--ok); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+table.branches { border-collapse: collapse; width: 100%; min-width: 820px; }
+table.branches th, table.branches td { text-align: left; vertical-align: top; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+table.branches th + th, table.branches td + td { border-left: 1px solid var(--line); }
+table.branches tbody tr:last-child td { border-bottom: none; }
+table.branches th { background: var(--card); color: var(--muted); font-weight: 500; }
+table.branches tr.other td { color: var(--muted); }
+table.branches td .small { margin-top: 4px; }
+.chip { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--card2); color: var(--text); border-radius: 5px; padding: 2px 8px; text-decoration: none; white-space: nowrap; }
+.chip:hover { color: var(--accent); }
+.tag { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.tag.ok, .tag.ready { color: var(--ok); }
+.tag.bad { color: var(--bad); }
+td code, .banner code { background: var(--card2); border-radius: 4px; padding: 0 5px; font-size: 12.5px; }
+
+/* ---- Dashboard: "every branch reaches main" flow ---- */
+h2.section { font-size: 18px; margin: 36px 0 18px; }
+.flow { display: flex; align-items: center; margin-bottom: 18px; }
+.flow .node {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  border: 1px solid var(--line); border-radius: 10px; padding: 12px 18px; min-width: 150px; min-height: 64px;
+  color: var(--text); text-decoration: none; background: var(--bg);
+}
+.flow a.node:hover { border-color: var(--accent); }
+.flow .node.main { border: 2px solid var(--accent); background: #0f1a2e; }
+.flow .sources { position: relative; display: flex; flex-direction: column; gap: 10px; padding-right: 36px; }
+.flow .sources::after { content: ""; position: absolute; right: 0; top: 23px; bottom: 23px; border-right: 1px solid var(--line); }
+.flow .node.src { flex-direction: row; justify-content: space-between; gap: 24px; min-width: 240px; min-height: 46px; padding: 10px 16px; position: relative; }
+.flow .node.src::after { content: ""; position: absolute; left: 100%; top: 50%; width: 36px; border-top: 1px solid var(--line); }
+.flow .node.src.merged::after, .flow .node.src.clean::after { border-top-color: var(--ok); }
+.flow .node.src.conflict { border-color: var(--bad); }
+.flow .node.src.conflict::after { border-top: 1px dashed var(--bad); }
+.flow .node.src span { font-size: 14px; }
+.flow .arrow { flex: 1 1 24px; min-width: 24px; max-width: 80px; height: 1px; background: var(--line); position: relative; }
+.flow .arrow::after { content: ""; position: absolute; right: -1px; top: -4px; border: 4.5px solid transparent; border-left: 7px solid var(--muted); border-right: none; }
+@media (max-width: 860px) {
+  .flow { flex-direction: column; align-items: stretch; }
+  .flow .sources { padding-right: 0; }
+  .flow .sources::after, .flow .node.src::after { display: none; }
+  .flow .node.src.conflict { border-style: dashed; }
+  .flow .node.src.merged, .flow .node.src.clean { border-left: 3px solid var(--ok); }
+  .flow .arrow { width: 1px; min-width: 0; height: 24px; flex: none; align-self: center; }
+  .flow .arrow::after { right: -4px; top: auto; bottom: -1px; border: 4.5px solid transparent; border-top: 7px solid var(--muted); border-bottom: none; }
+}

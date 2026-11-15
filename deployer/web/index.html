@@ -16,32 +16,111 @@
   </header>
   <main>
     <div id="banner"></div>
-    <div id="branches" class="grid"><p class="muted">Loading…</p></div>
+
+    <div class="table-wrap">
+      <table class="branches">
+        <thead>
+          <tr><th>Branch</th><th>Owner</th><th>What goes on it</th><th>Into main</th><th>Site</th></tr>
+        </thead>
+        <tbody id="rows"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
+      </table>
+    </div>
+
+    <h2 class="section">Every branch reaches main through a pull request</h2>
+    <div id="flow" class="flow"></div>
+    <div id="together"></div>
   </main>
   <script src="/_deployer/deployer.js"></script>
   <script>
-    function card(b) {
-      const links = el('div', { class: 'links' });
-      for (const a of b.apps) {
-        if (a.status === 'running') links.append(el('a', { class: 'button primary', href: a.url, target: '_blank', rel: 'noopener', text: `Open ${a.name} ↗` }));
+    const isTeam = (b) => b.name !== 'main' && !!b.owner;
+
+    function mergeCell(b) {
+      const m = b.merge || {};
+      const behind = m.behind > 0 ? el('div', { class: 'small muted', text: `${m.behind} commit${m.behind > 1 ? 's' : ''} behind main` }) : null;
+      switch (m.state) {
+        case 'main': return el('span', { class: 'muted', text: 'Merge target' });
+        case 'merged': return el('div', {}, el('span', { class: 'tag ok', text: '✓ In main' }), behind);
+        case 'clean': return el('div', {},
+          el('span', { class: 'tag ready', text: 'Merges cleanly' }),
+          el('div', { class: 'small muted', text: `${m.ahead} commit${m.ahead > 1 ? 's' : ''} not in main yet` }), behind);
+        case 'conflict': return el('div', {},
+          el('span', { class: 'tag bad', text: 'Conflicts with main' }),
+          el('div', { class: 'small muted' }, 'in ', ...m.conflicts.flatMap((f, i) => [i ? ', ' : '', el('code', { text: f })])));
+        default: return el('span', { class: 'small muted', text: m.error || 'Checking…' });
       }
-      links.append(el('a', { class: 'button', href: branchUrl(b.name), text: 'Branch page' }));
-      const livePages = b.pages.filter((p) => p.live).length;
-      return el('div', { class: 'card' },
-        el('div', { class: 'row spread' }, el('h2', {}, el('a', { href: branchUrl(b.name), text: b.name })), pill(b.status)),
-        el('div', { class: 'small' }, el('b', { text: b.owner || 'No owner listed' }), b.role ? ` · ${b.role}` : ''),
-        commitBox(b.head),
-        el('div', { class: 'small muted', text: `${b.message}${b.pages.length ? ` · ${b.pages.length} page${b.pages.length > 1 ? 's' : ''} (${livePages} live)` : ''}` }),
-        links);
+    }
+
+    function siteCell(b) {
+      const links = el('div', { class: 'links' }, pill(b.status));
+      for (const a of b.apps) {
+        if (a.status === 'running') links.append(el('a', { class: 'button primary small', href: a.url, target: '_blank', rel: 'noopener', text: `Open ${a.name} ↗` }));
+      }
+      links.append(el('a', { class: 'button small', href: branchUrl(b.name), text: 'Details' }));
+      return links;
+    }
+
+    function row(b) {
+      return el('tr', { class: isTeam(b) || b.name === 'main' ? '' : 'other' },
+        el('td', {}, el('a', { class: 'chip', href: branchUrl(b.name), text: b.name })),
+        el('td', { text: b.owner || 'Not listed' }),
+        el('td', {}, b.role || el('span', { class: 'muted', text: 'Not in branches.properties' }),
+          el('div', { class: 'small muted' }, `${b.head ? b.head.subject : 'No commits'} · ${b.head ? timeAgo(b.head.time * 1000) : ''}`)),
+        el('td', {}, mergeCell(b)),
+        el('td', {}, siteCell(b)));
+    }
+
+    function arrow() { return el('div', { class: 'arrow' }); }
+
+    function flow(s) {
+      const team = s.branches.filter(isTeam);
+      const main = s.branches.find((b) => b.name === 'main');
+      const merger = main && main.owner ? main.owner.replace(/\s*\(.*\)\s*$/, '') : 'Main owner';
+      const sources = el('div', { class: 'sources' }, team.map((b) =>
+        el('a', { class: `node src ${b.merge ? b.merge.state : ''}`, href: branchUrl(b.name), title: b.role || '' },
+          el('b', { text: b.name }), el('span', { class: 'muted', text: b.owner }))));
+
+      const mainSite = main && main.apps.find((a) => a.status === 'running');
+      const demo = s.public && s.public.url
+        ? el('a', { class: 'node end', href: s.public.url, target: '_blank', rel: 'noopener' }, el('b', { text: 'Live demo' }), el('span', { class: 'muted', text: 'public link ↗' }))
+        : mainSite
+          ? el('a', { class: 'node end', href: mainSite.url, target: '_blank', rel: 'noopener' }, el('b', { text: 'Live demo' }), el('span', { class: 'muted', text: `main's ${mainSite.name} site ↗` }))
+          : el('div', { class: 'node end' }, el('b', { text: 'Live demo' }), el('span', { class: 'muted', text: main ? `main: ${STATUS_TEXT[main.status] || main.status}` : 'no main yet' }));
+
+      return [
+        sources, arrow(),
+        el('div', { class: 'node' }, el('b', { text: 'Pull request' }), el('span', { class: 'muted', text: `${merger} merges` })),
+        arrow(),
+        el(main ? 'a' : 'div', { class: 'node main', href: main ? branchUrl('main') : null },
+          el('b', { text: 'main' }), el('span', { class: 'muted', text: 'always working' })),
+        arrow(), demo,
+      ];
+    }
+
+    function togetherBox(t) {
+      if (!t) return null;
+      if (t.error && !t.stoppedAt) return el('div', { class: 'banner bad', text: t.error });
+      if (t.ok) {
+        return el('div', { class: 'banner good' },
+          el('b', { text: '✓ All team branches merge into main together. ' }),
+          `Checked in order: ${t.merged.join(' → ')}. Nothing on GitHub was changed.`);
+      }
+      return el('div', { class: 'banner bad' },
+        el('b', { text: `Merging everything stops at ${t.stoppedAt}. ` }),
+        t.merged.length === 1 ? `${t.merged[0]} merges into main, then ${t.stoppedAt} clashes with it`
+          : t.merged.length ? `${t.merged.join(' → ')} merge into main together, then ${t.stoppedAt} clashes with them` : `${t.stoppedAt} clashes with main`,
+        t.conflicts.length ? [' in ', ...t.conflicts.flatMap((f, i) => [i ? ', ' : '', el('code', { text: f })]), '.'] : '.',
+        t.error ? el('pre', { text: t.error }) : null,
+        el('div', { class: 'small muted', text: 'Fix it on the branch (merge main into it and resolve those files), push, and this updates by itself. This is a dry run: nothing on GitHub was changed.' }));
     }
 
     async function load() {
       try {
         const s = await api('/_deployer/api/status');
         $('#banner').replaceChildren(...[publicBanner(s), fetchBanner(s)].filter(Boolean));
-        const box = $('#branches');
-        box.replaceChildren(...s.branches.map(card));
-        if (!s.branches.length) box.replaceChildren(el('p', { class: 'muted', text: 'No branches found yet. Waiting for GitHub…' }));
+        $('#rows').replaceChildren(...(s.branches.length ? s.branches.map(row)
+          : [el('tr', {}, el('td', { colspan: 5, class: 'muted', text: 'No branches found yet. Waiting for GitHub…' }))]));
+        $('#flow').replaceChildren(...flow(s));
+        $('#together').replaceChildren(...[togetherBox(s.together)].filter(Boolean));
       } catch (e) {
         $('#banner').replaceChildren(el('div', { class: 'banner bad', text: `Deployer not reachable: ${e.message}` }));
       }

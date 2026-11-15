@@ -57,6 +57,13 @@ final class BranchState {
     Path worktree;
     long deployedAt;
 
+    /** How this branch stands against main: main | merged | clean | conflict | unknown. */
+    String merge = "unknown";
+    int ahead = -1;
+    int behind = -1;
+    List<String> conflicts = List.of();
+    String mergeError;
+
     BranchState(String name, String owner, String role) {
         this.name = name;
         this.owner = owner;
@@ -79,6 +86,9 @@ final class BranchState {
                 "message", Json.q(message),
                 "apps", Json.array(apps, a -> a.toJson(name)),
                 "pages", Json.array(pageLinks, p -> Json.obj("path", Json.q(p[0]), "url", Json.q(p[1]), "live", Json.b(p[2].equals("live")))),
-                "deployedAt", Long.toString(deployedAt));
+                "deployedAt", Long.toString(deployedAt),
+                "merge", Json.obj("state", Json.q(merge), "ahead", Integer.toString(ahead),
+                        "behind", Integer.toString(behind), "conflicts", Json.array(conflicts, Json::q),
+                        "error", Json.q(mergeError)));
     }
 }

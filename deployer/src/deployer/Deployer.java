@@ -43,6 +43,8 @@ public final class Deployer {
     private volatile String fetchError = null;
     private volatile long lastFetch = 0;
     private volatile String activity = "Starting";
+    /** JSON: what happens if every team branch is merged into main, one after another. */
+    private volatile String together = "null";
     private Tunnel tunnel;
     private boolean passwordProtected;
     private final Object wake = new Object();
@@ -224,6 +226,7 @@ public final class Deployer {
                 st.head = head.isEmpty() ? null : head.get(0);
             }
         }
+        checkMerges(remote);
         for (BranchState st : snapshot()) {
             if (st.sha.equals(deployedSha(st))) continue;
             activity = "Building " + st.name;
@@ -234,6 +237,79 @@ public final class Deployer {
         }
         for (BranchState st : snapshot()) builder.checkHealth(st);
         activity = "Up to date";
+    }
+
+    /**
+     * For every branch: how far it is from main and whether it merges cleanly. Then a dry run of
+     * merging all team branches into main in team order, to catch branches that clash with each
+     * other. Runs inside git's object store only: no branch, checkout or remote is changed.
+     */
+    private void checkMerges(List<String[]> remote) {
+        String mainSha = null;
+        for (String[] b : remote) if (b[0].equals("main")) mainSha = b[1];
+        if (mainSha == null) {
+            together = Json.obj("ok", "false", "error", Json.q("There is no main branch on GitHub."));
+            return;
+        }
+        for (BranchState st : snapshot()) {
+            String sha;
+            synchronized (st) {
+                sha = st.sha;
+            }
+            String state;
+            int[] ab = st.name.equals("main") ? new int[] {0, 0} : git.aheadBehind(mainSha, sha);
+            List<String> conflicts = List.of();
+            String error = null;
+            if (st.name.equals("main")) state = "main";
+            else if (ab == null) { state = "unknown"; error = "git could not compare this branch with main"; }
+            else if (ab[0] == 0) state = "merged";
+            else {
+                Git.Merge m = git.tryMerge(mainSha, sha);
+                state = m.error() != null ? "unknown" : m.clean() ? "clean" : "conflict";
+                conflicts = m.conflicts();
+                error = m.error();
+            }
+            synchronized (st) {
+                st.merge = state;
+                st.ahead = ab == null ? -1 : ab[0];
+                st.behind = ab == null ? -1 : ab[1];
+                st.conflicts = conflicts;
+                st.mergeError = error;
+            }
+        }
+
+        // Dry run: main + team branches in the order of branches.properties.
+        String tip = mainSha;
+        List<String> steps = new ArrayList<>();
+        String stoppedAt = null, error = null;
+        List<String> files = List.of();
+        for (String key : teamOrder) {
+            if (key.equals("main")) continue;
+            BranchState st = null;
+            for (BranchState s : snapshot()) if (s.name.equalsIgnoreCase(key)) st = s;
+            if (st == null) continue;
+            String sha;
+            synchronized (st) {
+                sha = st.sha;
+            }
+            Git.Merge m = git.tryMerge(tip, sha);
+            if (!m.clean()) {
+                stoppedAt = st.name;
+                files = m.conflicts();
+                error = m.error();
+                break;
+            }
+            String next = git.mergeCommit(m.tree(), tip, sha);
+            if (next == null) {
+                stoppedAt = st.name;
+                error = "git could not record the simulated merge";
+                break;
+            }
+            tip = next;
+            steps.add(st.name);
+        }
+        together = Json.obj("ok", Json.b(stoppedAt == null), "merged", Json.array(steps, Json::q),
+                "stoppedAt", Json.q(stoppedAt), "conflicts", Json.array(files, Json::q), "error", Json.q(error));
     }
 
     private static String deployedSha(BranchState st) {
@@ -286,6 +362,7 @@ public final class Deployer {
                         : tunnel.toJson(passwordProtected),
                 "intervalSeconds", Integer.toString(intervalSeconds),
                 "now", Long.toString(System.currentTimeMillis()),
+                "together", together,
                 "branches", Json.array(snapshot(), BranchState::toJson));
     }
 
