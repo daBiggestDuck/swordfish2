@@ -1,6 +1,6 @@
 # swordfish2 `v0` tip SHAs
 
-Assembled tip document for branch `v0` @ `2fda2d8e6cf4c2762666c4e251facf89901ef66e` (`2fda2d8`).
+Assembled tip document for branch `v0` @ `336079a41360195b6405ea280815742a74de0350` (`336079a`).
 
 Verified via `git fetch origin --prune` + `gh api repos/daBiggestDuck/swordfish2/branches`.
 
@@ -16,7 +16,7 @@ Verified via `git fetch origin --prune` + `gh api repos/daBiggestDuck/swordfish2
 | `pranav/pets-triddy-nodey` | `4dd133d9168322b81b2482b12529812b74e7028a` | `4dd133d` | feat: add Triddy/Nodey pets on Data tip |
 | `deployer` | `4a42a15d210a8c7fab218a05428c3ac5badd9eca` | `4a42a15` | Add public link feature with password protection and enhance dashboard routing |
 
-| `v0` (this branch) | `2fda2d8e6cf4c2762666c4e251facf89901ef66e` | `2fda2d8` | assembled showcase |
+| `v0` (this branch) | `336079a41360195b6405ea280815742a74de0350` | `336079a` | assembled showcase |
 
 ## Notes
 
@@ -25,4 +25,12 @@ Verified via `git fetch origin --prune` + `gh api repos/daBiggestDuck/swordfish2
 - `deployer` tip added as `deployer/` + `deploy.{sh,ps1,cmd}` without replacing showcase surfaces.
 - WIP helpers `wip/v0-map-story` / `wip/v0-map-story-pets` are staging history only (not re-merged as product tips).
 - Preserved for UI sibling wrap: `web/engine.html`, `web/map.html`, `web/story/`, `demos/js-*`, `src/{data,engine,map,story}/`, `data/`.
+
+## Conflicts resolved during refresh
+
+1. **`.gitignore` (map merge)** — union of showcase + map ignores (`build/`, `out/`, `*.class`, Node, IDE, staging helpers).
+2. **`README.md` (map / story merges)** — kept cohesive v0 showcase README; folded map attribution & story refresh notes; updated tip SHAs.
+3. **Story tip rewrite (`12e20f6`)** — both-added story files (`STORY.md`, `run-story.*`, Passport/server/client); took latest story tip content while retaining non-story showcase tree.
+4. **`pranav/pets-triddy-nodey`** — ancestry merge only; avoided regressing `peregrine-1` mission ids from newer `Data` tip.
+5. **`deployer`** — ours-strategy merge + explicit checkout of `deployer/` tooling so showcase `src/`/`web/`/`data/` were not deleted.
 
