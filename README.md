@@ -12,7 +12,7 @@ Challenge / planning context: see [`PLAN.md`](PLAN.md) (Payload Pets data-first 
 
 - **`Data`**: TO2-AB payloads use stable mission id `peregrine-1` (aligned with missions.json).
 - **`map`**: interactive NASA lunar explorer — `web/map.html` + globe assets, static-hosting support (`index.html` → map), `run_map.sh` / Node fallback, engine client bridge.
-- **`story`**: refreshed story server / Passport client (`12e20f6`).
+- **`story`**: refreshed story server / Passport client (`12e20f6`) — engine event bridge, localhost CORS, optional `days` for Passport.
 - **Triddy / Nodey** kept from `pranav/pets-triddy-nodey` (archetypes + `demos/js-*`).
 
 ---
