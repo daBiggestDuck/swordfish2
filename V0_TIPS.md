@@ -16,7 +16,7 @@ Fetched from `origin` at assemble time. Showcase ports on this branch:
 | `pets` | `d921b00` | `d921b00ee2787935c19841c63e398f1c06f039bb` | yes | `petSpriteOutline` |
 | `ui` | `e2a0e5d` | `e2a0e5df9c2e49c794a9c13166a3f4baddd107af` | yes | identical to `main` (no extra files) |
 | `pranav/pets-triddy-nodey` | `4dd133d` | `4dd133d9168322b81b2482b12529812b74e7028a` | yes | Triddy/Nodey + `demos/js-*` |
-| `deployer` | `4a42a15` | `4a42a15d210a8c7fab218a05428c3ac5badd9eca` | **no** | separate local branch dashboard; left on its own branch |
+| `deployer` | `4a42a15` | `4a42a15d210a8c7fab218a05428c3ac5badd9eca` | yes | local branch dashboard (`deploy.sh` / `deployer/`) |
 
 ## Entrypoints preserved (not a tabbed shell)
 
