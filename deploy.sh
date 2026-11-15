@@ -7,6 +7,14 @@
 #   ./deploy.sh --offline       -> don't contact GitHub; use branches already downloaded
 set -e
 cd "$(dirname "$0")"
+if ! command -v javac >/dev/null 2>&1 || ! javac -version >/dev/null 2>&1; then
+  echo "Java (JDK 17 or newer) is not installed. Get it from https://adoptium.net and run this again." >&2
+  exit 1
+fi
+if ! command -v git >/dev/null 2>&1; then
+  echo "git is not installed. Get it from https://git-scm.com and run this again." >&2
+  exit 1
+fi
 OUT="${TMPDIR:-/tmp}/payload-pets-deployer-build"
 rm -rf "$OUT" && mkdir -p "$OUT"
 javac -d "$OUT" deployer/src/deployer/*.java

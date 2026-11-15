@@ -4,12 +4,20 @@ One dashboard that shows **every branch** on GitHub: who owns it, its latest com
 
 ## Start it
 
+**First time only:** get the deployer onto your computer. Once it's merged into `main` you'll already have it; until then:
+
+```
+git fetch
+git checkout deployer
+```
+
+
 You need **git** and a **JDK 17 or newer**, the same as for the rest of the project.
 
 | Computer | Command | Then open |
 |---|---|---|
 | Mac / Linux | `./deploy.sh` | http://localhost:8000 |
-| Windows (PowerShell) | `.\deploy.ps1` | http://localhost:8000 |
+| Windows | double-click `deploy.cmd` (or `.\deploy.ps1` in PowerShell) | http://localhost:8000 |
 
 Stop it with **Ctrl+C**. That also stops every branch site it started.
 
