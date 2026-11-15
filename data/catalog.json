@@ -436,6 +436,16 @@
       "sourceIds": ["leag-bg1-2025"]
     },
     {
+      "id": "trident",
+      "name": "The Regolith and Ice Drill for Exploring New Terrain",
+      "shortName": "TRIDENT",
+      "type": "drill",
+      "kind": "volatiles",
+      "power": "required",
+      "summary": "Rotary-percussive drill for PRIME-1, built to bring material up from about 3 feet and to record temperature and soil strength. It needs power.",
+      "sourceIds": ["nasa-prime1", "nasa-im2-press-kit"]
+    },
+    {
       "id": "msolo",
       "name": "Mass Spectrometer Observing Lunar Operations",
       "shortName": "MSOLO",
