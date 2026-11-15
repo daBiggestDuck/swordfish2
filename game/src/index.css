@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* Sterion — display font for the landing (CC BY-NC, Letter Corner Studio;
+   hackathon/non-commercial use with attribution in the page credit line). */
+@font-face {
+  font-family: "Sterion";
+  src: url("/fonts/Sterion-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Sterion";
+  src: url("/fonts/Sterion-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
 /* Client palette — same tokens the Data/Missions branch uses (#0B1320 /
    #1F2937 / #64748B / #D1D5DB / #F97316); muted lifted one slate step to
    #94A3B8 because #64748B fails 4.5:1 text contrast on this ground. */
@@ -12,6 +29,7 @@
   --color-moonrock: #94a3b8;
   --color-lunarline: #475569;
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Sterion", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 html,

@@ -43,7 +43,7 @@ function Title() {
   return (
     <motion.h1
       variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
-      className="pointer-events-auto mt-2 text-6xl font-extrabold tracking-tight text-stardust uppercase md:text-7xl lg:text-8xl"
+      className="pointer-events-auto mt-2 font-display text-6xl uppercase text-stardust md:text-7xl lg:text-8xl"
       style={{ perspective: '800px', textWrap: 'balance' }}
     >
       {words.map((w, i) => (
