@@ -582,6 +582,7 @@ test('Story pet model aliases/fallbacks and Map surface 3D framing prevent blank
   for (const id of ['BLUE_GHOST', 'LISTER', 'BLUE_MOON', 'LRA', 'EDS', 'TRIDENT', 'LN-1', 'NODEY']) {
     assert.match(storyCss, new RegExp(`\\[data-pet="${id}"\\]`));
   }
+  assert.doesNotMatch(storyCss, /\.stage-card\s*\{[^}]*position:\s*sticky/s);
 
   const pets3dJs = await readFile(path.join(REPO_ROOT, 'web', 'pets-3d', 'pets3d.js'), 'utf8');
   assert.doesNotMatch(pets3dJs, /setScalar\(1\.35\)/);

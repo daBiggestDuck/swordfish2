@@ -21,6 +21,8 @@
   --ice: #fde68a;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --font: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --title-font: "Bruno Ace SC", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --subtext-font: "Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --nav-h: 3.25rem;
   --bg-elev: var(--panel);
   --bg-panel: var(--panel-alt);
@@ -38,6 +40,12 @@ html, body {
   color: var(--text);
   font-family: var(--font);
   line-height: 1.4;
+}
+
+h1, h2, h3, h4, .brand-mark {
+  font-family: var(--title-font);
+  font-weight: 400;
+  letter-spacing: 0.02em;
 }
 
 body {
@@ -166,6 +174,7 @@ a:hover { text-decoration: underline; }
   background: rgba(245, 158, 11, 0.09);
   border-bottom: 1px solid rgba(245, 158, 11, 0.42);
   color: var(--warn);
+  font-family: var(--subtext-font);
   font-size: 0.82rem;
 }
 .shell-banner[data-show="1"] { display: flex; }
@@ -210,8 +219,6 @@ a:hover { text-decoration: underline; }
   color: var(--accent);
 }
 .brand-mark {
-  font-weight: 700;
-  letter-spacing: -0.01em;
   font-size: 1.05rem;
   white-space: nowrap;
   color: var(--text);
@@ -324,6 +331,7 @@ a:hover { text-decoration: underline; }
   display: none;
   margin: 0;
   padding: 0.45rem 1rem;
+  font-family: var(--subtext-font);
   font-size: 0.8rem;
   color: var(--warn);
   background: rgba(245, 158, 11, 0.09);
@@ -411,8 +419,6 @@ a:hover { text-decoration: underline; }
 .local-panel h1 {
   margin: 0 0 0.35rem;
   font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
 }
 .local-more {
   margin: 0 0 0.85rem;
@@ -421,6 +427,7 @@ a:hover { text-decoration: underline; }
 .local-more > summary {
   cursor: pointer;
   list-style: none;
+  font-family: var(--subtext-font);
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--muted);
@@ -441,6 +448,7 @@ a:hover { text-decoration: underline; }
   margin: 0 0 0.85rem;
   color: var(--muted);
   max-width: 70ch;
+  font-family: var(--subtext-font);
   font-size: 0.84rem;
   line-height: 1.45;
 }
@@ -454,6 +462,7 @@ a:hover { text-decoration: underline; }
 }
 .local-panel .meta-foot {
   margin-top: 1rem;
+  font-family: var(--subtext-font);
   font-size: 0.78rem;
   color: var(--muted);
 }
@@ -507,6 +516,7 @@ a:hover { text-decoration: underline; }
 }
 .card .meta {
   color: var(--muted);
+  font-family: var(--subtext-font);
   font-size: 0.8rem;
   margin: 0 0 0.5rem;
   line-height: 1.45;
@@ -552,8 +562,6 @@ a:hover { text-decoration: underline; }
 .data-head h1 {
   margin: 0 0 0.5rem;
   font-size: 1.55rem;
-  font-weight: 700;
-  letter-spacing: -0.015em;
 }
 .data-moon {
   flex: 0 0 auto;
@@ -588,6 +596,7 @@ a:hover { text-decoration: underline; }
 }
 .data-moon figcaption {
   margin-top: 0.3rem;
+  font-family: var(--subtext-font);
   font-size: 0.78rem;
   line-height: 1.45;
   color: var(--muted);
@@ -603,6 +612,7 @@ a:hover { text-decoration: underline; }
   align-items: baseline;
   gap: 0.15rem 0.3rem;
   margin: 0 0 0.9rem;
+  font-family: var(--subtext-font);
   font-size: 0.85rem;
   color: var(--muted);
 }
@@ -770,6 +780,7 @@ a:hover { text-decoration: underline; }
 }
 .card--reveal .detail-summary {
   margin: 0;
+  font-family: var(--subtext-font);
   font-size: 0.85rem;
   line-height: 1.5;
   color: var(--text);
@@ -783,6 +794,7 @@ a:hover { text-decoration: underline; }
 }
 .card--reveal .detail-note {
   margin: 0;
+  font-family: var(--subtext-font);
   font-size: 0.72rem;
   line-height: 1.45;
   color: var(--muted);
@@ -847,6 +859,7 @@ a:hover { text-decoration: underline; }
 .about-block .kicker { margin-bottom: 0.25rem; color: var(--accent); }
 .about-block p, .about-block li {
   color: var(--muted);
+  font-family: var(--subtext-font);
   line-height: 1.5;
   margin: 0.35rem 0;
   font-size: 0.84rem;
@@ -865,6 +878,7 @@ a:hover { text-decoration: underline; }
   border-bottom: 1px solid var(--border);
   vertical-align: top;
 }
+.about-block td { font-family: var(--subtext-font); }
 .about-block th {
   font-family: var(--mono);
   font-size: 0.72rem;
@@ -906,6 +920,7 @@ a:hover { text-decoration: underline; }
   border: 1px solid rgba(255, 107, 107, 0.4);
   border-radius: 8px;
   padding: 0.75rem 1rem;
+  font-family: var(--subtext-font);
   font-size: 0.84rem;
 }
 
@@ -1007,6 +1022,7 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
 }
 .md-doc-sub {
+  font-family: var(--subtext-font);
   font-size: 0.68rem;
   color: var(--muted);
 }
@@ -1064,6 +1080,7 @@ a:hover { text-decoration: underline; }
   border: 1px solid rgba(255, 184, 77, 0.42);
   background: rgba(255, 184, 77, 0.09);
   color: var(--warn);
+  font-family: var(--subtext-font);
   font-size: 0.78rem;
 }
 
@@ -1091,6 +1108,7 @@ a:hover { text-decoration: underline; }
   margin-top: 0.4rem;
 }
 .md-toc-link {
+  font-family: var(--subtext-font);
   font-size: 0.78rem;
   line-height: 1.35;
   color: var(--muted);
@@ -1108,6 +1126,7 @@ a:hover { text-decoration: underline; }
 .md-toc-l3 { padding-left: 1.1rem; font-size: 0.74rem; }
 .md-toc-empty {
   margin: 0.4rem 0 0;
+  font-family: var(--subtext-font);
   font-size: 0.76rem;
   color: var(--muted);
 }
@@ -1119,6 +1138,7 @@ a:hover { text-decoration: underline; }
   padding: 1.25rem 1.5rem 1.75rem;
   min-width: 0;
   color: #d4def2;
+  font-family: var(--subtext-font);
   font-size: 0.9rem;
   line-height: 1.62;
 }
@@ -1129,8 +1149,10 @@ a:hover { text-decoration: underline; }
 .md-body h2,
 .md-body h3,
 .md-body h4 {
+  font-family: var(--title-font);
+  font-weight: 400;
   color: var(--text);
-  letter-spacing: -0.01em;
+  letter-spacing: 0.02em;
   line-height: 1.28;
   margin: 1.45rem 0 0.55rem;
 }

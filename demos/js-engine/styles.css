@@ -29,6 +29,8 @@
   --line: var(--border);
   --serif: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   --sans: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --title-font: "Bruno Ace SC", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --subtext-font: "Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 * { box-sizing: border-box; }
 body {
@@ -42,7 +44,7 @@ body {
 .skip:focus { top: 0.5rem; }
 .mast, .sheet, .colophon { width: min(920px, calc(100% - 2rem)); margin-inline: auto; }
 .mast { padding: 1.1rem 0 0.2rem; border-bottom: 1px solid var(--border); }
-h1, h2, h3, .choice-name { font-family: var(--sans); font-weight: 700; letter-spacing: -0.01em; }
+h1, h2, h3, h4, .choice-name { font-family: var(--title-font); font-weight: 400; letter-spacing: 0.02em; }
 h1 { font-size: 1.35rem; line-height: 1.2; margin: 0.1rem 0 0.45rem; }
 h2 { font-size: 1.15rem; margin: 0.2rem 0 0.4rem; }
 h3 { font-size: 1.02rem; margin: 1rem 0 0.3rem; }
@@ -51,7 +53,7 @@ h3 { font-size: 1.02rem; margin: 1rem 0 0.3rem; }
   font-family: var(--mono); color: var(--accent);
 }
 .mast p:last-child, .lede, .note, .ahead, .books, .choice-body, .choice-passport, .colophon, #rules p {
-  color: var(--muted); font-size: 0.84rem;
+  color: var(--muted); font-size: 0.84rem; font-family: var(--subtext-font);
 }
 .sheet { margin-top: 1rem; padding-bottom: 0.4rem; }
 fieldset {
@@ -112,10 +114,11 @@ input, select {
   background: var(--panel-alt); border: 1px solid var(--border); color: var(--text);
   border-radius: 6px; padding: 0.35rem 0.55rem;
 }
-.who { margin: 0; }
-.form-error { min-height: 1.2rem; color: var(--bad); }
-.log { padding-left: 1.2rem; color: var(--muted); font-size: 0.84rem; }
+.who { margin: 0; font-family: var(--subtext-font); }
+.form-error { min-height: 1.2rem; color: var(--bad); font-family: var(--subtext-font); }
+.log { padding-left: 1.2rem; color: var(--muted); font-size: 0.84rem; font-family: var(--subtext-font); }
 .log li { margin: 0.15rem 0; }
+#sources p, #sources ul { font-family: var(--subtext-font); }
 .const-list {
   columns: 2; padding-left: 1.1rem; color: var(--text);
   font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 0.78rem;

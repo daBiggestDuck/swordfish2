@@ -20,6 +20,8 @@ html.in-shell {
   --bad: #f87171;
   --ice: #fde68a;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --title-font: "Bruno Ace SC", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --subtext-font: "Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 html.in-shell body {

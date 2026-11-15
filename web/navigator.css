@@ -19,14 +19,22 @@
   --bad: #f87171;
   --ice: #fde68a;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --title-font: "Bruno Ace SC", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --subtext-font: "Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
   background: var(--bg); color: var(--text);
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family: var(--font);
   line-height: 1.4;
+}
+h1, h2, h3, h4 {
+  font-family: var(--title-font);
+  font-weight: 400;
+  letter-spacing: 0.02em;
 }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -43,9 +51,9 @@ button, select, input { font-family: inherit; color: var(--text); }
 .brand-badge, .eyebrow {
   font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; color: var(--accent);
 }
-.brand h1 { margin: .1rem 0 0; font-size: 1.25rem; letter-spacing: -.01em; }
+.brand h1 { margin: .1rem 0 0; font-size: 1.25rem; }
 .brand .lede, .brand p {
-  margin: .15rem 0 0; font-size: .84rem; color: var(--muted); max-width: 62ch;
+  margin: .15rem 0 0; font-family: var(--subtext-font); font-size: .84rem; color: var(--muted); max-width: 62ch;
 }
 
 .workspace {
@@ -61,7 +69,7 @@ button, select, input { font-family: inherit; color: var(--text); }
   padding: .9rem 1rem;
 }
 .kicker { font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; color: var(--muted); }
-.muted { color: var(--muted); font-size: .78rem; }
+.muted { font-family: var(--subtext-font); color: var(--muted); font-size: .78rem; }
 
 .controls {
   display: flex; flex-wrap: wrap; gap: .75rem; align-items: end;
@@ -141,7 +149,7 @@ button:hover { filter: brightness(1.12); }
   display: block; font-family: var(--mono); font-size: .9rem; color: var(--text);
   font-variant-numeric: tabular-nums;
 }
-.metric small { display: block; font-size: .68rem; color: var(--muted); }
+.metric small { display: block; font-family: var(--subtext-font); font-size: .68rem; color: var(--muted); }
 
 .win-row {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: .35rem;
@@ -159,7 +167,7 @@ button:hover { filter: brightness(1.12); }
   background: #0c1220; border: 1px solid var(--border); border-radius: 8px;
 }
 .chart-legend {
-  display: flex; flex-wrap: wrap; gap: .8rem; font-size: .74rem; margin-top: .4rem; color: var(--muted);
+  display: flex; flex-wrap: wrap; gap: .8rem; font-family: var(--subtext-font); font-size: .74rem; margin-top: .4rem; color: var(--muted);
 }
 .leg-sun { color: var(--warn); }
 .leg-earth { color: var(--accent); }
@@ -168,6 +176,7 @@ button:hover { filter: brightness(1.12); }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: .82rem; }
 th, td { text-align: left; padding: .5rem .65rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+td { font-family: var(--subtext-font); }
 th { font-family: var(--mono); font-size: .72rem; text-transform: uppercase; color: var(--muted); }
 td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 
@@ -178,11 +187,11 @@ td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
   background: var(--panel-alt); border: 1px solid var(--border); border-radius: 10px; padding: .7rem; font-size: .82rem;
 }
 .source-card h4 { margin: 0 0 .25rem; color: var(--accent); font-size: .9rem; }
-.source-card p { margin: 0; color: var(--muted); font-size: .78rem; }
+.source-card p { margin: 0; font-family: var(--subtext-font); color: var(--muted); font-size: .78rem; }
 
 .honest {
   background: transparent; border: 0; border-radius: 0; padding: .15rem 0 0;
-  font-size: .8rem; color: var(--text); line-height: 1.42;
+  font-family: var(--subtext-font); font-size: .8rem; color: var(--text); line-height: 1.42;
 }
 .honest strong { color: var(--accent); }
 
@@ -217,7 +226,7 @@ td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .controls label small { display: block; margin-top: 2px; font-size: .68rem; font-family: var(--mono); }
 .date-note[hidden] { display: none; }
 .date-note {
-  margin: .5rem 0 0; padding: .4rem .6rem; border-radius: 6px; font-size: .78rem;
+  margin: .5rem 0 0; padding: .4rem .6rem; border-radius: 6px; font-family: var(--subtext-font); font-size: .78rem;
   border: 1px solid var(--border); border-left: 3px solid var(--warn); background: var(--panel-alt); color: var(--text);
 }
 .date-note[data-kind="info"] { border-left-color: var(--accent); }
