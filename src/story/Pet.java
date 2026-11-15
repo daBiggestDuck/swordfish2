@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * A pet is a real CLPS lander turned cute.
  *
- * @param id            stable key used by the API and moments (e.g. "LISTER", "LN-1")
+ * @param id            stable key used by the API and moments (e.g. "BLUE_GHOST")
  * @param name          default pet name
  * @param vendor        company that built the real lander
  * @param missionId     id of the matching entry in {@link Missions}
@@ -14,6 +14,7 @@ import java.util.List;
  * @param defaultSite   site to preselect, or null when the pet has no fixed home
  * @param sleepsAtNight true if the pet naps through the lunar night instead of shivering
  * @param science       lines for the Pet Passport's "science sent home"
+ * @param fate          what really happened to the pet's mission (shown on the Passport)
  * @param instrument    the real instrument the pet is, or null when the pet is the whole lander
  */
 public record Pet(
@@ -26,7 +27,8 @@ public record Pet(
         String defaultSite,
         boolean sleepsAtNight,
         List<String> science,
-        String instrument) {
+        String instrument,
+        String fate) {
 
     /** Text for the Passport, e.g. "Blue Ghost Mission 1 (Firefly Aerospace)". */
     public String label(String missionName) {

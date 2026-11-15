@@ -962,8 +962,13 @@ async function confirmStagedDrop() {
   await loadSiteSky();
   renderSiteList();
   renderPetPickers();
+  // Face the drop pin so the on-globe 3D billboard is front-and-center (not clipped at the limb).
+  if (state.projection === '3d' && state.globe && state.placedPet) {
+    await state.globe.focusLatLon(state.placedPet.lat, state.placedPet.lon, { duration: 320 });
+  }
   renderMap();
   await refreshPlacedPetReaction(true);
+  positionSurfacePetLayer();
   window.dispatchEvent(new CustomEvent('payloadPets:siteSelected', { detail: { ...dropRecord, placedPet: state.placedPet } }));
   window.dispatchEvent(new CustomEvent('payloadpets:site-selected', { detail: { ...dropRecord, placedPet: state.placedPet } }));
   window.dispatchEvent(new CustomEvent('payloadPets:petDropped', { detail: state.placedPet }));
@@ -1469,13 +1474,13 @@ function renderActiveCustomMarkers(svg, projFn) {
   if (ie && !ie.matchedKnownSite && !state.stagedDrop && !sameAsConfirmed) {
     const ip = projFn(ie.lat, ie.lon);
     if (ip.visible !== false) {
-      svgEl('circle', { cx: ip.x.toFixed(1), cy: ip.y.toFixed(1), r: 10, fill: 'none', stroke: '#62b0ff', 'stroke-width': '1.5', 'stroke-dasharray': '3 2' }, svg);
-      svgEl('circle', { cx: ip.x.toFixed(1), cy: ip.y.toFixed(1), r: 5.5, fill: '#62b0ff', stroke: '#ffffff', 'stroke-width': '1.6' }, svg);
+      svgEl('circle', { cx: ip.x.toFixed(1), cy: ip.y.toFixed(1), r: 10, fill: 'none', stroke: '#ea580c', 'stroke-width': '1.5', 'stroke-dasharray': '3 2' }, svg);
+      svgEl('circle', { cx: ip.x.toFixed(1), cy: ip.y.toFixed(1), r: 5.5, fill: '#ea580c', stroke: '#ffffff', 'stroke-width': '1.6' }, svg);
       const inward = ip.clamped && ip.x > 480;
       svgEl('text', {
         x: (inward ? ip.x - 12 : ip.x + 10).toFixed(1),
         y: (ip.y + 4).toFixed(1),
-        fill: '#dce6f9', 'font-size': '10', 'font-weight': '600',
+        fill: '#fef3c7', 'font-size': '10', 'font-weight': '600',
         'text-anchor': inward ? 'end' : 'start',
       }, svg).textContent = ip.clamped
         ? `Custom Spot (${Math.abs(ie.lat).toFixed(0)}°${ie.lat >= 0 ? 'N' : 'S'} ↑)`
@@ -1502,7 +1507,7 @@ function render3DOverlay() {
       if (!p.visible) continue;
       svgEl('circle', {
         cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 4.5,
-        fill: 'rgba(68, 226, 255, 0.34)', stroke: '#44e2ff', 'stroke-width': '1',
+        fill: 'rgba(253, 230, 138, 0.34)', stroke: '#fde68a', 'stroke-width': '1',
       }, svg);
     }
   }
@@ -1524,7 +1529,7 @@ function render3DOverlay() {
         const isHit = state.impactedMissionIds.has(m.id);
         svgEl('line', {
           x1: p1.x.toFixed(1), y1: p1.y.toFixed(1), x2: p2.x.toFixed(1), y2: p2.y.toFixed(1),
-          stroke: isHit ? '#ff6b6b' : '#4a68b0', 'stroke-width': isHit ? '2.1' : '1.1',
+          stroke: isHit ? '#ff6b6b' : '#5c5340', 'stroke-width': isHit ? '2.1' : '1.1',
           'stroke-dasharray': isHit ? 'none' : '4 3', opacity: '0.72',
         }, svg);
       }
@@ -1537,7 +1542,7 @@ function render3DOverlay() {
     const p = state.globe.latLonToScreen(s.lat, s.lon);
     if (!p.visible) continue;
     const status = primarySiteStatus(s.id);
-    const color = status === 'LANDED' ? '#45d48a' : status === 'NO_LANDING' ? '#ff6b6b' : '#62b0ff';
+    const color = status === 'LANDED' ? '#45d48a' : status === 'NO_LANDING' ? '#ff6b6b' : '#ea580c';
     const selected = s.id === state.selectedSiteId && !customActive;
 
     if (selected) {
@@ -1545,13 +1550,13 @@ function render3DOverlay() {
     }
     svgEl('circle', {
       cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: selected ? 6.2 : 5,
-      fill: color, stroke: '#070a14', 'stroke-width': '1.5', class: 'clickable-marker',
+      fill: color, stroke: '#111827', 'stroke-width': '1.5', class: 'clickable-marker',
       'data-site-id': s.id,
     }, svg);
 
     const lbl = svgEl('text', {
       x: (p.x + 8).toFixed(1), y: (p.y + 3).toFixed(1),
-      fill: selected ? '#ffffff' : '#dce6f9', 'font-size': '10.5', 'font-weight': selected ? '700' : '500',
+      fill: selected ? '#ffffff' : '#fef3c7', 'font-size': '10.5', 'font-weight': selected ? '700' : '500',
       class: 'clickable-marker',
       'data-site-id': s.id,
     }, svg);
@@ -1631,7 +1636,7 @@ function renderMap() {
   const showPsr = $('#lyr-psr').checked;
   const showLinks = $('#lyr-links').checked;
 
-  svgEl('rect', { x: 0, y: 0, width: 960, height: 480, fill: '#090e1b' }, svg);
+  svgEl('rect', { x: 0, y: 0, width: 960, height: 480, fill: '#111827' }, svg);
 
   if (state.projection === 'global') {
     if (state.globe) {
@@ -1641,7 +1646,7 @@ function renderMap() {
         preserveAspectRatio: 'none', opacity: '0.9',
       }, svg);
     } else {
-      svgEl('rect', { x: 240, y: 0, width: 480, height: 480, fill: '#10182d', opacity: '0.55' }, svg);
+      svgEl('rect', { x: 240, y: 0, width: 480, height: 480, fill: '#1a2234', opacity: '0.55' }, svg);
     }
 
     if (showGrid) {
@@ -1649,12 +1654,12 @@ function renderMap() {
         const x = ((lon + 180) / 360) * 960;
         svgEl('line', {
           x1: x, y1: 0, x2: x, y2: 480,
-          stroke: lon === 0 ? '#2b3d66' : '#162038', 'stroke-width': lon === 0 ? 1.4 : 0.8,
+          stroke: lon === 0 ? '#3a4258' : '#1a2234', 'stroke-width': lon === 0 ? 1.4 : 0.8,
           'stroke-dasharray': Math.abs(lon) === 90 ? '4 4' : '',
         }, svg);
         if (lon === -90 || lon === 0 || lon === 90) {
           svgEl('text', {
-            x: x + 3, y: 12, fill: '#6c80ad', 'font-size': '8.5', 'font-family': 'monospace', opacity: '0.85',
+            x: x + 3, y: 12, fill: '#c4b896', 'font-size': '8.5', 'font-family': 'monospace', opacity: '0.85',
           }, svg).textContent = lon === 0 ? '0°' : `${Math.abs(lon)}°${lon > 0 ? 'E' : 'W'}`;
         }
       }
@@ -1662,11 +1667,11 @@ function renderMap() {
         const y = ((90 - lat) / 180) * 480;
         svgEl('line', {
           x1: 0, y1: y, x2: 960, y2: y,
-          stroke: lat === 0 ? '#2b3d66' : '#162038', 'stroke-width': lat === 0 ? 1.4 : 0.8,
+          stroke: lat === 0 ? '#3a4258' : '#1a2234', 'stroke-width': lat === 0 ? 1.4 : 0.8,
         }, svg);
         if (lat === -60 || lat === 0 || lat === 60) {
           svgEl('text', {
-            x: 6, y: y - 3, fill: '#6c80ad', 'font-size': '8.5', 'font-family': 'monospace', opacity: '0.85',
+            x: 6, y: y - 3, fill: '#c4b896', 'font-size': '8.5', 'font-family': 'monospace', opacity: '0.85',
           }, svg).textContent = lat === 0 ? '0° Eq' : `${Math.abs(lat)}°${lat > 0 ? 'N' : 'S'}`;
         }
       }
@@ -1677,7 +1682,7 @@ function renderMap() {
       const p = projectGlobal(f.lat, normLon);
       svgEl('text', {
         x: p.x.toFixed(1), y: (p.y + 3).toFixed(1),
-        fill: '#9ab0e0', opacity: '0.68', 'font-size': '8.5', 'text-anchor': 'middle', 'font-family': 'monospace',
+        fill: '#e8d9a8', opacity: '0.68', 'font-size': '8.5', 'text-anchor': 'middle', 'font-family': 'monospace',
       }, svg).textContent = f.name;
     }
 
@@ -1706,7 +1711,7 @@ function renderMap() {
       const nightPoleY = sunLatDeg >= 0 ? 480 : 0;
       svgEl('path', {
         d: `M 0,${nightPoleY} L ${polyPts.join(' L ')} L 960,${nightPoleY} Z`,
-        fill: '#02040a', opacity: '0.52',
+        fill: '#0a0f18', opacity: '0.52',
       }, svg);
       for (const seg of termSegments) {
         svgEl('polyline', {
@@ -1719,15 +1724,15 @@ function renderMap() {
       svgEl('text', { x: (sunP.x + 8).toFixed(1), y: (sunP.y + 3).toFixed(1), fill: '#ffb84d', 'font-size': '8.5', 'font-family': 'monospace', 'font-weight': '700' }, svg).textContent = 'SUN';
 
       const earthP = projectGlobal(ep.obsSubLat, ep.obsSubLon);
-      svgEl('circle', { cx: earthP.x.toFixed(1), cy: earthP.y.toFixed(1), r: 4.5, fill: '#58a6ff', stroke: '#ffffff', 'stroke-width': '1.2', opacity: '0.88' }, svg);
-      svgEl('text', { x: (earthP.x + 7).toFixed(1), y: (earthP.y + 3).toFixed(1), fill: '#58a6ff', 'font-size': '8.5', 'font-family': 'monospace', 'font-weight': '700' }, svg).textContent = 'EARTH';
+      svgEl('circle', { cx: earthP.x.toFixed(1), cy: earthP.y.toFixed(1), r: 4.5, fill: '#fef3c7', stroke: '#ffffff', 'stroke-width': '1.2', opacity: '0.88' }, svg);
+      svgEl('text', { x: (earthP.x + 7).toFixed(1), y: (earthP.y + 3).toFixed(1), fill: '#fef3c7', 'font-size': '8.5', 'font-family': 'monospace', 'font-weight': '700' }, svg).textContent = 'EARTH';
     }
   } else {
     const defs = svgEl('defs', {}, svg);
     const clip = svgEl('clipPath', { id: 'pole-clip' }, defs);
     svgEl('circle', { cx: 480, cy: 240, r: 212 }, clip);
 
-    svgEl('circle', { cx: 480, cy: 240, r: 214, fill: '#0b1222', stroke: '#293b66', 'stroke-width': '1.6' }, svg);
+    svgEl('circle', { cx: 480, cy: 240, r: 214, fill: '#111827', stroke: '#3a4258', 'stroke-width': '1.6' }, svg);
     if (state.globe && typeof state.globe.getSouthPoleDataUrl === 'function') {
       svgEl('image', {
         href: state.globe.getSouthPoleDataUrl(),
@@ -1737,7 +1742,7 @@ function renderMap() {
         opacity: '0.94',
       }, svg);
     } else {
-      svgEl('circle', { cx: 480, cy: 240, r: 212, fill: '#121b31' }, svg);
+      svgEl('circle', { cx: 480, cy: 240, r: 212, fill: '#1a2234' }, svg);
     }
 
     if (showGrid) {
@@ -1747,7 +1752,7 @@ function renderMap() {
           x1: 480, y1: 240,
           x2: (480 + 212 * Math.sin(rad)).toFixed(1),
           y2: (240 - 212 * Math.cos(rad)).toFixed(1),
-          stroke: deg === 0 ? 'rgba(98, 176, 255, 0.42)' : 'rgba(98, 176, 255, 0.2)',
+          stroke: deg === 0 ? 'rgba(234, 88, 12, 0.42)' : 'rgba(234, 88, 12, 0.2)',
           'stroke-width': deg === 0 ? '1.1' : '0.8',
         }, svg);
       }
@@ -1759,17 +1764,17 @@ function renderMap() {
         }, svg);
         svgEl('text', {
           x: 484, y: (240 - r + 11).toFixed(1),
-          fill: '#9ab0e0', 'font-size': '9.5', 'font-family': 'monospace',
+          fill: '#e8d9a8', 'font-size': '9.5', 'font-family': 'monospace',
         }, svg).textContent = `${Math.abs(latRing)}°S`;
       }
       // Subtle South Pole crosshair (90°S)
       svgEl('line', { x1: 475, y1: 240, x2: 485, y2: 240, stroke: 'rgba(255,255,255,0.45)', 'stroke-width': '1' }, svg);
       svgEl('line', { x1: 480, y1: 235, x2: 480, y2: 245, stroke: 'rgba(255,255,255,0.45)', 'stroke-width': '1' }, svg);
 
-      svgEl('text', { x: 480, y: 18, fill: '#9ab0e0', 'font-size': '9.5', 'font-family': 'monospace', 'text-anchor': 'middle' }, svg).textContent = '0° NEAR SIDE (EARTH)';
-      svgEl('text', { x: 480, y: 470, fill: '#9ab0e0', 'font-size': '9.5', 'font-family': 'monospace', 'text-anchor': 'middle' }, svg).textContent = '180° FAR SIDE';
-      svgEl('text', { x: 702, y: 243, fill: '#9ab0e0', 'font-size': '9.5', 'font-family': 'monospace' }, svg).textContent = '90°E';
-      svgEl('text', { x: 258, y: 243, fill: '#9ab0e0', 'font-size': '9.5', 'font-family': 'monospace', 'text-anchor': 'end' }, svg).textContent = '90°W';
+      svgEl('text', { x: 480, y: 18, fill: '#e8d9a8', 'font-size': '9.5', 'font-family': 'monospace', 'text-anchor': 'middle' }, svg).textContent = '0° NEAR SIDE (EARTH)';
+      svgEl('text', { x: 480, y: 470, fill: '#e8d9a8', 'font-size': '9.5', 'font-family': 'monospace', 'text-anchor': 'middle' }, svg).textContent = '180° FAR SIDE';
+      svgEl('text', { x: 702, y: 243, fill: '#e8d9a8', 'font-size': '9.5', 'font-family': 'monospace' }, svg).textContent = '90°E';
+      svgEl('text', { x: 258, y: 243, fill: '#e8d9a8', 'font-size': '9.5', 'font-family': 'monospace', 'text-anchor': 'end' }, svg).textContent = '90°W';
     }
 
     if (showTerm) {
@@ -1792,7 +1797,7 @@ function renderMap() {
         [cxT - tx * R, cyT - ty * R],
       ].map((p) => p.map((n) => n.toFixed(1)).join(','));
       svgEl('polygon', {
-        points: pts.join(' '), fill: '#02040a', opacity: '0.52', 'clip-path': 'url(#pole-clip)',
+        points: pts.join(' '), fill: '#0a0f18', opacity: '0.52', 'clip-path': 'url(#pole-clip)',
       }, svg);
       svgEl('line', {
         x1: (cxT - tx * 240).toFixed(1), y1: (cyT - ty * 240).toFixed(1),
@@ -1808,7 +1813,7 @@ function renderMap() {
         x: (480 + sx * 198).toFixed(1), y: (240 + sy * 198 + 3).toFixed(1),
         fill: '#ffb84d', 'font-size': '8.5', 'font-family': 'monospace', 'font-weight': '700',
         'text-anchor': sx > 0.25 ? 'end' : (sx < -0.25 ? 'start' : 'middle'),
-        style: 'paint-order: stroke; stroke: #070a14; stroke-width: 2.4px;',
+        style: 'paint-order: stroke; stroke: #111827; stroke-width: 2.4px;',
       }, svg).textContent = 'SUN';
     }
   }
@@ -1818,18 +1823,18 @@ function renderMap() {
       if (state.projection === 'pole' && psr.centerLat > -74) continue;
       if (state.projection === 'global') {
         const p = projectGlobal(psr.centerLat, psr.centerLon);
-        svgEl('circle', { cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 5.5, fill: 'rgba(68, 226, 255, 0.3)', stroke: '#44e2ff', 'stroke-width': '1' }, svg);
+        svgEl('circle', { cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 5.5, fill: 'rgba(253, 230, 138, 0.3)', stroke: '#fde68a', 'stroke-width': '1' }, svg);
       } else if (psr.rings?.[0]) {
         const pts = psr.rings[0].map(([lon, lat]) => {
           const p = projectSouthPole(lat, lon);
           return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
         }).join(' ');
-        svgEl('polygon', { points: pts, fill: 'rgba(68, 226, 255, 0.28)', stroke: '#44e2ff', 'stroke-width': '1.2' }, svg);
+        svgEl('polygon', { points: pts, fill: 'rgba(253, 230, 138, 0.28)', stroke: '#fde68a', 'stroke-width': '1.2' }, svg);
         if (!psr.name.includes('Shackleton')) {
           const cp = projectSouthPole(psr.centerLat, psr.centerLon);
           svgEl('text', {
             x: cp.x.toFixed(1), y: (cp.y - 6).toFixed(1),
-            fill: '#7ae9ff', opacity: '0.78', 'font-size': '8.2', 'font-family': 'monospace', 'text-anchor': 'middle',
+            fill: '#fef3c7', opacity: '0.78', 'font-size': '8.2', 'font-family': 'monospace', 'text-anchor': 'middle',
           }, svg).textContent = psr.name.replace(/\s+(Crater|Floor|PSR|Complex).*$/i, '');
         }
       }
@@ -1855,7 +1860,7 @@ function renderMap() {
         const isHit = state.impactedMissionIds.has(m.id);
         svgEl('path', {
           d: `M ${p1.x.toFixed(1)},${p1.y.toFixed(1)} Q ${mx.toFixed(1)},${my.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`,
-          fill: 'none', stroke: isHit ? '#ff6b6b' : '#4a68b0', 'stroke-width': isHit ? '2.2' : '1.2',
+          fill: 'none', stroke: isHit ? '#ff6b6b' : '#5c5340', 'stroke-width': isHit ? '2.2' : '1.2',
           'stroke-dasharray': isHit ? 'none' : '4 3', opacity: isHit ? '0.95' : '0.65',
         }, svg);
       }
@@ -1872,23 +1877,23 @@ function renderMap() {
 
     const p = projectPoint2D(s.lat, s.lon);
     const status = primarySiteStatus(s.id);
-    const color = status === 'LANDED' ? '#45d48a' : status === 'NO_LANDING' ? '#ff6b6b' : '#62b0ff';
+    const color = status === 'LANDED' ? '#45d48a' : status === 'NO_LANDING' ? '#ff6b6b' : '#ea580c';
 
     if (selected) {
       svgEl('circle', { cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 12, fill: 'none', stroke: '#ffffff', 'stroke-width': '2' }, svg);
     }
     svgEl('circle', {
       cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: selected ? 7 : 5.5,
-      fill: color, stroke: '#070a14', 'stroke-width': '1.6', style: 'cursor:pointer',
+      fill: color, stroke: '#111827', 'stroke-width': '1.6', style: 'cursor:pointer',
       'data-site-id': s.id,
     }, svg);
 
     const plc = siteLabelPlacement2D(s, state.projection);
     const lbl = svgEl('text', {
       x: (p.x + plc.dx).toFixed(1), y: (p.y + plc.dy).toFixed(1),
-      fill: selected ? '#ffffff' : '#c2cee8', 'font-size': selected ? '11.5' : '10',
+      fill: selected ? '#ffffff' : '#e8d9a8', 'font-size': selected ? '11.5' : '10',
       'font-weight': selected ? '700' : '500', 'text-anchor': plc.anchor,
-      style: 'cursor:pointer; paint-order: stroke; stroke: #070a14; stroke-width: 2.6px; stroke-linejoin: round;',
+      style: 'cursor:pointer; paint-order: stroke; stroke: #111827; stroke-width: 2.6px; stroke-linejoin: round;',
       'data-site-id': s.id,
     }, svg);
     lbl.textContent = s.shortName + (state.pickedPetSiteId === s.id ? ' ★' : '');
@@ -1901,12 +1906,12 @@ function renderMap() {
     if (selSite && selSite.lat > -73.5) {
       const rp = projectSouthPoleClamped(selSite.lat, selSite.lon);
       svgEl('circle', { cx: rp.x.toFixed(1), cy: rp.y.toFixed(1), r: 10, fill: 'none', stroke: '#ffffff', 'stroke-width': '1.6', 'stroke-dasharray': '3 2', 'data-site-id': selSite.id }, svg);
-      svgEl('circle', { cx: rp.x.toFixed(1), cy: rp.y.toFixed(1), r: 5.5, fill: '#62b0ff', stroke: '#070a14', 'stroke-width': '1.5', style: 'cursor:pointer', 'data-site-id': selSite.id }, svg);
+      svgEl('circle', { cx: rp.x.toFixed(1), cy: rp.y.toFixed(1), r: 5.5, fill: '#ea580c', stroke: '#111827', 'stroke-width': '1.5', style: 'cursor:pointer', 'data-site-id': selSite.id }, svg);
       const inward = rp.x > 480;
       svgEl('text', {
         x: (inward ? rp.x - 12 : rp.x + 12).toFixed(1), y: (rp.y + 4).toFixed(1),
         fill: '#ffffff', 'font-size': '10', 'font-weight': '700', 'text-anchor': inward ? 'end' : 'start',
-        style: 'cursor:pointer; paint-order: stroke; stroke: #070a14; stroke-width: 2.6px;',
+        style: 'cursor:pointer; paint-order: stroke; stroke: #111827; stroke-width: 2.6px;',
         'data-site-id': selSite.id,
       }, svg).textContent = `${selSite.shortName} (${Math.abs(selSite.lat).toFixed(0)}°${selSite.lat >= 0 ? 'N' : 'S'} ↑)`;
     }
@@ -1933,7 +1938,7 @@ function renderMap() {
       svgEl('text', {
         x: (inward ? sp.x - 14 : sp.x + 14).toFixed(1), y: (sp.y + 4).toFixed(1),
         fill: '#ffb84d', 'font-size': '10', 'font-weight': '700', 'text-anchor': inward ? 'end' : 'start',
-        style: 'paint-order: stroke; stroke: #070a14; stroke-width: 2.6px;',
+        style: 'paint-order: stroke; stroke: #111827; stroke-width: 2.6px;',
       }, svg).textContent = `${Math.abs(state.stagedDrop.lat).toFixed(1)}°${state.stagedDrop.lat >= 0 ? 'N' : 'S'} ↑`;
     }
     if (state.stagedDrop.animStartTime !== null) {
@@ -1958,16 +1963,16 @@ function renderSkyDome() {
 
   for (const [deg, label] of [[0, '0°'], [30, '30°'], [60, '60°']]) {
     const r = ((90 - deg) / 90) * R;
-    svgEl('circle', { cx, cy, r: r.toFixed(1), fill: 'none', stroke: '#1d2947', 'stroke-width': '1' }, svg);
-    svgEl('text', { x: cx + 3, y: (cy - r + 10).toFixed(1), fill: '#6c80ad', 'font-size': '9' }, svg).textContent = label;
+    svgEl('circle', { cx, cy, r: r.toFixed(1), fill: 'none', stroke: '#2a3348', 'stroke-width': '1' }, svg);
+    svgEl('text', { x: cx + 3, y: (cy - r + 10).toFixed(1), fill: '#c4b896', 'font-size': '9' }, svg).textContent = label;
   }
   for (const [ang, lbl] of [[0, 'N'], [90, 'E'], [180, 'S'], [270, 'W']]) {
     const a = (ang * Math.PI) / 180;
-    svgEl('line', { x1: cx, y1: cy, x2: (cx + R * Math.sin(a)).toFixed(1), y2: (cy - R * Math.cos(a)).toFixed(1), stroke: '#17203a' }, svg);
+    svgEl('line', { x1: cx, y1: cy, x2: (cx + R * Math.sin(a)).toFixed(1), y2: (cy - R * Math.cos(a)).toFixed(1), stroke: '#1f283a' }, svg);
     svgEl('text', {
       x: (cx + (R + 12) * Math.sin(a)).toFixed(1),
       y: (cy - (R + 12) * Math.cos(a) + 3).toFixed(1),
-      fill: '#8c9bbd', 'font-size': '10', 'text-anchor': 'middle',
+      fill: '#c4b896', 'font-size': '10', 'text-anchor': 'middle',
     }, svg).textContent = lbl;
   }
 
@@ -1986,7 +1991,7 @@ function renderSkyDome() {
     }
     svgEl('polygon', {
       points: `${innerPts.join(' ')} ${outerPts.join(' ')}`,
-      fill: 'rgba(140, 155, 189, 0.25)', stroke: '#6c80ad', 'stroke-width': '1',
+      fill: 'rgba(140, 155, 189, 0.25)', stroke: '#c4b896', 'stroke-width': '1',
     }, svg);
   }
 
@@ -2008,7 +2013,7 @@ function renderSkyDome() {
   const earthP = domePos(earthEl, earthAz);
   svgEl('circle', {
     cx: earthP.x.toFixed(1), cy: earthP.y.toFixed(1), r: 6.5,
-    fill: earthVis ? '#58a6ff' : 'none', stroke: '#58a6ff', 'stroke-width': '1.6',
+    fill: earthVis ? '#fef3c7' : 'none', stroke: '#fef3c7', 'stroke-width': '1.6',
   }, svg);
   const sunP = domePos(sunEl, sunAz);
   svgEl('circle', {
@@ -2053,15 +2058,15 @@ function renderOpChart() {
     const y = yOf(deg);
     svgEl('line', {
       x1: padL, y1: y.toFixed(1), x2: W - padR, y2: y.toFixed(1),
-      stroke: deg === 0 ? '#4d608f' : '#18223d', 'stroke-width': deg === 0 ? '1.3' : '0.8',
+      stroke: deg === 0 ? '#5c5340' : '#222b40', 'stroke-width': deg === 0 ? '1.3' : '0.8',
       'stroke-dasharray': deg === 0 ? '4 3' : '',
     }, svg);
-    svgEl('text', { x: padL - 5, y: (y + 3).toFixed(1), fill: '#6c80ad', 'font-size': '9.5', 'text-anchor': 'end', 'font-family': 'monospace' }, svg)
+    svgEl('text', { x: padL - 5, y: (y + 3).toFixed(1), fill: '#c4b896', 'font-size': '9.5', 'text-anchor': 'end', 'font-family': 'monospace' }, svg)
       .textContent = `${deg}°`;
   }
 
   const earthPts = state.sky.earth.map((e, i) => `${xOf(i).toFixed(1)},${yOf(e).toFixed(1)}`).join(' ');
-  svgEl('polyline', { points: earthPts, fill: 'none', stroke: '#62b0ff', 'stroke-width': '1.8' }, svg);
+  svgEl('polyline', { points: earthPts, fill: 'none', stroke: '#ea580c', 'stroke-width': '1.8' }, svg);
 
   const sunPts = state.sky.sun.map((e, i) => `${xOf(i).toFixed(1)},${yOf(e).toFixed(1)}`).join(' ');
   svgEl('polyline', { points: sunPts, fill: 'none', stroke: '#ffb84d', 'stroke-width': '2' }, svg);
@@ -2073,7 +2078,7 @@ function renderOpChart() {
 
   for (let i = 0; i < n; i += 24) {
     const lbl = (state.sky.timestamps[i] || '').slice(5, 11).toUpperCase();
-    svgEl('text', { x: xOf(i).toFixed(1), y: H - 8, fill: '#6c80ad', 'font-size': '9', 'text-anchor': 'middle', 'font-family': 'monospace' }, svg)
+    svgEl('text', { x: xOf(i).toFixed(1), y: H - 8, fill: '#c4b896', 'font-size': '9', 'text-anchor': 'middle', 'font-family': 'monospace' }, svg)
       .textContent = lbl;
   }
 
@@ -2637,8 +2642,16 @@ window.PayloadPetsMap = {
   renderSources();
   renderMissions();
   await loadSiteSky();
+  // Restore camera onto any previously dropped pet so the surface billboard isn't off-limb.
+  if (state.projection === '3d' && state.globe && state.placedPet && isDropPet(state.placedPet.petId)) {
+    await state.globe.focusLatLon(state.placedPet.lat, state.placedPet.lon, {
+      duration: 0,
+      animate: false,
+    });
+  }
   renderMap();
   await refreshPlacedPetReaction(true);
+  positionSurfacePetLayer();
   await refreshCompare();
 }
 

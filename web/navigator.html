@@ -23,7 +23,8 @@
       <div class="kicker">COMPARE CONTROLS</div>
       <div class="controls" id="controls">
         <label>UTC date
-          <input type="date" id="nav-date" value="2026-12-03">
+          <input type="date" id="nav-date" value="2026-12-03" min="2024-01-01" max="2028-12-18" required aria-describedby="date-range date-note">
+          <small class="muted" id="date-range">Data 2024-01-01 → 2029-01-01 · latest start 2028-12-18</small>
         </label>
         <label>UTC time
           <input type="time" id="nav-time" value="12:00" step="3600">
@@ -41,6 +42,7 @@
         <button type="button" class="btn-primary" id="btn-refresh">Update</button>
         <button type="button" class="btn-ghost" id="btn-defaults">Reset 3 polar sites</button>
       </div>
+      <p id="date-note" class="date-note" role="status" hidden></p>
       <div class="epoch-row">
         <span class="utc" id="epoch-label">—</span>
         <span class="muted" id="eph-meta">—</span>

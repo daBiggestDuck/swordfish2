@@ -59,10 +59,10 @@ let sharedFarm = null;
 const modelWarmCache = new Set();
 
 const PALETTE = Object.freeze({
-  happy: { light: 0xffe7ad, ambient: 0x6a7a99, accent: 0x62b0ff, tint: 1 },
+  happy: { light: 0xffe7ad, ambient: 0x6a7a99, accent: 0xea580c, tint: 1 },
   shivering: { light: 0xe0b15a, ambient: 0x4a5568, accent: 0xffb84d, tint: 0.85 },
-  sleeping: { light: 0x9bb0c6, ambient: 0x1a2438, accent: 0x44e2ff, tint: 0.55 },
-  cold: { light: 0xa8c4e0, ambient: 0x243448, accent: 0x44e2ff, tint: 0.7 },
+  sleeping: { light: 0x9bb0c6, ambient: 0x1a2438, accent: 0xf59e0b, tint: 0.55 },
+  cold: { light: 0xa8c4e0, ambient: 0x243448, accent: 0xf59e0b, tint: 0.7 },
 });
 
 async function acquireLiveSlot() {
@@ -398,10 +398,11 @@ function buildSceneKit({ surface, transparent, shadows }) {
   const scene = new THREE.Scene();
   scene.background = transparent ? null : new THREE.Color(0x050811);
 
-  const camera = new THREE.PerspectiveCamera(surface ? 32 : 38, 1, 0.1, 40);
+  const camera = new THREE.PerspectiveCamera(surface ? 28 : 38, 1, 0.1, 40);
   if (surface) {
-    camera.position.set(1.85, 1.35, 2.45);
-    camera.lookAt(0, 0.62, 0);
+    // Tight framing so the instrument fills the on-globe billboard.
+    camera.position.set(1.15, 0.95, 1.55);
+    camera.lookAt(0, 0.55, 0);
   } else {
     camera.position.set(2.6, 1.85, 3.4);
     camera.lookAt(0, 0.55, 0);
@@ -413,10 +414,10 @@ function buildSceneKit({ surface, transparent, shadows }) {
   key.position.set(3.2, 5.5, 2.4);
   key.castShadow = Boolean(shadows);
   scene.add(key);
-  const fill = new THREE.DirectionalLight(0x62b0ff, 0.35);
+  const fill = new THREE.DirectionalLight(0xea580c, 0.35);
   fill.position.set(-3, 2, -2);
   scene.add(fill);
-  const rim = new THREE.PointLight(0x44e2ff, 0.4, 12);
+  const rim = new THREE.PointLight(0xf59e0b, 0.4, 12);
   rim.position.set(-1.5, 0.4, 2.2);
   scene.add(rim);
 
@@ -758,6 +759,7 @@ async function mountLivePet3D(id, moodOrPhase, el, options) {
       state.dust = [];
       state.tips = [];
       state.root = buildInstrument(state.petId, state);
+      if (surface) state.root.scale.setScalar(1.35);
       scene.add(state.root);
       modelWarmCache.add(state.petId);
       renderer.domElement.setAttribute(
@@ -805,11 +807,11 @@ async function mountLivePet3D(id, moodOrPhase, el, options) {
     const resize = () => {
       if (state.disposed) return;
       const rect = el.getBoundingClientRect();
-      const minSize = surface ? 72 : 160;
-      width = Math.max(minSize, Math.floor(rect.width) || (surface ? 96 : 320));
+      const minSize = surface ? 140 : 160;
+      width = Math.max(minSize, Math.floor(rect.width) || (surface ? 168 : 320));
       height = Math.max(
         minSize,
-        Math.floor(rect.height) || (surface ? 96 : 320),
+        Math.floor(rect.height) || (surface ? 168 : 320),
       );
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
@@ -1038,21 +1040,23 @@ function animateMood(root, state, t, reduceMotion) {
     return;
   }
   const mood = state.mood;
+  // Amplify motion on globe-surface billboards so bob/drill/shiver reads at a glance.
+  const amp = state.surface ? 1.85 : 1;
   if (mood === "happy") {
-    root.position.y = Math.sin(t * 2.2) * 0.04;
+    root.position.y = Math.sin(t * 2.2) * 0.04 * amp;
     root.rotation.z = 0;
   } else if (mood === "shivering") {
     root.position.y = 0;
-    root.rotation.z = Math.sin(t * 28) * 0.035;
-    root.position.x = Math.sin(t * 31) * 0.012;
+    root.rotation.z = Math.sin(t * 28) * 0.035 * amp;
+    root.position.x = Math.sin(t * 31) * 0.012 * amp;
   } else if (mood === "sleeping") {
     root.position.x = 0;
-    root.position.y = Math.sin(t * 1.1) * 0.018;
+    root.position.y = Math.sin(t * 1.1) * 0.018 * amp;
     root.rotation.z = 0;
   } else {
     root.position.x = 0;
-    root.position.y = 0.01 + Math.sin(t * 1.6) * 0.012;
-    root.rotation.z = Math.sin(t * 1.4) * 0.01;
+    root.position.y = 0.01 + Math.sin(t * 1.6) * 0.012 * amp;
+    root.rotation.z = Math.sin(t * 1.4) * 0.01 * amp;
   }
 
   for (const bit of state.animables) {

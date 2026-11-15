@@ -1749,7 +1749,7 @@ export class LunarGlobeGL {
       ctx.arc(W / 2, H / 2, r, 0, Math.PI * 2);
       ctx.fillStyle = '#6c727d';
       ctx.fill();
-      ctx.strokeStyle = '#62b0ff';
+      ctx.strokeStyle = '#ea580c';
       ctx.stroke();
     }
   }

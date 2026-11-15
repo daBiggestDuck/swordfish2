@@ -457,6 +457,7 @@ test('Live Server static routes and Story client offline fallback work cleanly',
   assert.equal(passport.petName, 'Astro');
   assert.equal(passport.rating, 'Lunar Day Legend');
   assert.ok(passport.sources.length >= 1);
+  assert.ok(typeof passport.fate === 'string' && passport.fate.length > 0);
 
   const handler = createMapRequestHandler(MAPS_ROOT, path.join(REPO_ROOT, 'web'));
   for (const [route, pattern] of [
@@ -539,10 +540,10 @@ test('Live Server and showcase Engine regression checks', async () => {
   const { readFile } = await import('node:fs/promises');
 
   const engineServer = await readFile(path.join(REPO_ROOT, 'src', 'engine', 'EngineServer.java'), 'utf8');
-  assert.match(engineServer, /allowLocalPages\s*\(/);
+  assert.match(engineServer, /allowLocalOrigin\s*\(/);
   assert.match(engineServer, /Access-Control-Allow-Origin/);
   assert.match(engineServer, /Vary/);
-  assert.match(engineServer, /allowLocalPages\s*\(\s*ex\s*\)/);
+  assert.match(engineServer, /allowLocalOrigin\s*\(\s*ex\s*\)/);
 
   const showcaseJs = await readFile(path.join(REPO_ROOT, 'web', 'showcase.js'), 'utf8');
   assert.match(showcaseJs, /resolvedSrc/);

@@ -18,6 +18,6 @@ if (-not ((Get-Command javac -ErrorAction SilentlyContinue) -and (Get-Command ja
 $out = Join-Path ([System.IO.Path]::GetTempPath()) "payload-pets-story-build"
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 $javaFiles = Get-ChildItem -Path "src\story" -Filter "*.java" | Select-Object -ExpandProperty FullName
-& javac -d $out $javaFiles
+& javac -encoding UTF-8 -d $out $javaFiles
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & java -cp $out story.StoryServer $Port --data $Data

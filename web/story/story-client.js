@@ -1,8 +1,18 @@
 // Story client: the one thing other branches need to use the story.
 //
-// Used by the standalone story page (story.js) and meant for the engine/ui game loop. When a Java
-// StoryServer (:8081) is unreachable or when running under a static server (VS Code Live Server),
-// all endpoints transparently fall back to matching offline CLPS story data + map_engine_client.
+// Used by the standalone story page (story.js) and meant for the engine/ui game loop. The engine
+// branch is a Java server (EngineServer, port 8082) whose /api/engine/tick returns
+// { events, state }; pass those straight in. When a Java StoryServer (:8081) is unreachable or when
+// running under a static server (VS Code Live Server), all endpoints transparently fall back to
+// matching offline CLPS story data + map_engine_client:
+//
+//   import { createStoryClient } from './story-client.js';
+//   const story = createStoryClient({ base: 'http://localhost:8081' });   // story server
+//   story.setContext(state.site.id, petId);             // when the player picks a site and pet
+//   // after every engine tick or action:
+//   for (const m of await story.due(state.dayProgress)) showPopup(m);
+//   for (const e of events) if (story.handleEngineEvent(e).ended) showPassport();
+//   const passport = await story.passport(state.dayProgress, petName, { earthDays: state.earthDays });
 //
 // Pop-up objects look like { id, mission, title, text, dayStart, sourceUrl }.
 
@@ -69,6 +79,10 @@ const IM2_KIT =
 const PEREGRINE_KIT =
   'https://www.nasa.gov/wp-content/uploads/2023/12/np-2023-12-017-jsc-clps-astrobotic-press-kit-update-508.pdf';
 const CT3 = 'https://science.nasa.gov/lunar-science/clps-deliveries/ct-3-science/';
+const TRIDENT_DRILL =
+  'https://www.nasa.gov/missions/artemis/nasas-lunar-drill-technology-passes-tests-on-the-moon/';
+const PRIME1 =
+  'https://www.nasa.gov/centers-and-facilities/kennedy/nasas-polar-ice-experiment-paves-way-for-future-moon-missions/';
 const LN1_BEACON =
   'https://www.nasa.gov/centers-and-facilities/marshall/nasa-lights-beacon-on-moon-with-autonomous-navigation-system-test/';
 const IM1_PROGRESS =
@@ -90,49 +104,52 @@ const STORY_MISSIONS = [
 
 const STORY_PETS = [
   {
-    id: 'LISTER',
-    name: 'LISTER',
-    vendor: 'Honeybee Robotics',
+    id: 'BLUE_GHOST',
+    name: 'Ghost',
+    vendor: 'Firefly Aerospace',
     missionId: 'blue-ghost-1',
-    face: '🔩',
-    tagline: "Hungry heat-flow drill. Measures warmth under the regolith — needs power at night.",
+    face: '👻',
+    tagline: "Brave and sunny. Based on Firefly's first Moon lander, which carried 10 NASA instruments.",
     defaultSite: 'MARE_CRISIUM',
     sleepsAtNight: false,
     science: [
-      "Drilled to measure heat flowing from the Moon's interior",
-      'Needed lander power to keep working after sunset',
+      'Switched on all 10 NASA instruments and collected data on the Moon',
+      'Kept working through sunset and into the lunar night',
     ],
-    instrument: 'LISTER heat-flow probe',
+    instrument: null,
+    fate: 'The real Blue Ghost 1 landed on Mar. 2, 2025, ran all 10 NASA instruments, worked into the lunar night, and ended its mission on Mar. 16, 2025.',
   },
   {
-    id: 'LRA',
-    name: 'Retro',
-    vendor: 'NASA GSFC',
-    missionId: 'im-1',
-    face: '💠',
-    tagline: 'Quiet corner-cube mirror. Needs no power, so it sleeps through lunar night.',
-    defaultSite: 'MALAPERT_A',
-    sleepsAtNight: true,
-    science: [
-      'Bounced laser light so orbiters could pin down the lander',
-      'Slept through the night — passive optics draw zero watts',
-    ],
-    instrument: 'LRA laser retroreflector',
-  },
-  {
-    id: 'EDS',
-    name: 'EDS',
-    vendor: 'NASA',
-    missionId: 'blue-ghost-1',
-    face: '✨',
-    tagline: 'Dust-shield panel. Electric fields lift lunar dust — only while power lasts.',
-    defaultSite: 'MARE_CRISIUM',
+    id: 'BLUE_MOON',
+    name: 'Luna',
+    vendor: 'Blue Origin',
+    missionId: 'blue-moon-1',
+    face: '🔵',
+    tagline: "Shy and curious. A planned delivery to the south pole that hasn't flown yet.",
+    defaultSite: 'SHACKLETON_RIDGE',
     sleepsAtNight: false,
     science: [
-      'Lifted lunar dust off glass and radiators with electric fields',
-      'Stopped cleaning when the Sun set and power ran low',
+      'Practiced caring for a lander that will film its own landing (SCALPSS)',
+      'Practiced for a mission carrying a mirror (LRA) so orbiters can find it',
     ],
-    instrument: 'EDS electrodynamic dust shield',
+    instrument: null,
+    fate: "The real Blue Moon Mark 1 has not flown yet. NASA lists it as a planned delivery to the Moon's south pole.",
+  },
+  {
+    id: 'TRIDENT',
+    name: 'Triddy',
+    vendor: 'Intuitive Machines',
+    missionId: 'im-2',
+    face: '⛏️',
+    tagline: 'Hungry and determined. Based on TRIDENT, the ice drill that flew on IM-2 to Mons Mouton.',
+    defaultSite: 'MONS_MOUTON',
+    sleepsAtNight: false,
+    science: [
+      'Built to drill 1 meter down, bringing up soil about 10 cm at a time',
+      'Helped MSolo sniff the soil for signs of water ice',
+    ],
+    instrument: 'TRIDENT drill',
+    fate: 'The real IM-2 lander ended up on its side near Mons Mouton on Mar. 6, 2025. MSolo still worked despite the rough landing.',
   },
   {
     id: 'LN-1',
@@ -140,7 +157,7 @@ const STORY_PETS = [
     vendor: 'Intuitive Machines',
     missionId: 'im-1',
     face: '📡',
-    tagline: 'Chatty navigation beacon. Prefers waiting for Earth before it transmits.',
+    tagline: 'Chatty and helpful. Based on LN-1, the navigation beacon that flew on IM-1 to Malapert A.',
     defaultSite: 'MALAPERT_A',
     sleepsAtNight: false,
     science: [
@@ -148,8 +165,25 @@ const STORY_PETS = [
       "Backed up its lander's own navigation system",
     ],
     instrument: 'LN-1 navigation beacon',
+    fate: 'The real IM-1 lander came to rest tilted near Malapert A on Feb. 22, 2024. LN-1 still lit its beacon for 30 minutes in total.',
   },
 ];
+
+const STORY_PET_ALIASES = {
+  BLUE_GHOST: 'BLUE_GHOST',
+  GHOST: 'BLUE_GHOST',
+  LISTER: 'BLUE_GHOST',
+  EDS: 'BLUE_GHOST',
+  BLUE_MOON: 'BLUE_MOON',
+  LUNA: 'BLUE_MOON',
+  LRA: 'BLUE_MOON',
+  RETRO: 'BLUE_MOON',
+  TRIDENT: 'TRIDENT',
+  TRIDDY: 'TRIDENT',
+  'LN-1': 'LN-1',
+  LN1: 'LN-1',
+  NODEY: 'LN-1',
+};
 
 const STORY_SITES = [
   { id: 'MARE_CRISIUM', name: 'Mare Crisium', lat: 18.56, lon: 61.81 },
@@ -171,21 +205,24 @@ const BUILT_IN_MOMENTS = [
   { id: 'peregrine-nolanding', siteId: 'ANY', mission: 'Peregrine Mission One', title: 'Not every trip lands', text: "Astrobotic's Peregrine launched Jan. 8, 2024 but never landed on the Moon. NASA says every failure brings lessons that improve the next mission.", dayStart: 0.3, sourceUrl: PEREGRINE_KIT, petId: 'ANY' },
   { id: 'earth-link', siteId: 'ANY', mission: 'Any CLPS lander', title: 'Calling Earth', text: 'Landers can only send data home when Earth is above the horizon and the antenna points right. Real operators wait for the link too.', dayStart: 0.5, sourceUrl: DELIVERIES, petId: 'ANY' },
 
-  { id: 'lister-hello', siteId: 'ANY', mission: 'Blue Ghost Mission 1', title: 'Meet LISTER', text: "LISTER is a heat-flow probe that flew on Firefly's Blue Ghost 1. It drills into regolith to measure warmth from the Moon's interior — hungry work!", dayStart: 0.03, sourceUrl: BG1_LANDING, petId: 'LISTER' },
-  { id: 'lister-drill', siteId: 'ANY', mission: 'Blue Ghost Mission 1', title: 'Drilling for heat', text: 'LISTER was designed to dig meters into the surface. Keep it powered: without solar (or lander) power, the drill gets too cold to work.', dayStart: 0.3, sourceUrl: BG1_END, petId: 'LISTER' },
-  { id: 'lister-night', siteId: 'ANY', mission: 'Blue Ghost Mission 1', title: 'Into the night', text: "Blue Ghost 1 kept science running through sunset. Active instruments like LISTER need power through the lunar night — huddle, don't sleep!", dayStart: 0.92, sourceUrl: BG1_END, petId: 'LISTER' },
+  { id: 'ghost-touchdown', siteId: 'ANY', mission: 'Blue Ghost Mission 1', title: 'Touchdown!', text: "Ghost is based on Firefly's Blue Ghost 1. Landing safely is the hardest part of any lunar mission, and your pet just did it!", dayStart: 0.03, sourceUrl: BG1_LANDING, petId: 'BLUE_GHOST' },
+  { id: 'ghost-payloads', siteId: 'ANY', mission: 'Blue Ghost Mission 1', title: 'A backpack of experiments', text: 'The real Blue Ghost 1 carried 10 NASA instruments, and all 10 switched on and collected data on the Moon. Keep Ghost powered so they keep working!', dayStart: 0.25, sourceUrl: BG1_END, petId: 'BLUE_GHOST' },
+  { id: 'ghost-night', siteId: 'ANY', mission: 'Blue Ghost Mission 1', title: 'Into the night', text: 'Blue Ghost 1 kept working through sunset and into the lunar night. Its mission ended on Mar. 16, 2025. Keep Ghost cozy!', dayStart: 0.92, sourceUrl: BG1_END, petId: 'BLUE_GHOST' },
 
-  { id: 'retro-hello', siteId: 'ANY', mission: 'IM-1 Mission', title: 'Meet Retro', text: 'Retro is based on the Laser Retroreflector Array — a handful of glass prisms that bounce laser light back to orbiters. No power, no commands.', dayStart: 0.03, sourceUrl: IM1_LRO, petId: 'LRA' },
-  { id: 'retro-mirror', siteId: 'ANY', mission: 'Any CLPS lander', title: 'A mirror for orbiters', text: 'Passive LRA arrays help spacecraft pinpoint exactly where a lander sits. They keep working for decades because they draw zero watts.', dayStart: 0.4, sourceUrl: CLPS_PAGE, petId: 'LRA' },
-  { id: 'retro-night', siteId: 'ANY', mission: 'Any CLPS lander', title: 'Sleep through the night', text: 'While powered pets huddle in the cold, Retro sleeps peacefully. Real hardware needs no heater and no battery — just clear glass facets.', dayStart: 0.92, sourceUrl: CLPS_PAGE, petId: 'LRA' },
+  { id: 'luna-waiting', siteId: 'ANY', mission: 'Blue Moon Mark 1 Mission', title: 'Still waiting for liftoff', text: "Luna is based on Blue Origin's Blue Moon Mark 1, a planned CLPS delivery that will carry two NASA instruments to the Moon's south pole. This day is a practice run!", dayStart: 0.03, sourceUrl: CT3, petId: 'BLUE_MOON' },
+  { id: 'luna-cameras', siteId: 'ANY', mission: 'Blue Moon Mark 1 Mission', title: 'Filming the landing', text: "One of Luna's instruments, SCALPSS, uses cameras to film the lander and the ground during descent, to show how the engine plume disturbs the surface.", dayStart: 0.3, sourceUrl: CT3, petId: 'BLUE_MOON' },
+  { id: 'luna-learns', siteId: 'ANY', mission: 'Earlier CLPS flights', title: 'Learning from friends', text: 'Earlier landers taught the whole program a lot: IM-1 landed tilted, Peregrine never landed, and Blue Ghost 1 worked through a lunar day. Luna gets to learn from all of them.', dayStart: 0.5, sourceUrl: DELIVERIES, petId: 'BLUE_MOON' },
+  { id: 'luna-mirror', siteId: 'ANY', mission: 'Blue Moon Mark 1 Mission', title: 'A mirror for orbiters', text: "Luna's other instrument is a laser retroreflector (LRA). It helps spacecraft in orbit pinpoint exactly where the lander is.", dayStart: 0.7, sourceUrl: CT3, petId: 'BLUE_MOON' },
+  { id: 'luna-night', siteId: 'ANY', mission: 'Blue Moon Mark 1 Mission', title: 'Big dreams, long night', text: 'Every lander faces the cold lunar night. Luna dreams of the day it really flies. For now, keep it warm and the Earth link steady!', dayStart: 0.92, sourceUrl: CLPS_PAGE, petId: 'BLUE_MOON' },
 
-  { id: 'eds-hello', siteId: 'ANY', mission: 'Blue Ghost Mission 1', title: 'Meet EDS', text: 'EDS is an electrodynamic dust shield from Blue Ghost 1. Electric fields lift lunar dust off glass and radiators — no moving parts.', dayStart: 0.03, sourceUrl: BG1_LANDING, petId: 'EDS' },
-  { id: 'eds-dust', siteId: 'ANY', mission: 'Blue Ghost Mission 1', title: 'Dust everywhere', text: 'Lunar dust is electrostatically sticky. EDS cleans surfaces while the Sun (and lander power) can feed it; night stops the cleaning.', dayStart: 0.35, sourceUrl: BG1_END, petId: 'EDS' },
-  { id: 'eds-night', siteId: 'ANY', mission: 'Blue Ghost Mission 1', title: 'Fields need power', text: 'Without power the dust shield cannot keep lifting motes. EDS huddles in the lunar night instead of sleeping — same rule as other active payloads.', dayStart: 0.92, sourceUrl: BG1_END, petId: 'EDS' },
+  { id: 'triddy-hello', siteId: 'ANY', mission: 'IM-2 Mission', title: 'Meet Triddy', text: "Triddy is based on TRIDENT, the drill in NASA's PRIME-1 experiment. It flew on IM-2 together with MSolo, an instrument that sniffs soil for gases.", dayStart: 0.03, sourceUrl: PRIME1, petId: 'TRIDENT' },
+  { id: 'triddy-drill', siteId: 'ANY', mission: 'IM-2 Mission', title: 'Drilling down', text: 'TRIDENT is built to drill up to 1 meter into the Moon, bringing up soil about 10 cm at a time by spinning and hammering. Drilling is hungry work, so keep Triddy powered!', dayStart: 0.3, sourceUrl: TRIDENT_DRILL, petId: 'TRIDENT' },
+  { id: 'triddy-sideways', siteId: 'ANY', mission: 'IM-2 Mission', title: 'Landing on its side', text: 'IM-2 landed on Mar. 6, 2025, about 400 meters from its target at Mons Mouton, and ended up on its side. MSolo still worked despite the rough landing.', dayStart: 0.55, sourceUrl: TRIDENT_DRILL, petId: 'TRIDENT' },
+  { id: 'triddy-ice', siteId: 'ANY', mission: 'IM-2 Mission', title: 'Sniffing for ice', text: "PRIME-1 was NASA's first try at drilling for ice near the Moon's south pole. Water ice there could one day help astronauts live on the Moon.", dayStart: 0.8, sourceUrl: PRIME1, petId: 'TRIDENT' },
 
   { id: 'nodey-hello', siteId: 'ANY', mission: 'IM-1 Mission', title: 'Meet Nodey', text: "Nodey is based on Lunar Node-1 (LN-1), a navigation beacon NASA flew on IM-1. Its job: help explorers know exactly where they are on the Moon.", dayStart: 0.03, sourceUrl: LN1_BEACON, petId: 'LN-1' },
   { id: 'nodey-dsn', siteId: 'ANY', mission: 'IM-1 Mission', title: 'Talking to Earth', text: "On the way to the Moon, LN-1 made three successful passes with NASA's Deep Space Network, talking with ground stations on Earth.", dayStart: 0.25, sourceUrl: IM1_PROGRESS, petId: 'LN-1' },
-  { id: 'nodey-backup', siteId: 'ANY', mission: 'IM-1 Mission', title: 'Helping its lander', text: "LN-1 also gave critical backup to IM-1's own navigation system. Nodey likes to help — and prefers waiting until Earth is in view!", dayStart: 0.5, sourceUrl: LN1_BEACON, petId: 'LN-1' },
+  { id: 'nodey-backup', siteId: 'ANY', mission: 'IM-1 Mission', title: 'Helping its lander', text: "LN-1 also gave critical backup to IM-1's own navigation system. Nodey likes to help!", dayStart: 0.5, sourceUrl: LN1_BEACON, petId: 'LN-1' },
   { id: 'nodey-beacon', siteId: 'ANY', mission: 'IM-1 Mission', title: 'A beacon on the Moon', text: 'For 30 minutes in total in February 2024, NASA lit a navigation beacon on the Moon with LN-1, testing a system that could guide future explorers.', dayStart: 0.75, sourceUrl: LN1_BEACON, petId: 'LN-1' },
 ];
 
@@ -237,8 +274,13 @@ function loadExtraMoments() {
   return extraMomentsPromise;
 }
 
-function findPet(id) {
+function normalizePetId(id) {
   const key = String(id || '').trim().toUpperCase();
+  return STORY_PET_ALIASES[key] || key;
+}
+
+function findPet(id) {
+  const key = normalizePetId(id);
   return STORY_PETS.find((p) => p.id.toUpperCase() === key) || STORY_PETS[0];
 }
 
@@ -252,7 +294,7 @@ function passportRating(daysSurvived) {
 
 function momentApplies(m, site, pet) {
   const siteOk = m.siteId === 'ANY' || (site && SITE_MATCH(m.siteId, site));
-  const petOk = m.petId === 'ANY' || m.petId.toUpperCase() === String(pet || '').toUpperCase();
+  const petOk = m.petId === 'ANY' || m.petId.toUpperCase() === normalizePetId(pet);
   return siteOk && petOk;
 }
 
@@ -290,7 +332,7 @@ async function fallbackApi(path) {
   }
 
   if (pathname === '/api/pets') {
-    return STORY_PETS.map(({ science, ...rest }) => rest);
+    return STORY_PETS.map(({ science, fate, ...rest }) => rest);
   }
 
   if (pathname === '/api/sites') {
@@ -375,6 +417,7 @@ async function fallbackApi(path) {
       science,
       moments: matchedMoments.map((m) => ({ mission: m.mission, title: m.title })),
       sources,
+      fate: pet.fate || '',
     };
   }
 

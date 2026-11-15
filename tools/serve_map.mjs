@@ -130,7 +130,6 @@ export function createMapRequestHandler(mapsRoot = DEFAULT_MAPS_ROOT, webRoot = 
     } else if (relPath === '/readme') {
       relPath = '/readme.html';
     }
-
     const resolveSafeFile = (baseDir, reqPath) => {
       let decoded;
       try {

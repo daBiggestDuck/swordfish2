@@ -8,5 +8,5 @@ set -e
 cd "$(dirname "$0")"
 OUT="${TMPDIR:-/tmp}/payload-pets-story-build"
 mkdir -p "$OUT"
-javac -d "$OUT" src/story/*.java
+javac -encoding UTF-8 -d "$OUT" src/story/*.java
 exec java -cp "$OUT" story.StoryServer "$@"

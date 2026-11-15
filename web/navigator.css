@@ -1,16 +1,23 @@
 /* Reuses Map CSS tokens (web/map.css) so shell restyles stay cohesive. */
 :root {
-  --bg: #0b0e14;
-  --panel: #141922;
-  --panel-alt: #1a212e;
-  --border: #2a3244;
-  --text: #e6ecf8;
-  --muted: #8c9bbd;
-  --accent: #62b0ff;
+  --maroon: #7f1d1d;
+  --orange: #ea580c;
+  --amber: #f59e0b;
+  --cream: #fef3c7;
+  --space: #111827;
+
+  --bg: var(--space);
+  --panel: #1a2234;
+  --panel-alt: #222b40;
+  --border: #3a4258;
+  --text: var(--cream);
+  --muted: #c4b896;
+  --accent: var(--orange);
+  --accent-ink: var(--space);
   --good: #45d48a;
-  --warn: #ffb84d;
-  --bad: #ff6b6b;
-  --ice: #44e2ff;
+  --warn: var(--amber);
+  --bad: #f87171;
+  --ice: #fde68a;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
@@ -77,14 +84,14 @@ button, select, input { font-family: inherit; color: var(--text); }
   background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
   padding: .35rem .55rem; cursor: pointer;
 }
-.site-picks label.chk.on { border-color: var(--accent); background: #14223f; }
+.site-picks label.chk.on { border-color: var(--accent); background: rgba(127, 29, 29, 0.35); }
 
 button {
   cursor: pointer; border-radius: 6px; border: 1px solid transparent;
   padding: .34rem .7rem; font-size: .8rem; font-weight: 600;
 }
 button:hover { filter: brightness(1.12); }
-.btn-primary { background: var(--accent); color: #051024; }
+.btn-primary { background: var(--accent); color: var(--accent-ink); }
 .btn-ghost { background: var(--panel-alt); color: var(--text); border-color: var(--border); }
 
 .epoch-row {
@@ -117,7 +124,7 @@ button:hover { filter: brightness(1.12); }
   padding: .12rem .42rem; border-radius: 6px; width: fit-content;
 }
 .verdict.good { background: rgba(69, 212, 138, .18); color: var(--good); }
-.verdict.warn { background: rgba(255, 184, 77, .18); color: var(--warn); }
+.verdict.warn { background: rgba(245, 158, 11, .18); color: var(--warn); }
 .verdict.bad { background: rgba(255, 107, 107, .18); color: var(--bad); }
 
 .metric-grid {
@@ -149,7 +156,7 @@ button:hover { filter: brightness(1.12); }
 }
 #elev-chart {
   width: 100%; height: auto; display: block;
-  background: #070b15; border: 1px solid var(--border); border-radius: 8px;
+  background: #0c1220; border: 1px solid var(--border); border-radius: 8px;
 }
 .chart-legend {
   display: flex; flex-wrap: wrap; gap: .8rem; font-size: .74rem; margin-top: .4rem; color: var(--muted);
@@ -205,3 +212,12 @@ td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {
   .metric-grid, .win-row { grid-template-columns: 1fr 1fr; }
 }
+
+/* Date range guard (ephemeris covers a fixed window; see navigator.js resolveEpochMs) */
+.controls label small { display: block; margin-top: 2px; font-size: .68rem; font-family: var(--mono); }
+.date-note[hidden] { display: none; }
+.date-note {
+  margin: .5rem 0 0; padding: .4rem .6rem; border-radius: 6px; font-size: .78rem;
+  border: 1px solid var(--border); border-left: 3px solid var(--warn); background: var(--panel-alt); color: var(--text);
+}
+.date-note[data-kind="info"] { border-left-color: var(--accent); }

@@ -222,7 +222,7 @@ public class MapServer {
         String name = file.getFileName().toString();
         String type = name.endsWith(".html") ? "text/html; charset=utf-8"
                 : name.endsWith(".css") ? "text/css; charset=utf-8"
-                : name.endsWith(".js") ? "text/javascript; charset=utf-8"
+                : (name.endsWith(".js") || name.endsWith(".mjs")) ? "text/javascript; charset=utf-8"
                 : name.endsWith(".json") ? "application/json; charset=utf-8"
                 : name.endsWith(".md") ? "text/markdown; charset=utf-8"
                 : name.endsWith(".svg") ? "image/svg+xml"

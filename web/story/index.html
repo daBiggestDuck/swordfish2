@@ -4,80 +4,147 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Payload Pets: Story</title>
+  <meta name="description" content="Adopt a real NASA CLPS lunar lander or instrument and keep it alive through one lunar day.">
   <link rel="stylesheet" href="story.css">
 </head>
 <body>
-  <header>
-    <div class="brand-badge">NASA MOON EXPLORER · STORY</div>
-    <h1>Payload Pets</h1>
-    <p>Adopt a real lunar instrument and look after it through one lunar day.</p>
+  <div class="starfield" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-badge">NASA SPACE APPS // PAYLOAD PETS</div>
+        <h1>Payload Pets: The Story</h1>
+        <p>Adopt a pet built from real NASA Moon hardware, help it survive one lunar day, and discover what really happened to the missions that flew.</p>
+      </div>
+      <div class="topbar-stats" aria-hidden="true">
+        <span class="stat"><b>4</b> pets</span>
+        <span class="stat"><b>11</b> CLPS missions</span>
+        <span class="stat"><b>NASA</b> sources</span>
+      </div>
+    </div>
   </header>
 
-  <main>
-    <section class="card" aria-labelledby="setup-h">
-      <h2 id="setup-h">1. Adopt your pet</h2>
-      <label>Pet name <input id="petName" maxlength="24" placeholder="Leave blank for the default name"></label>
-      <label>Pet (a real CLPS lander)
-        <select id="pet"></select>
-      </label>
-      <p id="pet-bio" class="fine"></p>
-      <label>Landing site
-        <select id="site"></select>
-      </label>
+  <main class="layout">
+    <section class="card adopt" aria-labelledby="setup-h">
+      <h2 id="setup-h"><span class="step" aria-hidden="true">1</span> Adopt your pet</h2>
+      <div id="pet-cards" class="pet-cards" role="group" aria-label="Choose a pet"></div>
+      <select id="pet" hidden aria-hidden="true" tabindex="-1"></select>
+      <p id="pet-bio" class="bio"></p>
+      <div class="field-row">
+        <label>Name your pet
+          <input id="petName" maxlength="24" placeholder="Optional">
+        </label>
+        <label>Landing site
+          <select id="site"></select>
+        </label>
+      </div>
     </section>
 
-    <section class="card" aria-labelledby="day-h">
-      <h2 id="day-h">2. Live one lunar day</h2>
-      <div id="pet-face" aria-live="polite">🙂</div>
-      <div id="mood"></div>
-      <input id="slider" type="range" min="0" max="1000" value="0" aria-label="Lunar day progress">
-      <div id="readout">Day 0.0 of 14</div>
-      <button id="play">Play</button>
-      <button id="restart" class="ghost">Restart</button>
+    <section class="card stage-card" aria-labelledby="day-h">
+      <h2 id="day-h"><span class="step" aria-hidden="true">2</span> Live one lunar day</h2>
+      <div id="stage" class="stage" data-mood="warm">
+        <div class="sun" aria-hidden="true"></div>
+        <div id="earth" class="earth" aria-hidden="true"></div>
+        <div class="ground" aria-hidden="true"></div>
+        <div id="pet-face" class="pet">🙂</div>
+        <div id="mood" class="mood" aria-live="polite"></div>
+        <div id="chapter" class="chapter"></div>
+      </div>
+      <p class="fine center">Tap your pet to give it a pat, or drag to spin it. The Moon has no air, so its sky stays black even at noon.</p>
+      <div class="track">
+        <div id="markers" class="markers" aria-hidden="true"></div>
+        <input id="slider" type="range" min="0" max="1000" value="0" aria-label="Lunar day progress">
+        <div class="track-labels" aria-hidden="true"><span>Sunrise</span><span>Noon</span><span>Sunset</span></div>
+      </div>
+      <div class="controls">
+        <div>
+          <div id="readout" class="readout">Day 0.0 of 14</div>
+          <div id="story-count" class="fine" style="margin:0"></div>
+        </div>
+        <div class="buttons">
+          <button id="play" class="primary" type="button">Play</button>
+          <button id="restart" class="ghost" type="button">Restart</button>
+        </div>
+      </div>
+      <div class="care" aria-label="Care for your pet">
+        <div class="meter"><span><i class="dot d-sun"></i>Power</span><div class="bar"><i id="m-power"></i></div><b id="v-power">70</b></div>
+        <div class="meter"><span><i class="dot d-warm"></i>Warmth</span><div class="bar"><i id="m-warmth"></i></div><b id="v-warmth">60</b></div>
+        <div class="meter"><span><i class="dot d-sig"></i>Signal</span><div id="link" class="link">Earth link: checking</div><b id="v-data">0 sent</b></div>
+        <div class="care-buttons">
+          <button id="act-tilt" class="ghost" type="button">Tilt panels to the Sun</button>
+          <button id="act-heater" class="ghost" type="button" aria-pressed="false">Heater: off</button>
+          <button id="act-send" class="ghost" type="button">Send data home</button>
+        </div>
+        <p id="care-tip" class="fine">Press Play, then keep Power and Warmth above zero until sunset. Real landers juggle the same three things.</p>
+      </div>
     </section>
 
-    <section class="card" aria-labelledby="sky-h">
-      <h2 id="sky-h">Sun &amp; Earth at your site</h2>
-      <label>Landing date
-        <input id="date" type="date">
-      </label>
-      <label>Compare with
-        <select id="compare"><option value="">(none)</option></select>
-      </label>
-      <button id="best" class="ghost" type="button">Best landing date for this site</button>
+    <section class="card sky-card" aria-labelledby="sky-h">
+      <h2 id="sky-h"><span class="step" aria-hidden="true">3</span> Plan your landing</h2>
+      <p class="lead">Pick a landing date and see where the Sun and Earth sit in the sky. Sun means power. Earth means a radio link home.</p>
+      <div class="field-row">
+        <label>Landing date
+          <input id="date" type="date">
+        </label>
+        <label>Compare with
+          <select id="compare"><option value="">(none)</option></select>
+        </label>
+      </div>
+      <button id="best" class="ghost wide" type="button">Find the best landing date for this site</button>
       <div id="sky"></div>
       <p id="sky-note" class="fine"></p>
     </section>
 
-    <section class="card" aria-labelledby="clps-h">
-      <h2 id="clps-h">Real CLPS deliveries</h2>
+    <section class="card timeline-card" aria-labelledby="clps-h">
+      <h2 id="clps-h"><span class="step" aria-hidden="true">4</span> Real CLPS deliveries</h2>
       <ol id="timeline"></ol>
       <p class="fine">Order of planned missions is approximate (NASA places future deliveries by year only).</p>
     </section>
+    <section class="card passport-card" id="passport-card" aria-labelledby="pp-h">
+      <h2 id="pp-h"><span class="step" aria-hidden="true">5</span> Your Pet Passport</h2>
+      <p id="pp-lead" class="lead">This fills in as you play. Finish the lunar day to get it stamped.</p>
+      <div id="passport" class="passport" data-done="false">
+      <div class="pp-band">
+        <h3 id="pp-title">Lunar Pet Passport</h3>
+        <span id="pp-no">CLPS</span>
+      </div>
+      <div class="pp-main">
+        <div id="pp-face" class="pp-face" aria-hidden="true"></div>
+        <dl id="pp-body"></dl>
+        <div id="pp-stamp" class="stamp" aria-hidden="true"></div>
+      </div>
+      <div id="pp-stats" class="pp-stats"></div>
+      <div class="pp-journey" aria-hidden="true"><i id="pp-journey"></i><span>Sunrise</span><span>Noon</span><span>Sunset</span></div>
+      <div class="pp-fate"><b>What really happened</b><p id="pp-fate"></p></div>
+      <div id="pp-mrz" class="pp-mrz" aria-hidden="true"></div>
+      <div class="row">
+        <button id="pp-copy" class="primary" type="button">Copy</button>
+        <a id="pp-nasa" class="btn ghost" target="_blank" rel="noopener">NASA source ↗</a>
+        <button id="pp-close" class="ghost" type="button">Play again</button>
+      </div>
+    </div>
+    </section>
   </main>
 
+  <footer class="foot">
+    Every fact links to its NASA source. 3D pet models by the pets team. Photos: NASA (Andromeda Galaxy, GALEX; Earthset from Orion, Artemis II).
+  </footer>
+
   <div id="popup" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="popup-title">
-    <div class="modal">
+    <div class="modal postcard">
+      <p class="postmark">Moon news</p>
       <h3 id="popup-title"></h3>
       <p id="popup-text"></p>
       <p class="mission" id="popup-mission"></p>
-      <p><a id="popup-source" class="srclink" target="_blank" rel="noopener">NASA source</a></p>
-      <button id="popup-ok">Got it</button>
-    </div>
-  </div>
-
-  <div id="passport" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="pp-title">
-    <div class="modal passport">
-      <h3 id="pp-title">Pet Passport</h3>
-      <dl id="pp-body"></dl>
       <div class="row">
-        <button id="pp-copy">Copy</button>
-        <a id="pp-nasa" class="btn" target="_blank" rel="noopener">NASA source</a>
-        <button id="pp-close" class="ghost">Close</button>
+        <a id="popup-source" class="srclink" target="_blank" rel="noopener">NASA source ↗</a>
+        <button id="popup-ok" class="primary" type="button">Got it</button>
       </div>
     </div>
   </div>
 
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }</script>
   <script type="module" src="story.js"></script>
 </body>
 </html>

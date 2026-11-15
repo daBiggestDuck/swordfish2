@@ -1,33 +1,40 @@
 /* Injected into same-origin iframe tabs when hosted in the v0 showcase shell.
-   Aligns secondary surfaces with Map / Sites (web/map.css) tokens. */
+   Aligns secondary surfaces with Map / Sites (web/map.css) warm space tokens. */
 html.in-shell {
-  --bg: #0b0e14;
-  --panel: #141922;
-  --panel-alt: #1a212e;
-  --border: #2a3244;
-  --text: #e6ecf8;
-  --muted: #8c9bbd;
-  --accent: #62b0ff;
+  --maroon: #7f1d1d;
+  --orange: #ea580c;
+  --amber: #f59e0b;
+  --cream: #fef3c7;
+  --space: #111827;
+
+  --bg: var(--space);
+  --panel: #1a2234;
+  --panel-alt: #222b40;
+  --border: #3a4258;
+  --text: var(--cream);
+  --muted: #c4b896;
+  --accent: var(--orange);
+  --accent-ink: var(--space);
   --good: #45d48a;
-  --warn: #ffb84d;
-  --bad: #ff6b6b;
-  --ice: #44e2ff;
+  --warn: var(--amber);
+  --bad: #f87171;
+  --ice: #fde68a;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 html.in-shell body {
-  background: #0b0e14 !important;
-  color: #e6ecf8 !important;
+  background: #111827 !important;
+  color: #fef3c7 !important;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif !important;
 }
 
 html.in-shell a {
-  color: #62b0ff !important;
+  color: #ea580c !important;
 }
 
 html.in-shell .brand-badge,
 html.in-shell .eyebrow {
-  color: #62b0ff !important;
+  color: #ea580c !important;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
   letter-spacing: 0.08em !important;
   text-transform: uppercase;
