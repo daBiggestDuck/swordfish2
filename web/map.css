@@ -152,6 +152,28 @@ button:hover { filter: brightness(1.12); }
   width: 96px !important; height: 96px !important;
   display: block; background: transparent !important;
 }
+.surface-pet-art .pets3d-error-box,
+.moon-pet-art .pets3d-error-box {
+  display: grid;
+  place-content: center;
+  gap: 0.35rem;
+  padding: 0.4rem;
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--muted, #8c9bbd);
+}
+.surface-pet-art .pets3d-retry,
+.moon-pet-art .pets3d-retry {
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #051024;
+  background: var(--accent, #62b0ff);
+  border: 1px solid var(--accent, #62b0ff);
+  border-radius: 5px;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+}
 .surface-pet-art .pet-frame { width: 88px; height: auto; }
 .surface-pet-art.power-glow { filter: drop-shadow(0 0 10px rgba(255, 231, 173, .65)); }
 .surface-pet-art.signal-stress { filter: drop-shadow(0 0 10px rgba(255, 107, 107, .55)); }
