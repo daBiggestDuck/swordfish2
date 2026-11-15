@@ -5,6 +5,7 @@ import {
   DROP_PETS,
   buildOverlayMarkerGroup,
   conditionsToReaction,
+  disposePetVisual,
   getDropPet,
   isDropPet,
   mountPetVisual,
@@ -50,6 +51,8 @@ const state = {
   storyboardRaf: null,
   stageSeq: 0,
   petReactionKey: '',
+  surfacePetKey: '',
+  surfacePetBusy: false,
 };
 
 function svgEl(tag, attrs = {}, parent = null) {
@@ -72,6 +75,68 @@ function setElementHidden(el, isHidden) {
     el.removeAttribute('hidden');
     el.style.display = '';
   }
+}
+
+/** Exclusive map overlay popups: "predrop" | "pet" | "none". HUD is soft (suppressed when exclusive). */
+function setActiveMapPopup(kind) {
+  const vp = $('#map-viewport');
+  const next = kind === 'predrop' || kind === 'pet' ? kind : 'none';
+  if (vp) vp.dataset.activePopup = next;
+
+  const card = $('#predrop-card');
+  const stage = $('#moon-pet-stage');
+
+  if (next === 'predrop') {
+    if (stage) setElementHidden(stage, true);
+    if (card) setElementHidden(card, false);
+  } else if (next === 'pet') {
+    if (card) {
+      card.classList.remove('story-active', 'dock-left', 'dock-bottom');
+      setElementHidden(card, true);
+    }
+    if (stage) setElementHidden(stage, false);
+  } else {
+    if (card) {
+      card.classList.remove('story-active', 'dock-left', 'dock-bottom');
+      setElementHidden(card, true);
+    }
+    // pet stage visibility decided by caller / refreshPlacedPetReaction
+  }
+}
+
+/** Flip/shift predrop so it stays in-viewport and away from the drop pin. */
+function layoutPredropCard(screenX, screenY, viewportW, viewportH) {
+  const card = $('#predrop-card');
+  if (!card || card.hidden) return { dockLeft: false, dockBottom: false };
+
+  const pad = 12;
+  const cardW = Math.min(300, Math.max(200, viewportW - pad * 2));
+  const cardH = Math.min(card.offsetHeight || 320, viewportH - pad * 2);
+  let dockLeft = Number.isFinite(screenX) ? screenX > viewportW * 0.5 : false;
+  let dockBottom = false;
+
+  // If pin is in the upper half near the card's preferred top, prefer bottom dock.
+  if (Number.isFinite(screenY) && screenY < pad + cardH * 0.45 && screenY < viewportH * 0.42) {
+    dockBottom = true;
+  }
+  // Keep card fully inside viewport height when top-docked.
+  if (!dockBottom && cardH + pad * 2 > viewportH) {
+    dockBottom = false; // still top; CSS max-height + scroll handles overflow
+  }
+
+  card.classList.toggle('dock-left', dockLeft);
+  card.classList.toggle('dock-bottom', dockBottom);
+  return { dockLeft, dockBottom, cardW };
+}
+
+/** Keep mood sheet off the on-globe pet when the pin is in the bottom-left corner. */
+function layoutPetStage(screenX, viewportW) {
+  const stage = $('#moon-pet-stage');
+  if (!stage || stage.hidden) return;
+  const dockRight = Number.isFinite(screenX) && Number.isFinite(viewportW)
+    ? screenX < viewportW * 0.42
+    : false;
+  stage.classList.toggle('dock-right', dockRight);
 }
 
 let clientFallbackMode = false;
@@ -640,6 +705,13 @@ function renderTelemetry() {
   opBadge.textContent = cur.dualViable ? 'GREAT' : (cur.sunlit ? 'SUN ONLY' : 'NIGHT');
   opBadge.className = `badge ${cur.dualViable ? 'good' : (cur.sunlit ? 'warn' : 'bad')}`;
 
+  const liveMeta = $('#live-summary-meta');
+  if (liveMeta) {
+    const sunBit = cur.sunlit ? 'Day' : 'Night';
+    const dteBit = cur.earthVisible ? 'Earth OK' : 'No Earth';
+    liveMeta.textContent = `${sunBit} · ${dteBit} · ${opBadge.textContent}`;
+  }
+
   $('#win-sunlit').textContent = win.sunlitDaysText;
   $('#win-dte').textContent = `${win.dteCoveragePct}%`;
   $('#win-dual').textContent = win.dualViableDaysText;
@@ -677,10 +749,15 @@ async function stageDropPoint(lat, lon, fetchNew = true, animate = fetchNew) {
   const seq = ++state.stageSeq;
   const card = $('#predrop-card');
 
+  // Dismiss pet stage / prior sheet — exclusive popup slot
   if (animate) {
     cancelStoryboardAnim();
-    card.classList.remove('story-active');
+    card.classList.remove('story-active', 'dock-left', 'dock-bottom');
+    setActiveMapPopup('none');
     setElementHidden(card, true);
+    setElementHidden($('#moon-pet-stage'), true);
+  } else {
+    setActiveMapPopup('predrop');
   }
 
   const ev =
@@ -791,14 +868,14 @@ async function stageDropPoint(lat, lon, fetchNew = true, animate = fetchNew) {
   if (animate) {
     state.stagedDrop.animStartTime = typeof performance !== 'undefined' ? performance.now() : 0;
     card.classList.remove('story-active');
-    setElementHidden(card, false);
+    setActiveMapPopup('predrop');
     void card.offsetWidth;
     card.classList.add('story-active');
     renderMap();
     startStoryboardLineLoop();
   } else {
     card.classList.add('story-active');
-    setElementHidden(card, false);
+    setActiveMapPopup('predrop');
     renderMap();
   }
 }
@@ -808,7 +885,7 @@ function clearStagedDrop() {
   cancelStoryboardAnim();
   state.stagedDrop = null;
   const card = $('#predrop-card');
-  card.classList.remove('story-active');
+  card.classList.remove('story-active', 'dock-left', 'dock-bottom');
   setElementHidden(card, true);
   if (state.globe) {
     const active = getActivePointInfo();
@@ -817,6 +894,15 @@ function clearStagedDrop() {
     } else {
       state.globe.setStagedPoint(null, null);
     }
+  }
+  // Restore pet mood sheet if a pet is placed; otherwise clear exclusive slot
+  const placed = state.placedPet || readPlacedPet();
+  if (placed && isDropPet(placed.petId)) {
+    setActiveMapPopup('pet');
+    refreshPlacedPetReaction(false);
+  } else {
+    setActiveMapPopup('none');
+    setElementHidden($('#moon-pet-stage'), true);
   }
   renderMap();
 }
@@ -939,7 +1025,9 @@ async function refreshPlacedPetReaction(force = false) {
   if (!placed || !isDropPet(placed.petId)) {
     if (stage) setElementHidden(stage, true);
     if (banner) setElementHidden(banner, true);
+    if ($('#map-viewport')?.dataset?.activePopup === 'pet') setActiveMapPopup('none');
     state.petReactionKey = '';
+    disposeSurfacePetLayer();
     return;
   }
 
@@ -948,6 +1036,7 @@ async function refreshPlacedPetReaction(force = false) {
   const key = `${placed.petId}:${reaction.phaseId}:${reaction.moodId}:${reaction.signalStress ? 1 : 0}:${reaction.powerGlow ? 1 : 0}:${state.sampleIndex}`;
   if (!force && key === state.petReactionKey) {
     updatePlacedPetChrome(placed, reaction);
+    positionSurfacePetLayer();
     return;
   }
   state.petReactionKey = key;
@@ -967,10 +1056,113 @@ async function refreshPlacedPetReaction(force = false) {
   updatePlacedPetChrome(state.placedPet, reaction);
   const art = $('#moon-pet-art');
   if (art) {
-    await mountPetVisual(art, placed.petId, sky, { idPrefix: 'map-moon-pet' });
+    // Shared-farm blit (same instruments as globe). Does not consume a live WebGL slot,
+    // so the surface pet can keep its dedicated context in 3D mode.
+    await mountPetVisual(art, placed.petId, sky, {
+      idPrefix: 'map-moon-pet',
+      mode: 'shared',
+      autoRotate: state.projection !== '3d',
+      interactive: false,
+    });
   }
-  if (stage) setElementHidden(stage, false);
+  // Only show pet sheet when predrop is not occupying the exclusive slot
+  const activePopup = $('#map-viewport')?.dataset?.activePopup;
+  if (stage && activePopup !== 'predrop' && !state.stagedDrop) {
+    setActiveMapPopup('pet');
+  }
+  await syncSurfacePetLayer(force);
   renderMap();
+}
+
+function disposeSurfacePetLayer() {
+  const layer = $('#surface-pet-layer');
+  const host = $('#surface-pet-art');
+  disposePetVisual(host);
+  state.surfacePetKey = '';
+  if (layer) {
+    layer.className = 'surface-pet-layer';
+    setElementHidden(layer, true);
+    layer.setAttribute('aria-hidden', 'true');
+  }
+}
+
+/** Sync transform only — cheap, called on every globe view change. */
+function positionSurfacePetLayer() {
+  const layer = $('#surface-pet-layer');
+  const placed = state.placedPet;
+  if (!layer || !placed || !isDropPet(placed.petId) || state.projection !== '3d' || !state.globe) {
+    if (layer && state.projection !== '3d') setElementHidden(layer, true);
+    return;
+  }
+  const p = state.globe.latLonToScreen(placed.lat, placed.lon);
+  const { width: vw } = state.globe.getViewportSize?.() || { width: 960 };
+  if (p?.visible !== false) layoutPetStage(p.x, vw);
+  if (!p || p.visible === false) {
+    setElementHidden(layer, true);
+    layer.setAttribute('aria-hidden', 'true');
+    return;
+  }
+  setElementHidden(layer, false);
+  layer.removeAttribute('aria-hidden');
+  layer.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px)`;
+}
+
+/**
+ * Mount / update the on-globe 3D pet for globe mode; tear down for 2D / south-pole.
+ * Flat views draw SVG sprites via drawPlacedPetMarker instead.
+ */
+async function syncSurfacePetLayer(force = false) {
+  const layer = $('#surface-pet-layer');
+  const host = $('#surface-pet-art');
+  const placed = state.placedPet;
+  if (!layer || !host) return;
+
+  if (!placed || !isDropPet(placed.petId) || state.projection !== '3d') {
+    disposeSurfacePetLayer();
+    return;
+  }
+
+  const sky = currentSkyForPet();
+  const reaction = conditionsToReaction(placed.petId, sky);
+  const mountKey = `${placed.petId}:${reaction.moodId}:${reaction.signal}:${reaction.powerGlow ? 1 : 0}:${reaction.signalStress ? 1 : 0}`;
+
+  for (const cls of [...layer.classList]) {
+    if (cls.startsWith('anim-')) layer.classList.remove(cls);
+  }
+  layer.classList.add(`anim-${reaction.animation}`);
+
+  positionSurfacePetLayer();
+
+  if (!force && mountKey === state.surfacePetKey && host._pets3dHandle?.petId === placed.petId) {
+    try {
+      host._pets3dHandle.update?.(reaction.moodId, {
+        signal: reaction.signal,
+        powerGlow: reaction.powerGlow,
+        signalStress: reaction.signalStress,
+        phaseId: reaction.phaseId,
+        surface: true,
+      });
+      host._pets3dHandle.setSignal?.(reaction.signal);
+    } catch {
+      /* ignore */
+    }
+    return;
+  }
+
+  if (state.surfacePetBusy) return;
+  state.surfacePetBusy = true;
+  try {
+    await mountPetVisual(host, placed.petId, sky, {
+      idPrefix: 'surface-pet',
+      surface: true,
+      autoRotate: false,
+      interactive: false,
+    });
+    state.surfacePetKey = mountKey;
+    positionSurfacePetLayer();
+  } finally {
+    state.surfacePetBusy = false;
+  }
 }
 
 function updatePlacedPetChrome(placed, reaction) {
@@ -991,30 +1183,119 @@ function updatePlacedPetChrome(placed, reaction) {
   }
 }
 
-function drawPlacedPetMarker(svg, projectFn) {
+/** Blit PNG cache for Flat / South Pole markers (same geometry as PayloadPets3D). */
+const overlayBlitCache = new Map();
+/** @type {string} */
+let overlayBlitPendingKey = '';
+
+function overlayBlitKey(petId, reaction, size) {
+  return `${petId}:${reaction.moodId}:${Math.round(reaction.signal || 0)}:${reaction.powerGlow ? 1 : 0}:${reaction.signalStress ? 1 : 0}:${size}`;
+}
+
+/**
+ * Kick off a shared-farm capture for the flat-map pin; re-renders when ready.
+ * @param {string} petId
+ * @param {ReturnType<typeof conditionsToReaction>} reaction
+ * @param {number} size
+ */
+async function ensureOverlayBlitSprite(petId, reaction, size) {
+  const key = overlayBlitKey(petId, reaction, size);
+  if (overlayBlitCache.has(key) || overlayBlitPendingKey === key) return overlayBlitCache.get(key) || null;
+  overlayBlitPendingKey = key;
+  try {
+    const three = globalThis.PayloadPets3D;
+    if (!three) return null;
+    if (three.ready) {
+      try {
+        await Promise.race([
+          three.ready,
+          new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
+        ]);
+      } catch {
+        /* may still expose capturePetSprite after partial load */
+      }
+    }
+    if (typeof three.capturePetSprite !== 'function') return null;
+    const sprite = await three.capturePetSprite(petId, reaction.moodId, {
+      size,
+      signal: reaction.signal,
+      powerGlow: reaction.powerGlow,
+      signalStress: reaction.signalStress,
+      phaseId: reaction.phaseId,
+    });
+    if (sprite?.dataUrl) {
+      overlayBlitCache.set(key, sprite.dataUrl);
+      if (state.projection !== '3d' && state.placedPet?.petId === petId) {
+        renderMap();
+      }
+      return sprite.dataUrl;
+    }
+  } catch (err) {
+    console.warn('[map] pet sprite blit failed', err);
+  } finally {
+    if (overlayBlitPendingKey === key) overlayBlitPendingKey = '';
+  }
+  return null;
+}
+
+/**
+ * Draw placed pet on map overlays.
+ * 3D globe: small surface pin only (3D model lives in #surface-pet-layer).
+ * Flat / south-pole: mood-reactive instrument blit (same geometry as 3D), SVG fallback.
+ */
+function drawPlacedPetMarker(svg, projectFn, mode = '2d') {
   const placed = state.placedPet;
   if (!placed || !isDropPet(placed.petId)) return;
   const p = projectFn(placed.lat, placed.lon);
   if (!p || p.visible === false) return;
-  try {
-    const pose = poseForSite(placed.petId, currentSkyForPet());
-    const marker = buildOverlayMarkerGroup(pose, p.x, p.y - 18, 0.16);
-    svg.appendChild(marker);
-    const pin = svgEl('circle', {
+
+  if (mode === '3d') {
+    svgEl('circle', {
       cx: p.x.toFixed(1),
       cy: p.y.toFixed(1),
-      r: 4,
+      r: 5,
       fill: '#ffe7ad',
       stroke: '#ffb84d',
-      'stroke-width': '1.6',
+      'stroke-width': '2',
+      class: 'moon-pet-pin',
     }, svg);
-    pin.setAttribute('class', 'moon-pet-pin');
+    return;
+  }
+
+  try {
+    const sky = currentSkyForPet();
+    const pose = poseForSite(placed.petId, sky);
+    const reaction = pose.reaction || conditionsToReaction(placed.petId, sky);
+    const scale = state.projection === 'pole' ? 0.3 : 0.26;
+    const blitSize = state.projection === 'pole' ? 144 : 128;
+    const cacheKey = overlayBlitKey(placed.petId, reaction, blitSize);
+    const spriteUrl = overlayBlitCache.get(cacheKey) || null;
+    const marker = buildOverlayMarkerGroup(pose, p.x, p.y, scale, {
+      label: true,
+      pin: true,
+      spriteUrl,
+      spriteSize: Math.round(200 * scale),
+    });
+    svg.appendChild(marker);
+    if (!spriteUrl) {
+      void ensureOverlayBlitSprite(placed.petId, reaction, blitSize);
+    }
   } catch (err) {
     console.warn('[map] pet marker', err);
     svgEl('circle', {
-      cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 7,
+      cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 8,
       fill: '#ffe7ad', stroke: '#ffb84d', 'stroke-width': '2',
     }, svg);
+    const pet = getDropPet(placed.petId);
+    svgEl('text', {
+      x: p.x.toFixed(1),
+      y: (p.y - 14).toFixed(1),
+      fill: '#ffe7ad',
+      'font-size': '11',
+      'font-weight': '700',
+      'text-anchor': 'middle',
+      class: 'moon-pet-sprite-label',
+    }, svg).textContent = pet?.name || placed.petId;
   }
 }
 
@@ -1279,23 +1560,28 @@ function render3DOverlay() {
 
   // Confirmed / Inspected Custom Drop Markers
   renderActiveCustomMarkers(svg, (lat, lon) => state.globe.latLonToScreen(lat, lon));
-  drawPlacedPetMarker(svg, (lat, lon) => state.globe.latLonToScreen(lat, lon));
+  // Pin under the on-globe 3D pet (model itself is in #surface-pet-layer)
+  drawPlacedPetMarker(svg, (lat, lon) => state.globe.latLonToScreen(lat, lon), '3d');
+  positionSurfacePetLayer();
 
-  // Staged Drop Pin + Animated Storyboard Leader Line to Top Edge of #predrop-card
+  // Staged Drop Pin + Animated Storyboard Leader Line to #predrop-card (exclusive popup)
   if (state.stagedDrop) {
     const sp = state.globe.latLonToScreen(state.stagedDrop.lat, state.stagedDrop.lon);
-    const card = $('#predrop-card');
-    const dockLeft = sp.visible && sp.x > vw * 0.5;
-    card.classList.toggle('dock-left', dockLeft);
+    const layout = layoutPredropCard(
+      sp.visible ? sp.x : vw * 0.5,
+      sp.visible ? sp.y : 80,
+      vw,
+      vh
+    );
     if (sp.visible) {
       svgEl('circle', { cx: sp.x.toFixed(1), cy: sp.y.toFixed(1), r: 11, fill: 'none', stroke: '#ffb84d', 'stroke-width': '1.8' }, svg);
       svgEl('circle', { cx: sp.x.toFixed(1), cy: sp.y.toFixed(1), r: 4.5, fill: '#ffffff', stroke: '#ffb84d', 'stroke-width': '1.5' }, svg);
 
-      // Draw storyboard connector once camera glide is finished and card staging begins
       if (state.stagedDrop.animStartTime !== null) {
-        const cardWidth = Math.min(320, Math.max(200, vw - 24));
-        const anchorX = dockLeft ? 12 + cardWidth * 0.52 : vw - 12 - cardWidth * 0.52;
-        drawStoryboardConnector(svg, sp.x, sp.y, anchorX, 58, 14);
+        const cardWidth = layout.cardW || Math.min(300, Math.max(200, vw - 24));
+        const anchorX = layout.dockLeft ? 12 + cardWidth * 0.52 : vw - 12 - cardWidth * 0.52;
+        const anchorY = layout.dockBottom ? Math.max(80, vh - 24) : 12;
+        drawStoryboardConnector(svg, sp.x, sp.y, anchorX, anchorY, 14);
       }
     }
   }
@@ -1329,8 +1615,12 @@ function renderMap() {
       });
     }
     render3DOverlay();
+    void syncSurfacePetLayer(false);
     return;
   }
+
+  // Flat / south-pole: tear down WebGL surface pet; sprites drawn on #lunar-map
+  disposeSurfacePetLayer();
 
   const svg = $('#lunar-map');
   svg.replaceChildren();
@@ -1626,13 +1916,12 @@ function renderMap() {
     state.projection === 'global' ? { ...projectGlobal(lat, lon), visible: true } : { ...projectSouthPoleClamped(lat, lon), visible: true }
   );
   renderActiveCustomMarkers(svg, proj2DOrClamped);
-  drawPlacedPetMarker(svg, proj2DOrClamped);
+  drawPlacedPetMarker(svg, proj2DOrClamped, '2d');
 
   if (state.stagedDrop) {
     const sp = proj2DOrClamped(state.stagedDrop.lat, state.stagedDrop.lon);
-    const card = $('#predrop-card');
-    const dockLeft = sp.x > 480;
-    card.classList.toggle('dock-left', dockLeft);
+    const m = svgViewBoxMetrics(svg);
+    const layout = layoutPredropCard(sp.x / 960 * m.rw, sp.y / 480 * m.rh, m.rw, m.rh);
     svgEl('circle', {
       cx: sp.x.toFixed(1), cy: sp.y.toFixed(1), r: 10.5,
       fill: 'none', stroke: '#ffb84d', 'stroke-width': '1.8',
@@ -1648,11 +1937,11 @@ function renderMap() {
       }, svg).textContent = `${Math.abs(state.stagedDrop.lat).toFixed(1)}°${state.stagedDrop.lat >= 0 ? 'N' : 'S'} ↑`;
     }
     if (state.stagedDrop.animStartTime !== null) {
-      const m = svgViewBoxMetrics(svg);
-      const cardWidthPx = Math.min(320, Math.max(200, m.rw - 24));
-      const anchorPxX = dockLeft ? 12 + cardWidthPx * 0.52 : m.rw - 12 - cardWidthPx * 0.52;
+      const cardWidthPx = layout.cardW || Math.min(300, Math.max(200, m.rw - 24));
+      const anchorPxX = layout.dockLeft ? 12 + cardWidthPx * 0.52 : m.rw - 12 - cardWidthPx * 0.52;
       const anchorX = (m.rect.left + anchorPxX - m.offsetX) / Math.max(0.0001, m.scale);
-      const cardTopY = (m.rect.top + 58 - m.offsetY) / Math.max(0.0001, m.scale);
+      const anchorPxY = layout.dockBottom ? Math.max(80, m.rh - 24) : 12;
+      const cardTopY = (m.rect.top + anchorPxY - m.offsetY) / Math.max(0.0001, m.scale);
       drawStoryboardConnector(svg, sp.x, sp.y, anchorX, cardTopY, 10);
     }
   }
@@ -2076,13 +2365,15 @@ function setProjection(mode, focusActive = true) {
   $('#proj-global').classList.toggle('active', mode === 'global');
   $('#proj-pole').classList.toggle('active', mode === 'pole');
 
-  const active = getActivePointInfo();
+  const active = getActivePointInfo() || (state.placedPet
+    ? { lat: state.placedPet.lat, lon: state.placedPet.lon, isCustom: !state.placedPet.matchedKnownSite }
+    : null);
   if (mode === '3d' && state.globe) {
     setElementHidden($('#lunar-globe-gl'), false);
     setElementHidden($('#globe-overlay'), false);
     setElementHidden($('#lunar-map'), true);
     state.globe.resize();
-    if (active && (state.stagedDrop || active.isCustom)) {
+    if (active && (state.stagedDrop || active.isCustom || state.placedPet)) {
       state.globe.setStagedPoint(active.lat, active.lon);
     } else {
       state.globe.setStagedPoint(null, null);
@@ -2093,6 +2384,8 @@ function setProjection(mode, focusActive = true) {
         yawOffsetRad: state.stagedDrop ? 0.22 : 0,
       });
     }
+  } else {
+    disposeSurfacePetLayer();
   }
 
   $('#cursor-hud').textContent = mode === '3d'
@@ -2100,6 +2393,7 @@ function setProjection(mode, focusActive = true) {
     : 'Click anywhere on the Moon map to inspect conditions or check a landing spot';
 
   renderMap();
+  if (mode === '3d') void syncSurfacePetLayer(true);
 }
 
 function wireEvents() {
@@ -2230,6 +2524,13 @@ function wireEvents() {
   };
   $('#btn-confirm-drop').onclick = confirmStagedDrop;
   $('#btn-cancel-drop').onclick = clearStagedDrop;
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (state.stagedDrop) {
+      e.preventDefault();
+      clearStagedDrop();
+    }
+  });
 
   $('#btn-pin-compare').onclick = () => {
     if (!state.compareIds.includes(state.selectedSiteId)) {
@@ -2269,7 +2570,7 @@ async function init() {
 
   const pStats = data.metadata?.programSummary || {};
   $('#program-stats').textContent =
-    `${pStats.deliveriesPlannedThrough2028 || 17} planned NASA Moon landings · Drag to spin the Moon, click any spot to check conditions`;
+    `${pStats.deliveriesPlannedThrough2028 || 17} planned NASA landings · click the Moon to inspect`;
 
   state.globe = new LunarGlobeGL($('#lunar-globe-gl'), {
     quickmap: data.quickmap || {},
@@ -2292,7 +2593,10 @@ async function init() {
       stageDropPoint(hit.lat, hit.lon);
     },
     onViewChange: () => {
-      if (state.projection === '3d') render3DOverlay();
+      if (state.projection === '3d') {
+        render3DOverlay();
+        positionSurfacePetLayer();
+      }
     },
     onTextureLoad: () => {
       if (state.projection !== '3d') renderMap();

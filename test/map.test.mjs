@@ -465,7 +465,7 @@ test('Live Server static routes and Story client offline fallback work cleanly',
     ['/web/navigator.html', /Navigator/],
     ['/web/story/index.html', /Payload Pets/],
     ['/demos/js-engine/index.html', /Game rules/],
-    ['/demos/js-pets/index.html', /Pet art/],
+    ['/demos/js-pets/index.html', /3D instruments|Pet instruments/],
   ]) {
     const res = await invokeHandler(handler, route);
     assert.equal(res.status, 200, `Expected 200 for ${route}`);

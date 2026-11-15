@@ -157,8 +157,11 @@
         <div class="local-panel">
           <div class="kicker">CLPS CATALOG · JUDGE PATH</div>
           <h1>Data / Missions</h1>
-          <p class="judge-tip"><strong style="color:var(--text)">What to do here.</strong> This is the offline NASA CLPS spine — missions, south-pole sites, and instrument pets. Switch View to <em>Sites</em> (polar / Malapert / Mons Mouton) or <em>Pets</em> (LISTER / EDS = Power, Nodey = Signal, Retro = passive night), then return to Navigator / Map with the ids verified.</p>
-          <p class="lede">Baked facts from <code>data/catalog.json</code> (as-of stamped). Every pet maps to a flown or planned instrument — use this tab to prove provenance before the demo.</p>
+          <details class="local-more">
+            <summary>What to do here · provenance tip</summary>
+            <p class="judge-tip"><strong style="color:var(--text)">Judge path.</strong> Offline NASA CLPS spine — missions, south-pole sites, instrument pets. Switch View to <em>Sites</em> or <em>Pets</em>, then return to Navigator / Map with the ids verified.</p>
+            <p class="lede">Baked facts from <code>data/catalog.json</code> (as-of stamped). Every pet maps to a flown or planned instrument.</p>
+          </details>
           <div class="stats" id="data-stats"></div>
           <div class="toolbar">
             <label class="search-wrap" style="flex:1 1 200px">Search
@@ -337,18 +340,28 @@
       // Still point iframe at the backend URL so a refresh after start works via reload below
     } else if (tab.id === "map") {
       note.dataset.show = "1";
+      note.className = "panel-note shell-tip";
       note.innerHTML =
-        "<strong>Judge tip.</strong> Pick a payload pet (LISTER / Retro / EDS / Nodey) → click a south-pole site → <em>Drop Pet on Moon</em>. The 3D pet appears on the surface; scrub the sun clock for power glow, night huddle, and Nodey signal stress when Earth is blocked.";
+        "<details><summary>Demo tip</summary><p><strong>Judge tip.</strong> Pick a payload pet (LISTER / Retro / EDS / Nodey) → click a south-pole site → <em>Drop Pet on Moon</em>. Scrub the sun clock for power glow, night huddle, and Nodey signal stress when Earth is blocked.</p></details>";
     } else if (tab.id === "pets") {
       note.dataset.show = "1";
+      note.className = "panel-note shell-tip";
       note.innerHTML =
-        "<strong>Judge tip.</strong> After a Map drop, this tab mirrors the live site mood. Scrub <em>full sun → sunset → night</em> here too — Power pets (LISTER / EDS) huddle in night; Nodey teaches Signal; Retro sleeps because real hardware draws none.";
+        "<details><summary>Demo tip</summary><p><strong>Judge tip.</strong> After a Map drop, this tab mirrors the live site mood on the same <em>3D</em> instruments. Scrub <em>full sun → sunset → night</em> — Power pets huddle in night; Nodey teaches Signal; Retro sleeps.</p></details>";
     } else {
       note.dataset.show = "0";
+      note.className = "panel-note";
       note.textContent = "";
     }
 
     styleIframeEmbed(iframe);
+
+    const parked = iframe.dataset.parkedSrc;
+    if (parked) {
+      delete iframe.dataset.parkedSrc;
+      iframe.src = src || parked;
+      return;
+    }
 
     if (iframe.getAttribute("src") !== src) {
       iframe.src = src;
@@ -505,6 +518,23 @@
     }
   }
 
+  /** Map + Pets each hold WebGL; park inactive ones so contexts free up. */
+  const WEBGL_TABS = new Set(["map", "pets"]);
+
+  function parkWebGlIframes(exceptId) {
+    for (const t of TABS) {
+      if (!WEBGL_TABS.has(t.id) || t.id === exceptId) continue;
+      const p = stageEl.querySelector(`[data-panel="${t.id}"]`);
+      const iframe = p?.querySelector("iframe");
+      if (!iframe) continue;
+      const src = iframe.getAttribute("src");
+      if (src && src !== "about:blank") {
+        iframe.dataset.parkedSrc = src;
+        iframe.src = "about:blank";
+      }
+    }
+  }
+
   async function show(id, docPath = null) {
     const tab = TABS.find((t) => t.id === id) || TABS[0];
     const activeDoc = tab.id === "readme" ? (docPath || readmeViewer?.getCurrentDoc?.() || "README.md") : null;
@@ -520,6 +550,8 @@
       btn?.setAttribute("aria-selected", selected ? "true" : "false");
       btn?.setAttribute("tabindex", selected ? "0" : "-1");
     }
+
+    parkWebGlIframes(WEBGL_TABS.has(tab.id) ? tab.id : null);
 
     const panel = ensurePanel(tab);
     for (const p of stageEl.querySelectorAll(".panel")) {
