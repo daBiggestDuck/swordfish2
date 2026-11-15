@@ -336,6 +336,7 @@
 
     let rows = [];
     if (view === "missions") {
+      const sourceById = new Map((catalog.sources || []).map((s) => [s.id, s]));
       rows = (catalog.missions || [])
         .filter((m) => !statusFilter || m.status === statusFilter)
         .filter((m) => {
@@ -348,15 +349,41 @@
         })
         .map((m) => {
           const site = (catalog.sites || []).find((s) => s.id === m.siteId);
-          return `<article class="card">
-            <h3>${escapeHtml(m.name || m.title || m.id)}</h3>
-            <p class="meta">${escapeHtml(m.provider || "")}${m.lander ? " · " + escapeHtml(m.lander) : ""}${
-              site ? " · " + escapeHtml(site.name || site.id) : m.siteId ? " · " + escapeHtml(m.siteId) : ""
-            }${m.launchDate ? " · launch " + escapeHtml(m.launchDate) : ""}</p>
-            <div class="tags">
-              <span class="tag status-${escapeHtml(m.status || "")}">${escapeHtml(m.status || "unknown")}</span>
-              <span class="tag">${escapeHtml(m.id)}</span>
-              ${m.outcome ? `<span class="tag">${escapeHtml(m.outcome)}</span>` : ""}
+          const sources = (m.sourceIds || [])
+            .map((id) => sourceById.get(id))
+            .filter(Boolean);
+          const detailBits = [
+            m.region,
+            site ? site.name || site.id : m.siteId,
+            m.nasaPayloadCount != null
+              ? `${m.nasaPayloadCount} NASA payload${m.nasaPayloadCount === 1 ? "" : "s"}`
+              : "",
+          ].filter(Boolean).map(escapeHtml).join(" · ");
+          return `<article class="card card--reveal" tabindex="0">
+            <div class="card-face">
+              <h3>${escapeHtml(m.name || m.title || m.id)}</h3>
+              <p class="meta">${escapeHtml(m.provider || "")}${m.lander ? " · " + escapeHtml(m.lander) : ""}${
+                site ? " · " + escapeHtml(site.name || site.id) : m.siteId ? " · " + escapeHtml(m.siteId) : ""
+              }${m.launchDate ? " · launch " + escapeHtml(m.launchDate) : ""}</p>
+              <div class="tags">
+                <span class="tag status-${escapeHtml(m.status || "")}">${escapeHtml(m.status || "unknown")}</span>
+                <span class="tag">${escapeHtml(m.id)}</span>
+                ${m.outcome ? `<span class="tag">${escapeHtml(m.outcome)}</span>` : ""}
+              </div>
+            </div>
+            <div class="card-detail">
+              <div class="detail-head">
+                <span class="tag status-${escapeHtml(m.status || "")}">${escapeHtml(m.status || "unknown")}</span>
+                ${m.taskOrder ? `<span class="detail-order">${escapeHtml(m.taskOrder)}</span>` : ""}
+              </div>
+              ${m.summary ? `<p class="detail-summary">${escapeHtml(m.summary)}</p>` : ""}
+              ${detailBits ? `<p class="detail-meta">${detailBits}</p>` : ""}
+              ${m.payloadNote ? `<p class="detail-note">${escapeHtml(m.payloadNote)}</p>` : ""}
+              ${sources.length
+                ? `<div class="detail-sources">${sources
+                    .map((s) => `<a class="source-chip" href="${escapeHtml(s.url)}" target="_blank" rel="noopener">${escapeHtml(s.publisher || s.title || s.id)}</a>`)
+                    .join("")}</div>`
+                : ""}
             </div>
           </article>`;
         });
@@ -409,6 +436,30 @@
       .replace(/"/g, "&quot;");
   }
 
+  /**
+   * Touch/click support for the mission-card hover detail (bound once).
+   * Desktop uses :hover / :focus-within; here a tap pins the detail open
+   * (one pinned card at a time), Escape unpins, source links still work.
+   */
+  function bindCardDetail(grid) {
+    if (!grid || grid.dataset.detailBound) return;
+    grid.dataset.detailBound = "1";
+    grid.addEventListener("click", (e) => {
+      const link = e.target.closest("a");
+      if (link) return; // let provenance links work
+      const card = e.target.closest(".card--reveal");
+      if (!card) return;
+      const wasPinned = card.classList.contains("card--pinned");
+      for (const c of grid.querySelectorAll(".card--pinned")) c.classList.remove("card--pinned");
+      if (!wasPinned) card.classList.add("card--pinned");
+    });
+    grid.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      const card = e.target.closest?.(".card--reveal");
+      if (card) card.classList.remove("card--pinned");
+    });
+  }
+
   async function loadDataPanel() {
     if (dataLoaded) {
       renderData();
@@ -424,6 +475,7 @@
       $("#data-q")?.addEventListener("input", renderData);
       $("#data-status")?.addEventListener("change", renderData);
       $("#data-view")?.addEventListener("change", renderData);
+      bindCardDetail($("#data-grid"));
       renderData();
     } catch (e) {
       err.hidden = false;

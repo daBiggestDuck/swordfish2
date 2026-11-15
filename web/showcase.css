@@ -358,6 +358,126 @@ a:hover { text-decoration: underline; }
 .tag.status-planned { color: var(--accent); border-color: rgba(98, 176, 255, 0.4); background: rgba(98, 176, 255, 0.18); }
 .tag.status-cancelled { color: var(--muted); }
 
+/* ── Mission cards with hover detail (Data / Missions, missions view) ──
+   The card face and a detail layer occupy the same footprint: on hover /
+   focus / tap the face is covered by the richer summary. Only transform
+   and opacity animate (no layout shift), and the exit is faster than the
+   enter so sweeping the grid stays snappy. */
+
+.card--reveal {
+  position: relative;
+  overflow: hidden; /* clip the detail layer to the card's rounded corners */
+  cursor: default;
+}
+.card--reveal:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.card--reveal .card-detail {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.75rem 0.9rem; /* match .card padding */
+  background: var(--panel-alt);
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  overflow: auto;
+  transition: opacity 120ms ease-out, transform 120ms ease-out;
+}
+.card--reveal:hover .card-detail,
+.card--reveal:focus-within .card-detail,
+.card--reveal.card--pinned .card-detail {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition: opacity 180ms cubic-bezier(0.23, 1, 0.32, 1),
+              transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Hover invitation is a pointer-only concern; keyboard gets focus-visible. */
+@media (hover: hover) and (pointer: fine) {
+  .card--reveal:hover {
+    background: var(--panel-alt);
+    border-color: rgba(98, 176, 255, 0.45);
+  }
+}
+.card--reveal:focus-visible,
+.card--reveal.card--pinned {
+  background: var(--panel-alt);
+  border-color: rgba(98, 176, 255, 0.45);
+}
+
+.card--reveal .detail-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.card--reveal .detail-order {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+.card--reveal .detail-summary {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+.card--reveal .detail-meta {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+}
+.card--reveal .detail-note {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.card--reveal .detail-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: auto; /* provenance sits at the bottom of the card */
+  padding-top: 0.25rem;
+}
+.source-chip {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.14rem 0.5rem;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--accent-dim);
+  color: var(--accent);
+  white-space: nowrap;
+}
+.source-chip:hover,
+.source-chip:focus-visible {
+  border-color: rgba(98, 176, 255, 0.5);
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card--reveal .card-detail,
+  .card--reveal:hover .card-detail,
+  .card--reveal:focus-within .card-detail,
+  .card--reveal.card--pinned .card-detail {
+    transform: none;
+    transition: opacity 120ms ease;
+  }
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
