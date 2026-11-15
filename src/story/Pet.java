@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * A pet is a real CLPS lander turned cute.
  *
- * @param id            stable key used by the API and moments (e.g. "BLUE_GHOST")
+ * @param id            stable key used by the API and moments (e.g. "LISTER", "LN-1")
  * @param name          default pet name
  * @param vendor        company that built the real lander
  * @param missionId     id of the matching entry in {@link Missions}

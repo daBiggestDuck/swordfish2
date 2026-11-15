@@ -84,6 +84,71 @@ button:hover { filter: brightness(1.12); }
   background: rgba(69, 212, 138, .12); border: 1px solid rgba(69, 212, 138, .45); color: var(--good);
   padding: .45rem .6rem; border-radius: 8px; font-size: .78rem; margin-bottom: .65rem;
 }
+.placed-pet-banner {
+  background: rgba(255, 184, 77, .12); border: 1px solid rgba(255, 184, 77, .5); color: var(--warn);
+  padding: .45rem .6rem; border-radius: 8px; font-size: .78rem; margin-bottom: .65rem;
+}
+.pet-drop-panel {
+  background: rgba(98, 176, 255, .07); border: 1px solid rgba(98, 176, 255, .28);
+  border-radius: 10px; padding: .55rem .6rem; margin-bottom: .65rem;
+}
+.pet-drop-head { display: flex; justify-content: space-between; align-items: center; gap: .4rem; margin-bottom: .4rem; }
+.pet-drop-hint { margin: .4rem 0 0; font-size: .74rem; color: var(--muted); line-height: 1.4; }
+.pet-picker { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; }
+.pet-picker-compact { grid-template-columns: 1fr 1fr; }
+.pet-chip {
+  display: flex; flex-direction: column; align-items: flex-start; gap: .1rem;
+  text-align: left; padding: .4rem .5rem; border-radius: 8px;
+  background: var(--panel-alt); border: 1px solid var(--border); color: var(--text); cursor: pointer;
+}
+.pet-chip strong { font-size: .82rem; }
+.pet-chip small { font-family: var(--mono); font-size: .64rem; color: var(--muted); letter-spacing: .04em; }
+.pet-chip.is-on { border-color: var(--warn); background: rgba(255, 184, 77, .14); box-shadow: 0 0 0 1px rgba(255, 184, 77, .25); }
+.pd-pet-row { margin: .55rem 0 .35rem; }
+.pd-pet-row .kicker { display: block; margin-bottom: .35rem; }
+
+.moon-pet-stage {
+  position: absolute; left: 12px; bottom: 12px; z-index: 7;
+  width: min(210px, calc(100% - 24px));
+  background: rgba(20, 25, 34, .95); border: 1px solid rgba(255, 184, 77, .55);
+  border-radius: 12px; padding: .55rem .65rem;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .5);
+}
+.moon-pet-stage[hidden] { display: none; }
+.moon-pet-stage-head { display: flex; justify-content: space-between; align-items: baseline; gap: .4rem; margin-bottom: .25rem; }
+.moon-pet-stage-head strong { font-size: .92rem; }
+.moon-pet-art {
+  display: grid; place-items: center; min-height: 140px; border-radius: 10px;
+  background: radial-gradient(circle at 50% 30%, rgba(255, 231, 173, .12), transparent 55%), #0a1020;
+  overflow: hidden;
+}
+.moon-pet-art .pet-frame { width: min(150px, 88%); height: auto; }
+.moon-pet-art.pets3d-mount,
+.moon-pet-art .pets3d-mount { width: 100%; height: 150px; }
+.moon-pet-art .pets3d-canvas { width: 100% !important; height: 150px !important; display: block; border-radius: 8px; }
+.moon-pet-art.power-glow,
+.moon-pet-visual.power-glow { box-shadow: inset 0 0 28px rgba(255, 231, 173, .35); }
+.moon-pet-art.signal-stress,
+.moon-pet-visual.signal-stress { box-shadow: inset 0 0 24px rgba(255, 107, 107, .28); }
+.moon-pet-mood { margin: .35rem 0 .15rem; font-size: .95rem; font-weight: 700; color: var(--warn); }
+.moon-pet-reason { margin: 0; font-size: .72rem; color: #c7d2e8; line-height: 1.35; }
+.moon-pet-tip { margin: .35rem 0 0; font-size: .68rem; }
+.moon-pet-visual.anim-bob { animation: petBob 1.6s ease-in-out infinite; }
+.moon-pet-visual.anim-shiver { animation: petShiver .14s linear infinite; }
+.moon-pet-visual.anim-sleep { animation: petSleep 2.8s ease-in-out infinite; }
+.moon-pet-visual.anim-huddle { animation: petHuddle 1.8s ease-in-out infinite; }
+@keyframes petBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes petShiver { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(2px); } }
+@keyframes petSleep { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+@keyframes petHuddle { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(3px) scale(0.98); } }
+.moon-pet-marker .pet-power-glow { animation: petGlowPulse 1.4s ease-in-out infinite; }
+.moon-pet-marker .pet-signal-stress { animation: petStressSpin 2.2s linear infinite; }
+@keyframes petGlowPulse { 0%, 100% { opacity: .28; } 50% { opacity: .5; } }
+@keyframes petStressSpin { to { stroke-dashoffset: -36; } }
+.dot.PET { background: #ffe7ad; border: 2px solid var(--warn); }
+@media (prefers-reduced-motion: reduce) {
+  .moon-pet-visual, .moon-pet-marker .pet-power-glow, .moon-pet-marker .pet-signal-stress { animation: none; }
+}
 
 .nasa-schedule-box {
   background: rgba(98, 176, 255, .09); border: 1px solid rgba(98, 176, 255, .38); border-radius: 8px;

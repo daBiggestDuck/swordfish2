@@ -1,4 +1,9 @@
 import { PETS, PHASES, TAGS, listSources, nextPhase, present } from "./pets.js";
+import {
+  isDropPet,
+  readPlacedPet,
+  subscribePlacedPet,
+} from "../../../web/pet_moon.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const DAY_MS = 2800;
@@ -12,10 +17,17 @@ let phaseId = PHASES[0].id;
 let playing = false;
 let stepTimer = null;
 let livePoseKey = "";
+let moonLink = null;
 
 boot();
 
 function boot() {
+  syncFromMapPlacement(readPlacedPet());
+  subscribePlacedPet((placed) => {
+    if (!syncFromMapPlacement(placed)) return;
+    pause();
+    render();
+  });
   renderSources();
   render();
   document.addEventListener("keydown", (event) => {
@@ -25,6 +37,33 @@ function boot() {
   });
 }
 
+function syncFromMapPlacement(placed) {
+  if (!placed || !isDropPet(placed.petId)) {
+    moonLink = null;
+    return false;
+  }
+  if (!PETS.some((p) => p.id === placed.petId)) return false;
+  petId = placed.petId;
+  if (placed.phaseId && PHASES.some((p) => p.id === placed.phaseId)) {
+    phaseId = placed.phaseId;
+  }
+  moonLink = placed;
+  return true;
+}
+
+function moonBanner() {
+  if (!moonLink) {
+    return el("p", { class: "moon-link hint" }, [
+      "Judge loop: open Map / Sites → pick a pet → Drop on Moon → scrub the sun clock. Come back here to see the same mood.",
+    ]);
+  }
+  const mood = moonLink.label || moonLink.moodId || "reacting";
+  const site = moonLink.siteName || "the Moon";
+  return el("p", { class: "moon-link is-live", role: "status" }, [
+    `Live from Map: ${PETS.find((p) => p.id === moonLink.petId)?.name || moonLink.petId} at ${site} · ${mood}. Scrub Map’s sun clock to watch sun / night / Earth signal drive this pose.`,
+  ]);
+}
+
 function render(options = {}) {
   const focusKey = document.activeElement?.getAttribute?.("data-focus-key");
   const pose = present(petId, phaseId);
@@ -32,13 +71,16 @@ function render(options = {}) {
   if (options.pauseNotice) announcePause();
   else announcePose(pose);
   app.replaceChildren(
+    moonBanner(),
     el("section", { class: "stage", id: "stage", tabindex: "-1" }, [
       el("div", { class: "stage-copy" }, [
         el("p", { class: "eyebrow" }, ["Now showing"]),
         el("h2", { id: "pet-name" }, [pose.pet.name]),
         el("p", { class: "kind" }, [pose.pet.kind]),
         el("p", { class: "mood", id: "mood-label" }, [pose.mood.label]),
-        el("p", { class: "reason", id: "mood-reason" }, [pose.reason]),
+        el("p", { class: "reason", id: "mood-reason" }, [
+          moonLink?.reason || pose.reason,
+        ]),
         el("p", { class: "blurb" }, [pose.pet.blurb]),
         ...(pose.pet.passport
           ? [el("p", { class: "passport", id: "pet-passport" }, [`Passport. ${pose.pet.passport}`])]

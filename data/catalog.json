@@ -436,16 +436,6 @@
       "sourceIds": ["leag-bg1-2025"]
     },
     {
-      "id": "trident",
-      "name": "The Regolith and Ice Drill for Exploring New Terrain",
-      "shortName": "TRIDENT",
-      "type": "drill",
-      "kind": "volatiles",
-      "power": "required",
-      "summary": "Rotary-percussive drill for PRIME-1, built to bring material up from about 3 feet and to record temperature and soil strength. It needs power.",
-      "sourceIds": ["nasa-prime1", "nasa-im2-press-kit"]
-    },
-    {
       "id": "msolo",
       "name": "Mass Spectrometer Observing Lunar Operations",
       "shortName": "MSOLO",
@@ -518,25 +508,6 @@
       "moods": { "day": "happy", "sunset": "shivering", "night": "cold" },
       "summary": "The adoptable dust shield is EDS. Electric fields move the dust, and those fields need power, so the shield does not keep cleaning through the lunar night on its own.",
       "sourceIds": ["nasa-to19d"]
-    },
-    {
-      "id": "trident",
-      "name": "Triddy",
-      "instrument": "TRIDENT",
-      "payloadIds": ["trident", "msolo"],
-      "power": "required",
-      "nightBehavior": "needs-power",
-      "passive": false,
-      "homeMissionId": "im-2",
-      "homeSiteId": "mons-mouton",
-      "care": ["Power", "Warmth", "Signal"],
-      "engineDraw": { "key": "tridentDraw", "value": 34 },
-      "moods": { "day": "happy", "sunset": "shivering", "night": "cold" },
-      "rarity": "Rare",
-      "passport": "Tried to pull about 1 meter of regolith and sniff for water ice with MSOLO.",
-      "vibe": "Ice-seeking drill pup in silver and ice-blue, with frost whiskers.",
-      "summary": "The adoptable PRIME-1 ice drill is Triddy (TRIDENT), paired with MSOLO. It is a powered rotary-percussive drill that draws more than LISTER while the Sun is up. Lunar night leaves it cold, not sleeping, unless the lander can still feed it power. Its home flight is IM-2 at Mons Mouton.",
-      "sourceIds": ["nasa-prime1", "nasa-im2-press-kit"]
     },
     {
       "id": "ln-1",

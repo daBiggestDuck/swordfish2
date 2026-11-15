@@ -1,7 +1,8 @@
 /**
- * Pet art, moods, and animations for five real CLPS instruments.
+ * Pet art, moods, and animations for the four adoptable CLPS payload pets:
+ * LISTER, Retro (LRA), EDS, and Nodey (LN-1).
  * Sunlight picks the pose. Care meters and the map live elsewhere.
- * Triddy and Nodey carry a Passport line from the catalog for the stage copy.
+ * Nodey carries a Passport line from the catalog for the stage copy.
  * Optional present(..., { signal }) drives Nodey's antenna blink (high Signal).
  */
 
@@ -65,10 +66,6 @@ export const SOURCES = Object.freeze({
     "NASA — LRO pings a lunar retroreflector",
     "https://science.nasa.gov/missions/lro/laser-instrument-on-nasas-lro-successfully-pings-indian-moon-lander/",
   ),
-  prime1: source(
-    "NASA — PRIME-1 Science (TRIDENT ice drill)",
-    "https://science.nasa.gov/lunar-science/clps-deliveries/prime-1-im/",
-  ),
   to2im: source(
     "NASA — TO2-IM Science Payloads (LN-1)",
     "https://science.nasa.gov/lunar-science/clps-deliveries/to2-im/",
@@ -118,18 +115,6 @@ export const PETS = Object.freeze([
     blurb:
       "Electrodynamic dust shield from the Blue Ghost Mission 1 payload set. Electric fields lift lunar dust off glass and radiators. The shield has no moving parts.",
     sources: Object.freeze([SOURCES.payloads]),
-  }),
-  freeze({
-    id: "trident",
-    name: "Triddy",
-    kind: "Ice drill (TRIDENT)",
-    passive: false,
-    nightNeed: "power to drill for ice and soil strength",
-    blurb:
-      "TRIDENT ice-drill pup from PRIME-1. Silver and ice-blue with frost whiskers. A rotary-percussive drill needs power, so lunar night is a cold huddle, not sleep.",
-    passport:
-      "Tried to pull about 1 meter of regolith and sniff for water ice with MSOLO.",
-    sources: Object.freeze([SOURCES.prime1]),
   }),
   freeze({
     id: "ln-1",
@@ -186,13 +171,6 @@ const PALETTE = Object.freeze({
     dust: "#9aafc2",
     glass: "#1a2833",
   }),
-});
-
-/** Silver / ice-blue tints for Triddy by mood. */
-const TRIDENT_TINT = Object.freeze({
-  happy: freeze({ body: "#c5dcec", belly: "#e8f4fc", line: "#2a4a62", drill: "#9eb4c8" }),
-  shivering: freeze({ body: "#b0c4d4", belly: "#dce8f0", line: "#2a4a62", drill: "#8aa0b4" }),
-  cold: freeze({ body: "#8aa4bc", belly: "#c5d4e2", line: "#102033", drill: "#6a849c" }),
 });
 
 /** Gold / amber tints for Nodey by mood. Teal tips stay beacon-colored. */
@@ -271,20 +249,15 @@ function explain(pet, phase) {
 function buildScene(pet, phase, mood, reason, signalHigh) {
   const palette = PALETTE[mood.id];
   const anchor = faceAnchor(pet.id);
-  const cheek = pet.id === "eds" || pet.id === "trident" || pet.id === "ln-1";
+  const cheek = pet.id === "eds" || pet.id === "ln-1";
   const headFill =
-    pet.id === "trident"
-      ? (TRIDENT_TINT[mood.id] || TRIDENT_TINT.cold).belly
-      : pet.id === "ln-1"
-        ? (NODEY_TINT[mood.id] || NODEY_TINT.cold).body
-        : undefined;
+    pet.id === "ln-1" ? (NODEY_TINT[mood.id] || NODEY_TINT.cold).body : undefined;
   const parts = [
     ...sun(phase),
     shadow(),
     ...body(pet, mood, palette, signalHigh),
     ...face(mood, anchor, palette, { cheek, headFill }),
   ];
-  if (pet.id === "trident") parts.push(...frostWhiskers(anchor, palette));
   if (mood.id === "shivering" || mood.id === "cold") {
     parts.push(...frostMarks(anchor, palette));
   }
@@ -301,7 +274,6 @@ function buildScene(pet, phase, mood, reason, signalHigh) {
 function faceAnchor(petId) {
   if (petId === "lister") return { cx: 100, cy: 96, frostX: 78, frostY: 64 };
   if (petId === "retro") return { cx: 100, cy: 78, frostX: 70, frostY: 52 };
-  if (petId === "trident") return { cx: 100, cy: 88, frostX: 72, frostY: 54 };
   if (petId === "ln-1") return { cx: 100, cy: 108, frostX: 66, frostY: 72 };
   return { cx: 100, cy: 52, frostX: 64, frostY: 28 };
 }
@@ -360,7 +332,6 @@ function body(pet, mood, palette, signalHigh) {
   if (pet.id === "lister") return listerBody(palette);
   if (pet.id === "retro") return retroBody(mood, palette);
   if (pet.id === "eds") return edsBody(palette);
-  if (pet.id === "trident") return tridentBody(mood);
   if (pet.id === "ln-1") return nodeyBody(mood, signalHigh);
   return edsBody(palette);
 }
@@ -472,78 +443,6 @@ function edsBody(palette) {
       "stroke-width": "1.5",
       opacity: "0.75",
       "data-role": "grid",
-    }),
-  ];
-}
-
-/** Ice-drill pup: silver/ice-blue body, drill stem and bit under the chin. */
-function tridentBody(mood) {
-  const tint = TRIDENT_TINT[mood.id] || TRIDENT_TINT.cold;
-  return [
-    part("ellipse", {
-      cx: 100,
-      cy: 128,
-      rx: 38,
-      ry: 32,
-      fill: tint.body,
-      stroke: tint.line,
-      "stroke-width": "3",
-      "data-role": "body",
-    }),
-    part("ellipse", {
-      cx: 100,
-      cy: 134,
-      rx: 22,
-      ry: 16,
-      fill: tint.belly,
-      opacity: "0.85",
-      "data-role": "belly",
-    }),
-    part("ellipse", {
-      cx: 78,
-      cy: 72,
-      rx: 10,
-      ry: 14,
-      fill: tint.body,
-      stroke: tint.line,
-      "stroke-width": "2",
-      "data-role": "ear",
-    }),
-    part("ellipse", {
-      cx: 122,
-      cy: 72,
-      rx: 10,
-      ry: 14,
-      fill: tint.body,
-      stroke: tint.line,
-      "stroke-width": "2",
-      "data-role": "ear",
-    }),
-    part("line", {
-      x1: 100,
-      y1: 152,
-      x2: 100,
-      y2: 186,
-      stroke: tint.drill,
-      "stroke-width": "5",
-      "stroke-linecap": "round",
-      "data-role": "bit",
-    }),
-    part("polygon", {
-      points: "90,186 110,186 100,204",
-      fill: tint.line,
-      "data-role": "bit",
-    }),
-    part("rect", {
-      x: 92,
-      y: 160,
-      width: 16,
-      height: 6,
-      rx: 2,
-      fill: tint.belly,
-      stroke: tint.line,
-      "stroke-width": "1.5",
-      "data-role": "collar",
     }),
   ];
 }
@@ -787,58 +686,6 @@ function frostMarks(anchor, palette) {
       "data-role": "frost",
     }),
   );
-}
-
-/** Permanent frost whiskers for Triddy (ice-drill pup). */
-function frostWhiskers(anchor, palette) {
-  const { cx, cy } = anchor;
-  const y = cy + 4;
-  return [
-    part("line", {
-      x1: cx - 22,
-      y1: y - 4,
-      x2: cx - 10,
-      y2: y,
-      stroke: palette.frost,
-      "stroke-width": "2",
-      "stroke-linecap": "round",
-      "data-role": "whisker",
-      "data-shape": "left",
-    }),
-    part("line", {
-      x1: cx - 24,
-      y1: y + 4,
-      x2: cx - 10,
-      y2: y + 2,
-      stroke: palette.frost,
-      "stroke-width": "2",
-      "stroke-linecap": "round",
-      "data-role": "whisker",
-      "data-shape": "left",
-    }),
-    part("line", {
-      x1: cx + 10,
-      y1: y,
-      x2: cx + 22,
-      y2: y - 4,
-      stroke: palette.frost,
-      "stroke-width": "2",
-      "stroke-linecap": "round",
-      "data-role": "whisker",
-      "data-shape": "right",
-    }),
-    part("line", {
-      x1: cx + 10,
-      y1: y + 2,
-      x2: cx + 24,
-      y2: y + 4,
-      stroke: palette.frost,
-      "stroke-width": "2",
-      "stroke-linecap": "round",
-      "data-role": "whisker",
-      "data-shape": "right",
-    }),
-  ];
 }
 
 function part(tag, attrs, children = []) {

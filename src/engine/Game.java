@@ -235,6 +235,7 @@ public class Game {
             case "work" -> switch (pet.id()) {
                 case "LISTER" -> Rules.DRILL;
                 case "LRA" -> Rules.PING;
+                case "LN-1" -> Rules.PING;
                 default -> Rules.DUST_TEST;
             };
             default -> null;
@@ -314,8 +315,8 @@ public class Game {
                 addData(Rules.DRILL_DATA);
                 events.add(new Event("drilled", String.format(java.util.Locale.ROOT, "%.3f m", drillDepthM()), hour));
             }
-            case "LRA" -> {
-                // The laser is fired from orbit and the orbiter records the return, so it counts as sent.
+            case "LRA", "LN-1" -> {
+                // LRA: orbiter laser return. LN-1: ranging beacon ping.
                 double got = Rules.PING_DATA * (1 - dust / 100);
                 pings++;
                 dataSent += got;

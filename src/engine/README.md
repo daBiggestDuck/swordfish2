@@ -26,6 +26,7 @@ You pick a payload pet (a real CLPS instrument) and a landing site, then keep th
 | LISTER | Heat-flow drill, Blue Ghost 1 | Drill 8 stops down to 1 m |
 | LRA | Passive retroreflector, IM-1 and IM-2. Needs no power | Catch a laser ping every LRO pass (2 h) |
 | EDS | Dust shield, Blue Ghost 1 | Dust test (also cleans) |
+| LN-1 (Nodey) | Navigation beacon, IM-1 @ Malapert A | Broadcast a ranging ping |
 
 Milestones to beat: IM-2 (1 day), IM-1 (7 days), sunset (346 h), Blue Ghost 1 (5 h into night).
 
@@ -43,7 +44,7 @@ Milestones to beat: IM-2 (1 day), IM-1 (7 days), sunset (346 h), Blue Ghost 1 (5
 
 ## Hooks for the other branches
 
-- **story:** call `storyEngine.advance(game.dayProgress())` every tick (0.0 at sunrise to 1.0 at sunset). `game.earthDays()` feeds the Pet Passport. Site and pet ids match story's (`MARE_CRISIUM`, `MALAPERT_A`, `MONS_MOUTON`, `REINER_GAMMA`, `LRA`, `LISTER`, `EDS`).
+- **story:** call `storyEngine.advance(game.dayProgress())` every tick (0.0 at sunrise to 1.0 at sunset). `game.earthDays()` feeds the Pet Passport. Site and pet ids match story's (`MARE_CRISIUM`, `MALAPERT_A`, `MONS_MOUTON`, `REINER_GAMMA`, `LISTER`, `LRA`, `EDS`, `LN-1`).
 - **pets:** draw one face or animation per mood: `happy`, `night`, `dusty`, `sleepy`, `freezing`, `overheating`, `fainted`, `proud`.
 - **data:** replace `Sites.ALL` and add facts to `Sources.java`. Each fact must cite a source id; a test checks this.
 - **map:** `GET /api/engine/sites` lists every site with its temperatures and sunlight.

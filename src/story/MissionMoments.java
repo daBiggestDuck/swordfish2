@@ -24,10 +24,6 @@ public final class MissionMoments {
     public static final String PEREGRINE_KIT =
             "https://www.nasa.gov/wp-content/uploads/2023/12/np-2023-12-017-jsc-clps-astrobotic-press-kit-update-508.pdf";
     public static final String CT3 = "https://science.nasa.gov/lunar-science/clps-deliveries/ct-3-science/";
-    public static final String TRIDENT_DRILL =
-            "https://www.nasa.gov/missions/artemis/nasas-lunar-drill-technology-passes-tests-on-the-moon/";
-    public static final String PRIME1 =
-            "https://www.nasa.gov/centers-and-facilities/kennedy/nasas-polar-ice-experiment-paves-way-for-future-moon-missions/";
     public static final String LN1_BEACON =
             "https://www.nasa.gov/centers-and-facilities/marshall/nasa-lights-beacon-on-moon-with-autonomous-navigation-system-test/";
     public static final String IM1_PROGRESS =
@@ -92,76 +88,58 @@ public final class MissionMoments {
                             + "antenna points right. Real operators wait for the link too.",
                     0.50, DELIVERIES),
 
-            // ---- Pet: Ghost (Blue Ghost Mission 1, Firefly Aerospace) ----
-            new MissionMoment("ghost-touchdown", "ANY", "Blue Ghost Mission 1",
-                    "Touchdown!",
-                    "Ghost is based on Firefly's Blue Ghost 1. Landing safely is the hardest part "
-                            + "of any lunar mission, and your pet just did it!",
-                    0.03, BG1_LANDING, Pets.BLUE_GHOST),
-            new MissionMoment("ghost-payloads", "ANY", "Blue Ghost Mission 1",
-                    "A backpack of experiments",
-                    "The real Blue Ghost 1 carried 10 NASA instruments, and all 10 switched on and "
-                            + "collected data on the Moon. Keep Ghost powered so they keep working!",
-                    0.25, BG1_END, Pets.BLUE_GHOST),
-            new MissionMoment("ghost-night", "ANY", "Blue Ghost Mission 1",
+            // ---- Pet: LISTER (heat-flow drill on Blue Ghost 1) ----
+            new MissionMoment("lister-hello", "ANY", "Blue Ghost Mission 1",
+                    "Meet LISTER",
+                    "LISTER is a heat-flow probe that flew on Firefly's Blue Ghost 1. It drills into "
+                            + "regolith to measure warmth from the Moon's interior — hungry work!",
+                    0.03, BG1_LANDING, Pets.LISTER),
+            new MissionMoment("lister-drill", "ANY", "Blue Ghost Mission 1",
+                    "Drilling for heat",
+                    "LISTER was designed to dig meters into the surface. Keep it powered: without "
+                            + "solar (or lander) power, the drill gets too cold to work.",
+                    0.30, BG1_END, Pets.LISTER),
+            new MissionMoment("lister-night", "ANY", "Blue Ghost Mission 1",
                     "Into the night",
-                    "Blue Ghost 1 kept working through sunset and into the lunar night. "
-                            + "Its mission ended on Mar. 16, 2025. Keep Ghost cozy!",
-                    0.92, BG1_END, Pets.BLUE_GHOST),
+                    "Blue Ghost 1 kept science running through sunset. Active instruments like LISTER "
+                            + "need power through the lunar night — huddle, don't sleep!",
+                    0.92, BG1_END, Pets.LISTER),
 
-            // ---- Pet: Luna (Blue Moon Mark 1, Blue Origin) ----
-            new MissionMoment("luna-waiting", "ANY", "Blue Moon Mark 1 Mission",
-                    "Still waiting for liftoff",
-                    "Luna is based on Blue Origin's Blue Moon Mark 1, a planned CLPS delivery that "
-                            + "will carry two NASA instruments to the Moon's south pole. "
-                            + "This day is a practice run!",
-                    0.03, CT3, Pets.BLUE_MOON),
-            new MissionMoment("luna-cameras", "ANY", "Blue Moon Mark 1 Mission",
-                    "Filming the landing",
-                    "One of Luna's instruments, SCALPSS, uses cameras to film the lander and the "
-                            + "ground during descent, to show how the engine plume disturbs the surface.",
-                    0.30, CT3, Pets.BLUE_MOON),
-            new MissionMoment("luna-learns", "ANY", "Earlier CLPS flights",
-                    "Learning from friends",
-                    "Earlier landers taught the whole program a lot: IM-1 landed tilted, "
-                            + "Peregrine never landed, and Blue Ghost 1 worked through a lunar day. "
-                            + "Luna gets to learn from all of them.",
-                    0.50, DELIVERIES, Pets.BLUE_MOON),
-            new MissionMoment("luna-mirror", "ANY", "Blue Moon Mark 1 Mission",
+            // ---- Pet: Retro (LRA laser retroreflector) ----
+            new MissionMoment("retro-hello", "ANY", "IM-1 Mission",
+                    "Meet Retro",
+                    "Retro is based on the Laser Retroreflector Array — a handful of glass prisms "
+                            + "that bounce laser light back to orbiters. No power, no commands.",
+                    0.03, IM1_LRO, Pets.RETRO),
+            new MissionMoment("retro-mirror", "ANY", "Any CLPS lander",
                     "A mirror for orbiters",
-                    "Luna's other instrument is a laser retroreflector (LRA). "
-                            + "It helps spacecraft in orbit pinpoint exactly where the lander is.",
-                    0.70, CT3, Pets.BLUE_MOON),
-            new MissionMoment("luna-night", "ANY", "Blue Moon Mark 1 Mission",
-                    "Big dreams, long night",
-                    "Every lander faces the cold lunar night. Luna dreams of the day it really "
-                            + "flies. For now, keep it warm and the Earth link steady!",
-                    0.92, CLPS_PAGE, Pets.BLUE_MOON),
+                    "Passive LRA arrays help spacecraft pinpoint exactly where a lander sits. "
+                            + "They keep working for decades because they draw zero watts.",
+                    0.40, CLPS_PAGE, Pets.RETRO),
+            new MissionMoment("retro-night", "ANY", "Any CLPS lander",
+                    "Sleep through the night",
+                    "While powered pets huddle in the cold, Retro sleeps peacefully. Real hardware "
+                            + "needs no heater and no battery — just clear glass facets.",
+                    0.92, CLPS_PAGE, Pets.RETRO),
 
-            // ---- Pet: Triddy (TRIDENT drill, PRIME-1 on IM-2, Intuitive Machines) ----
-            new MissionMoment("triddy-hello", "ANY", "IM-2 Mission",
-                    "Meet Triddy",
-                    "Triddy is based on TRIDENT, the drill in NASA's PRIME-1 experiment. It flew on "
-                            + "IM-2 together with MSolo, an instrument that sniffs soil for gases.",
-                    0.03, PRIME1, Pets.TRIDDY),
-            new MissionMoment("triddy-drill", "ANY", "IM-2 Mission",
-                    "Drilling down",
-                    "TRIDENT is built to drill up to 1 meter into the Moon, bringing up soil about "
-                            + "10 cm at a time by spinning and hammering. Drilling is hungry work, so "
-                            + "keep Triddy powered!",
-                    0.30, TRIDENT_DRILL, Pets.TRIDDY),
-            new MissionMoment("triddy-sideways", "ANY", "IM-2 Mission",
-                    "Landing on its side",
-                    "IM-2 landed on Mar. 6, 2025, about 400 meters from its target at Mons Mouton, "
-                            + "and ended up on its side. MSolo still worked despite the rough landing.",
-                    0.55, TRIDENT_DRILL, Pets.TRIDDY),
-            new MissionMoment("triddy-ice", "ANY", "IM-2 Mission",
-                    "Sniffing for ice",
-                    "PRIME-1 was NASA's first try at drilling for ice near the Moon's south pole. "
-                            + "Water ice there could one day help astronauts live on the Moon.",
-                    0.80, PRIME1, Pets.TRIDDY),
+            // ---- Pet: EDS (electrodynamic dust shield on Blue Ghost 1) ----
+            new MissionMoment("eds-hello", "ANY", "Blue Ghost Mission 1",
+                    "Meet EDS",
+                    "EDS is an electrodynamic dust shield from Blue Ghost 1. Electric fields lift "
+                            + "lunar dust off glass and radiators — no moving parts.",
+                    0.03, BG1_LANDING, Pets.EDS),
+            new MissionMoment("eds-dust", "ANY", "Blue Ghost Mission 1",
+                    "Dust everywhere",
+                    "Lunar dust is electrostatically sticky. EDS cleans surfaces while the Sun "
+                            + "(and lander power) can feed it; night stops the cleaning.",
+                    0.35, BG1_END, Pets.EDS),
+            new MissionMoment("eds-night", "ANY", "Blue Ghost Mission 1",
+                    "Fields need power",
+                    "Without power the dust shield cannot keep lifting motes. EDS huddles in the "
+                            + "lunar night instead of sleeping — same rule as other active payloads.",
+                    0.92, BG1_END, Pets.EDS),
 
-            // ---- Pet: Nodey (LN-1 navigation beacon on IM-1, Intuitive Machines) ----
+            // ---- Pet: Nodey (LN-1 navigation beacon on IM-1) ----
             new MissionMoment("nodey-hello", "ANY", "IM-1 Mission",
                     "Meet Nodey",
                     "Nodey is based on Lunar Node-1 (LN-1), a navigation beacon NASA flew on IM-1. "
@@ -175,7 +153,7 @@ public final class MissionMoments {
             new MissionMoment("nodey-backup", "ANY", "IM-1 Mission",
                     "Helping its lander",
                     "LN-1 also gave critical backup to IM-1's own navigation system. "
-                            + "Nodey likes to help!",
+                            + "Nodey likes to help — and prefers waiting until Earth is in view!",
                     0.50, LN1_BEACON, Pets.NODEY),
             new MissionMoment("nodey-beacon", "ANY", "IM-1 Mission",
                     "A beacon on the Moon",

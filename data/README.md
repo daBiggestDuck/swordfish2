@@ -15,7 +15,7 @@ A record is one of five lists:
 - **sources** — an `https` URL with a host, a title, and a publisher.
 - **sites** — region (`polar`, `near-side`, `far-side`), terrain, illumination, water-ice relation, and how Earth is reached.
 - **payloads** — one real instrument or suite, with a `type` such as `retroreflector`, `heat-flow`, or `dust-shield`, and a `kind`. The kind can match the type, or it can be a narrower token such as `volatiles` or `geophysics`.
-- **pets** — the adoptable instruments. The planning page started with three: the heat-flow drill (LISTER), the laser retroreflector (LRA and NGLR), and the dust shield (EDS). This catalog also ships Triddy (TRIDENT / MSOLO on IM-2) and Nodey (LN-1 on IM-1). Each pet points at those payloads. Optional game fields include `passive`, `care`, `engineDraw`, `moods`, `rarity`, `passport`, `vibe`, `preferWait`, `signalBias`, `homeMissionId`, and `homeSiteId`.
+- **pets** — the adoptable instruments. The planning page started with three: the heat-flow drill (LISTER), the laser retroreflector (LRA and NGLR), and the dust shield (EDS). v0 ships exactly four adoptable pets: LISTER, Retro (LRA/NGLR), EDS, and Nodey (LN-1). Optional game fields include `passive`, `care`, `engineDraw`, `moods`, `rarity`, `passport`, `vibe`, `preferWait`, `signalBias`, `homeMissionId`, and `homeSiteId`.
 - **missions** — provider, lander, task order, dates, status, site, and payload ids.
 
 `filterMissions` keeps a mission only when every filter that was set matches. Filters that are omitted, blank, or only whitespace are ignored. `past` and `upcoming` are decided from `asOf`, which defaults to the catalog date and can be overridden.
@@ -67,7 +67,6 @@ The pets follow the instruments. Engine draw numbers are playable stand-ins kept
 - Heat-flow drill: LISTER, power required, stops at night without power. Flown on Blue Ghost 1. NASA describes a 2-to-3-meter heat-flow probe. Engine draw key `listerDraw` ≈ 30.
 - Laser retroreflector: LRA and NGLR, no power, still there at night. The small LRA is for spacecraft. NGLR is the Earth-ranging one on Blue Ghost 1.
 - Dust shield: EDS, power required, does not keep cleaning through the night by itself. Engine draw key `edsDraw` ≈ 20.
-- Triddy: TRIDENT with MSOLO on IM-2 at Mons Mouton. Power required, night mood cold (not sleeping). Hungrier than LISTER (`tridentDraw` ≈ 34). Rare. Passport line covers the ~1 m regolith pull and ice sniff with MSOLO.
 - Nodey: LN-1 on IM-1 at Malapert A (80.13°S, 1.44°E). Power required, night mood cold. Lighter than EDS (`ln1Draw` ≈ 18). Uncommon. Prefers waiting on Signal. Passport line covers broadcast ranging for later vehicles.
 
 ## Two datasets on this branch
@@ -120,7 +119,7 @@ node data/cli.js missions --payload volatiles
 node data/cli.js mission im-2
 node data/cli.js site mons-mouton
 node data/cli.js pet retroreflector
-node data/cli.js pet trident
+node data/cli.js pet ln-1
 node data/cli.js pet ln-1
 node data/cli.js compare malapert-a mare-crisium mons-mouton
 node data/cli.js sources

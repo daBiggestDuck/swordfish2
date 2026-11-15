@@ -1,5 +1,19 @@
+import './pets-3d/install.js';
 import { LunarGlobeGL } from './globe_gl.js';
 import { handleClientApi, normalizeSiteId, elevationDeg, azimuthDeg } from './map_engine_client.js';
+import {
+  DROP_PETS,
+  buildOverlayMarkerGroup,
+  conditionsToReaction,
+  getDropPet,
+  isDropPet,
+  mountPetVisual,
+  poseForSite,
+  readPlacedPet,
+  readSelectedPetId,
+  writePlacedPet,
+  writeSelectedPetId,
+} from './pet_moon.js';
 
 const $ = (sel) => document.querySelector(sel);
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -15,6 +29,8 @@ const state = {
     try { return JSON.parse(localStorage.getItem('payloadPets.selectedDrop') || 'null'); }
     catch { return null; }
   })(),
+  selectedPetId: readSelectedPetId('lister'),
+  placedPet: readPlacedPet(),
   compareIds: ['SHACKLETON_RIM', 'MALAPERT_A', 'MARE_CRISIUM'],
   projection: '3d', // '3d' | 'global' | 'pole'
   sampleIndex: 141, // 2026-Dec-03 12:00 UTC
@@ -33,6 +49,7 @@ const state = {
   inspectedEval: null,
   storyboardRaf: null,
   stageSeq: 0,
+  petReactionKey: '',
 };
 
 function svgEl(tag, attrs = {}, parent = null) {
@@ -369,6 +386,7 @@ async function applyFilters() {
 async function loadSiteSky() {
   if (state.stagedDrop) {
     await stageDropPoint(state.stagedDrop.lat, state.stagedDrop.lon, true, false);
+    await refreshPlacedPetReaction();
     return;
   }
 
@@ -402,6 +420,7 @@ async function loadSiteSky() {
   renderSkyDome();
   renderOpChart();
   updateClockDisplay();
+  await refreshPlacedPetReaction();
 
   const ep = getInterpolatedEphemeris();
   if (ep && state.globe) {
@@ -768,6 +787,7 @@ async function stageDropPoint(lat, lon, fetchNew = true, animate = fetchNew) {
     warnUl.appendChild(li);
   }
 
+  renderPetPickers();
   if (animate) {
     state.stagedDrop.animStartTime = typeof performance !== 'undefined' ? performance.now() : 0;
     card.classList.remove('story-active');
@@ -804,6 +824,9 @@ function clearStagedDrop() {
 async function confirmStagedDrop() {
   if (!state.stagedDrop) return;
   const ev = state.stagedDrop.evalData;
+  const petId = isDropPet(state.selectedPetId) ? state.selectedPetId : readSelectedPetId('lister');
+  const skyCurrent = ev.sky?.current || state.sky?.current || {};
+  const reaction = conditionsToReaction(petId, skyCurrent);
   const dropRecord = {
     id: ev.id,
     name: ev.name,
@@ -814,11 +837,13 @@ async function confirmStagedDrop() {
     custom: !ev.matchedKnownSite,
     decayMultipliers: ev.decayMultipliers,
     scores: ev.scores,
+    petId,
     confirmedAt: new Date().toISOString(),
   };
 
   state.confirmedDrop = dropRecord;
   localStorage.setItem('payloadPets.selectedDrop', JSON.stringify(dropRecord));
+  const siteId = ev.matchedKnownSite && ev.nearestSiteId ? ev.nearestSiteId : ev.id;
   if (ev.matchedKnownSite && ev.nearestSiteId) {
     state.selectedSiteId = ev.nearestSiteId;
     state.pickedPetSiteId = ev.nearestSiteId;
@@ -828,12 +853,169 @@ async function confirmStagedDrop() {
     localStorage.setItem('payloadPets.selectedSite', ev.id);
   }
 
+  state.selectedPetId = petId;
+  writeSelectedPetId(petId);
+  state.placedPet = writePlacedPet({
+    petId,
+    siteId,
+    siteName: ev.name,
+    lat: ev.lat,
+    lon: ev.lon,
+    matchedKnownSite: Boolean(ev.matchedKnownSite),
+    sampleIndex: state.sampleIndex,
+    phaseId: reaction.phaseId,
+    moodId: reaction.moodId,
+    label: reaction.label,
+    reason: reaction.reason,
+    signal: reaction.signal,
+    sunlit: reaction.sunlit,
+    earthVisible: reaction.earthVisible,
+  });
+
   clearStagedDrop();
   await loadSiteSky();
   renderSiteList();
+  renderPetPickers();
   renderMap();
-  window.dispatchEvent(new CustomEvent('payloadPets:siteSelected', { detail: dropRecord }));
-  window.dispatchEvent(new CustomEvent('payloadpets:site-selected', { detail: dropRecord }));
+  await refreshPlacedPetReaction(true);
+  window.dispatchEvent(new CustomEvent('payloadPets:siteSelected', { detail: { ...dropRecord, placedPet: state.placedPet } }));
+  window.dispatchEvent(new CustomEvent('payloadpets:site-selected', { detail: { ...dropRecord, placedPet: state.placedPet } }));
+  window.dispatchEvent(new CustomEvent('payloadPets:petDropped', { detail: state.placedPet }));
+}
+
+function renderPetPickers() {
+  const fill = (root) => {
+    if (!root) return;
+    root.replaceChildren();
+    for (const pet of DROP_PETS) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `pet-chip${pet.id === state.selectedPetId ? ' is-on' : ''}`;
+      btn.setAttribute('aria-pressed', pet.id === state.selectedPetId ? 'true' : 'false');
+      btn.dataset.petId = pet.id;
+      btn.innerHTML = `<strong>${pet.name}</strong><small>${pet.role}</small>`;
+      btn.addEventListener('click', () => {
+        state.selectedPetId = pet.id;
+        writeSelectedPetId(pet.id);
+        renderPetPickers();
+        updateDropConfirmLabel();
+      });
+      root.appendChild(btn);
+    }
+  };
+  fill($('#pet-picker'));
+  fill($('#pd-pet-picker'));
+  updateDropConfirmLabel();
+  const hint = $('#pet-drop-hint');
+  if (hint) {
+    const pet = getDropPet(state.selectedPetId);
+    hint.textContent = pet
+      ? `${pet.name} selected (${pet.role}). Click the Moon or Inspect & Pick, then Drop Pet on Moon.`
+      : 'Select a pet, then click a landing spot and confirm the drop.';
+  }
+}
+
+function updateDropConfirmLabel() {
+  const btn = $('#btn-confirm-drop');
+  if (!btn) return;
+  const pet = getDropPet(state.selectedPetId);
+  btn.textContent = pet ? `Drop ${pet.name} on Moon` : 'Drop Pet on Moon';
+}
+
+function currentSkyForPet() {
+  return (
+    state.sky?.current ||
+    state.stagedDrop?.evalData?.sky?.current ||
+    state.inspectedEval?.sky?.current ||
+    {}
+  );
+}
+
+async function refreshPlacedPetReaction(force = false) {
+  const placed = state.placedPet || readPlacedPet();
+  state.placedPet = placed;
+  const stage = $('#moon-pet-stage');
+  const banner = $('#placed-pet-banner');
+  if (!placed || !isDropPet(placed.petId)) {
+    if (stage) setElementHidden(stage, true);
+    if (banner) setElementHidden(banner, true);
+    state.petReactionKey = '';
+    return;
+  }
+
+  const sky = currentSkyForPet();
+  const reaction = conditionsToReaction(placed.petId, sky);
+  const key = `${placed.petId}:${reaction.phaseId}:${reaction.moodId}:${reaction.signalStress ? 1 : 0}:${reaction.powerGlow ? 1 : 0}:${state.sampleIndex}`;
+  if (!force && key === state.petReactionKey) {
+    updatePlacedPetChrome(placed, reaction);
+    return;
+  }
+  state.petReactionKey = key;
+
+  state.placedPet = writePlacedPet({
+    ...placed,
+    sampleIndex: state.sampleIndex,
+    phaseId: reaction.phaseId,
+    moodId: reaction.moodId,
+    label: reaction.label,
+    reason: reaction.reason,
+    signal: reaction.signal,
+    sunlit: reaction.sunlit,
+    earthVisible: reaction.earthVisible,
+  });
+
+  updatePlacedPetChrome(state.placedPet, reaction);
+  const art = $('#moon-pet-art');
+  if (art) {
+    await mountPetVisual(art, placed.petId, sky, { idPrefix: 'map-moon-pet' });
+  }
+  if (stage) setElementHidden(stage, false);
+  renderMap();
+}
+
+function updatePlacedPetChrome(placed, reaction) {
+  const pet = getDropPet(placed.petId);
+  const nameEl = $('#moon-pet-name');
+  const moodEl = $('#moon-pet-mood');
+  const reasonEl = $('#moon-pet-reason');
+  if (nameEl) nameEl.textContent = pet?.name || placed.petId;
+  if (moodEl) moodEl.textContent = reaction.label;
+  if (reasonEl) reasonEl.textContent = reaction.reason;
+
+  const banner = $('#placed-pet-banner');
+  if (banner) {
+    setElementHidden(banner, false);
+    banner.textContent = `${pet?.name || placed.petId} on ${placed.siteName || 'the Moon'} · ${reaction.label}${
+      reaction.powerGlow ? ' · power glow' : ''
+    }${reaction.signalStress ? ' · signal stress' : ''}`;
+  }
+}
+
+function drawPlacedPetMarker(svg, projectFn) {
+  const placed = state.placedPet;
+  if (!placed || !isDropPet(placed.petId)) return;
+  const p = projectFn(placed.lat, placed.lon);
+  if (!p || p.visible === false) return;
+  try {
+    const pose = poseForSite(placed.petId, currentSkyForPet());
+    const marker = buildOverlayMarkerGroup(pose, p.x, p.y - 18, 0.16);
+    svg.appendChild(marker);
+    const pin = svgEl('circle', {
+      cx: p.x.toFixed(1),
+      cy: p.y.toFixed(1),
+      r: 4,
+      fill: '#ffe7ad',
+      stroke: '#ffb84d',
+      'stroke-width': '1.6',
+    }, svg);
+    pin.setAttribute('class', 'moon-pet-pin');
+  } catch (err) {
+    console.warn('[map] pet marker', err);
+    svgEl('circle', {
+      cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 7,
+      fill: '#ffe7ad', stroke: '#ffb84d', 'stroke-width': '2',
+    }, svg);
+  }
 }
 
 // ---- Map Projection Helpers ----
@@ -1097,6 +1279,7 @@ function render3DOverlay() {
 
   // Confirmed / Inspected Custom Drop Markers
   renderActiveCustomMarkers(svg, (lat, lon) => state.globe.latLonToScreen(lat, lon));
+  drawPlacedPetMarker(svg, (lat, lon) => state.globe.latLonToScreen(lat, lon));
 
   // Staged Drop Pin + Animated Storyboard Leader Line to Top Edge of #predrop-card
   if (state.stagedDrop) {
@@ -1440,9 +1623,10 @@ function renderMap() {
   }
 
   const proj2DOrClamped = (lat, lon) => (
-    state.projection === 'global' ? projectGlobal(lat, lon) : projectSouthPoleClamped(lat, lon)
+    state.projection === 'global' ? { ...projectGlobal(lat, lon), visible: true } : { ...projectSouthPoleClamped(lat, lon), visible: true }
   );
   renderActiveCustomMarkers(svg, proj2DOrClamped);
+  drawPlacedPetMarker(svg, proj2DOrClamped);
 
   if (state.stagedDrop) {
     const sp = proj2DOrClamped(state.stagedDrop.lat, state.stagedDrop.lon);
@@ -2117,6 +2301,13 @@ async function init() {
 
 window.PayloadPetsMap = {
   normalizeSiteId,
+  DROP_PETS,
+  getSelectedPetId() {
+    return state.selectedPetId;
+  },
+  getPlacedPet() {
+    return state.placedPet ? { ...state.placedPet } : null;
+  },
   getSelectedSite() {
     const canonical = normalizeSiteId(state.selectedSiteId);
     return (state.data?.sites || []).find((s) => normalizeSiteId(s.id) === canonical) || null;
@@ -2137,11 +2328,13 @@ window.PayloadPetsMap = {
   },
 };
 
+  renderPetPickers();
   renderSiteList();
   renderSources();
   renderMissions();
   await loadSiteSky();
   renderMap();
+  await refreshPlacedPetReaction(true);
   await refreshCompare();
 }
 

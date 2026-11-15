@@ -4,16 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * A payload pet: a real CLPS instrument. Ids match the story branch (LRA, LISTER, EDS).
- *
- * Safe temperature ranges and power draw are game values (the sources don't publish them).
- * Real facts are in {@link Sources}.
- *
- * @param passive       needs no power at all (the LRA): never runs out, never freezes
- * @param minSafeK      below this the pet takes cold damage
- * @param maxSafeK      above this the pet takes heat damage
- * @param drawPerHour   power used every game hour just to stay awake
- * @param workLabel     button text for the pet's science action
+ * Four adoptable payload pets (same set as catalog / story / js-pets).
  */
 public record Pet(
         String id,
@@ -30,10 +21,12 @@ public record Pet(
     public static final List<Pet> ALL = List.of(
             new Pet("LISTER", "LISTER", "Lunar Instrumentation for Subsurface Thermal Exploration with Rapidity",
                     "Blue Ghost Mission 1", false, 200, 340, 1.0, "Drill deeper", "pds-lister"),
-            new Pet("LRA", "LRA", "Laser Retroreflector Array",
+            new Pet("LRA", "Retro", "Laser Retroreflector Array",
                     "IM-1 and IM-2", true, 0, 1000, 0, "Catch a laser ping", "pds-lra"),
             new Pet("EDS", "EDS", "Electrodynamic Dust Shield",
-                    "Blue Ghost Mission 1", false, 210, 350, 0.8, "Run a dust test", null));
+                    "Blue Ghost Mission 1", false, 210, 350, 0.8, "Run a dust test", null),
+            new Pet("LN-1", "Nodey", "Lunar Node-1 Navigation Demonstrator",
+                    "IM-1 at Malapert A", false, 200, 340, 0.6, "Broadcast a ranging ping", null));
 
     public static Optional<Pet> byId(String id) {
         return ALL.stream().filter(p -> p.id().equalsIgnoreCase(id)).findFirst();

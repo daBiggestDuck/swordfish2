@@ -23,7 +23,7 @@ public class Payload {
     public final boolean passive;       // true = needs no power (LRA)
     public final double powerW;         // watts, NaN if unpublished
     public final double massKg;         // kg, NaN if unpublished
-    public final String petArchetype;   // maps to pet identity: lister, lra, rac, msolo, scalpss, planetvac, trident, ln-1
+    public final String petArchetype;   // maps to adoptable pet identity: lister, lra, eds, ln-1
     public final String missionId;      // FK → Mission.id
     public final String sourceUrl;
 
@@ -93,19 +93,19 @@ public class Payload {
             // ════ TO2-AB (Peregrine) ════
             p("nss", "Neutron Spectrometer System", "NSS", "spectrometer",
               "Hydrogen abundance in regolith",
-              null, "NASA ARC", false, U, U, "msolo", "peregrine-1", SRC_TO2AB),
+              null, "NASA ARC", false, U, U, "lister", "peregrine-1", SRC_TO2AB),
 
             p("lets", "Linear Energy Transfer Spectrometer", "LETS", "spectrometer",
               "Radiation dose on lunar surface",
-              null, "NASA JSC", false, U, U, "msolo", "peregrine-1", SRC_TO2AB),
+              null, "NASA JSC", false, U, U, "lister", "peregrine-1", SRC_TO2AB),
 
             p("nirvss", "Near-Infrared Volatile Spectrometer System", "NIRVSS", "spectrometer",
               "Surface volatiles and minerals",
-              null, "NASA ARC", false, U, U, "msolo", "peregrine-1", SRC_TO2AB),
+              null, "NASA ARC", false, U, U, "lister", "peregrine-1", SRC_TO2AB),
 
             p("pitms", "Peregrine Ion-Trap Mass Spectrometer", "PITMS", "spectrometer",
               "Exospheric volatiles at the surface",
-              null, "NASA GSFC", false, U, U, "msolo", "peregrine-1", SRC_TO2AB),
+              null, "NASA GSFC", false, U, U, "lister", "peregrine-1", SRC_TO2AB),
 
             p("lra-peregrine", "Laser Retroreflector Array", "LRA", "retroreflector",
               "Precise distances from orbit",
@@ -118,20 +118,20 @@ public class Payload {
 
             p("scalpss-im1", "Stereo Cameras for Lunar Plume-Surface Studies", "SCALPSS", "camera",
               "Video/still images of plume crater formation",
-              "Michelle Munk", "NASA LaRC", false, U, U, "scalpss", "im-1", SRC_TO2IM),
+              "Michelle Munk", "NASA LaRC", false, U, U, "eds", "im-1", SRC_TO2IM),
 
             p("rolses", "Radio-wave Observations at the Lunar Surface of the photoElectron Sheath",
               "ROLSES", "radio",
               "Electron sheath density and radio emissions",
-              "Dr. Nat Gopalswamy", "NASA GSFC", false, U, U, "msolo", "im-1", SRC_TO2IM),
+              "Dr. Nat Gopalswamy", "NASA GSFC", false, U, U, "lister", "im-1", SRC_TO2IM),
 
             p("ndl", "Navigation Doppler Lidar", "NDL", "nav",
               "Velocity and altitude from 5 km",
-              "Dr. Farzin Amzajerdian", "NASA LaRC", false, U, U, "scalpss", "im-1", SRC_TO2IM),
+              "Dr. Farzin Amzajerdian", "NASA LaRC", false, U, U, "eds", "im-1", SRC_TO2IM),
 
             p("rfmg", "Radio Frequency Mass Gauge", "RFMG", "gauge",
               "Mass of cryogenic fuel in tanks",
-              "Dr. Greg Zimmerli", "NASA GRC", false, U, U, "msolo", "im-1", SRC_TO2IM),
+              "Dr. Greg Zimmerli", "NASA GRC", false, U, U, "lister", "im-1", SRC_TO2IM),
 
             p("lra-im1", "Laser Retroreflector Array", "LRA", "retroreflector",
               "Precise distances from orbit",
@@ -140,23 +140,23 @@ public class Payload {
             // ════ TO19D (Blue Ghost 1) ════
             p("scalpss-bg1", "Stereo Cameras for Lunar Plume-Surface Studies 1.1", "SCALPSS 1.1", "camera",
               "3D images of plume-surface interaction",
-              "Michelle Munk", "NASA LaRC", false, U, U, "scalpss", "blue-ghost-1", SRC_TO19D),
+              "Michelle Munk", "NASA LaRC", false, U, U, "eds", "blue-ghost-1", SRC_TO19D),
 
             p("rac", "Regolith Adherence Characterization", "RAC", "sampler",
               "Dust adhesion to materials",
-              null, "NASA GRC", false, U, U, "rac", "blue-ghost-1", SRC_TO19D),
+              null, "NASA GRC", false, U, U, "eds", "blue-ghost-1", SRC_TO19D),
 
             p("lms", "Lunar Magnetotelluric Sounder", "LMS", "spectrometer",
               "Interior electrical conductivity",
-              null, "NASA GSFC", false, U, U, "msolo", "blue-ghost-1", SRC_TO19D),
+              null, "NASA GSFC", false, U, U, "lister", "blue-ghost-1", SRC_TO19D),
 
             p("radpc", "Radiation Tolerant Computer", "RadPC", "computer",
               "Radiation-hardened compute performance",
-              null, "NASA GSFC", false, U, U, "msolo", "blue-ghost-1", SRC_TO19D),
+              null, "NASA GSFC", false, U, U, "lister", "blue-ghost-1", SRC_TO19D),
 
             p("lpv", "Lunar PlanetVac", "LPV", "sampler",
               "Pneumatic regolith sample capture",
-              null, "Honeybee Robotics", false, U, U, "planetvac", "blue-ghost-1", SRC_TO19D),
+              null, "Honeybee Robotics", false, U, U, "eds", "blue-ghost-1", SRC_TO19D),
 
             p("lister", "Lunar Instrumentation for Subsurface Thermal Exploration with Rapidity",
               "LISTER", "drill",
@@ -165,7 +165,7 @@ public class Payload {
 
             p("lexi", "Lunar Environment heliospheric X-ray Imager", "LEXI", "camera",
               "Solar wind-magnetosphere interaction",
-              null, "NASA GSFC", false, U, U, "scalpss", "blue-ghost-1", SRC_TO19D),
+              null, "NASA GSFC", false, U, U, "eds", "blue-ghost-1", SRC_TO19D),
 
             p("nglr", "Next Generation Laser Retroreflector", "NGLR", "retroreflector",
               "Precise Earth-Moon laser ranging",
@@ -177,17 +177,16 @@ public class Payload {
 
             p("stereo-bg1", "Stereo Camera", "StereoCAM", "camera",
               "Surface context imagery",
-              null, "NASA GSFC", false, U, U, "scalpss", "blue-ghost-1", SRC_TO19D),
+              null, "NASA GSFC", false, U, U, "eds", "blue-ghost-1", SRC_TO19D),
 
-            // ════ TO-PRIME1 (IM-2 Athena) — includes Triddy (`trident`) ════
-            // Game catalog home is Mons Mouton; do not reuse id `trident` on Griffin.
+            // ════ TO-PRIME1 (IM-2 Athena) — TRIDENT drill maps to lister archetype ════
             p("trident", "The Regolith and Ice Drill for Exploring New Terrain", "TRIDENT", "drill",
               "Subsurface ice sampling",
-              null, "Honeybee Robotics", false, U, U, "trident", "im-2", SRC_PRIME1),
+              null, "Honeybee Robotics", false, U, U, "lister", "im-2", SRC_PRIME1),
 
             p("msolo", "Mass Spectrometer Observing Lunar Operations", "MSolo", "spectrometer",
               "Volatile species at the surface (water, CO2)",
-              null, "NASA KSC", false, U, U, "msolo", "im-2", SRC_PRIME1),
+              null, "NASA KSC", false, U, U, "lister", "im-2", SRC_PRIME1),
 
             p("lra-im2", "Laser Retroreflector Array", "LRA", "retroreflector",
               "Precise distances from orbit",
@@ -195,7 +194,7 @@ public class Payload {
 
             p("micro-nova", "Micro-Nova hopper", "Micro-Nova", "nav",
               "Terrain mobility demonstration",
-              null, "Intuitive Machines", false, U, U, "scalpss", "im-2", SRC_PRIME1),
+              null, "Intuitive Machines", false, U, U, "eds", "im-2", SRC_PRIME1),
 
             // ════ CP-11 (IM-3) ════
             // Payloads verified against science.nasa.gov/lunar-science/clps-deliveries/cp-11/
@@ -203,11 +202,11 @@ public class Payload {
             //  LuSEE-Night flies on Blue Ghost 2 / CS-3, and IM-3 carries these four).
             p("lvx", "Lunar Vertex", "LVx", "spectrometer",
               "Origin of lunar magnetic fields and their relation to surface swirls",
-              "Dr. David Blewett", "Johns Hopkins APL", false, U, U, "msolo", "im-3", SRC_CP11),
+              "Dr. David Blewett", "Johns Hopkins APL", false, U, U, "lister", "im-3", SRC_CP11),
 
             p("cadre", "Cooperative Autonomous Distributed Robotic Exploration", "CADRE", "nav",
               "Autonomous multi-rover exploration and distributed measurements",
-              "Jean-Pierre de la Croix", "NASA JPL", false, U, U, "planetvac", "im-3", SRC_CP11),
+              "Jean-Pierre de la Croix", "NASA JPL", false, U, U, "eds", "im-3", SRC_CP11),
 
             p("mpac", "MoonLIGHT Pointing Actuator", "MPAc", "retroreflector",
               "Earth-Moon laser ranging; test of general relativity",
@@ -215,17 +214,17 @@ public class Payload {
 
             p("lusem", "Lunar Space Environment Monitor", "LUSEM", "radio",
               "High-energy particles and the near-surface space environment",
-              "Young-Jun Choi", "KASI", false, U, U, "msolo", "im-3", SRC_CP11),
+              "Young-Jun Choi", "KASI", false, U, U, "lister", "im-3", SRC_CP11),
 
             // ════ CS-3 (Blue Ghost 2) ════
             p("lusee-night", "Lunar Surface Electromagnetics Experiment-Night", "LuSEE-Night", "radio",
               "Low-frequency radio astronomy from the lunar farside, surviving the lunar night on battery",
-              "Dr. Stuart Bale", "Brookhaven / Lawrence Berkeley (DOE)", false, U, U, "msolo", "blue-ghost-2", SRC_CS3),
+              "Dr. Stuart Bale", "Brookhaven / Lawrence Berkeley (DOE)", false, U, U, "lister", "blue-ghost-2", SRC_CS3),
 
             // ════ TO20A (Griffin 1) — placeholder payloads ════
             p("msolo-griffin", "MSolo (Griffin)", "MSolo", "spectrometer",
               "Volatile species near south pole",
-              null, "NASA KSC", false, U, U, "msolo", "griffin-1", SRC_TO20A),
+              null, "NASA KSC", false, U, U, "lister", "griffin-1", SRC_TO20A),
 
             p("lra-griffin", "Laser Retroreflector Array", "LRA", "retroreflector",
               "Precise distances from orbit",
@@ -233,7 +232,7 @@ public class Payload {
 
             p("nss-griffin", "Neutron Spectrometer System (Griffin)", "NSS", "spectrometer",
               "Hydrogen abundance near south pole",
-              null, "NASA ARC", false, U, U, "msolo", "griffin-1", SRC_TO20A)
+              null, "NASA ARC", false, U, U, "lister", "griffin-1", SRC_TO20A)
         ));
     }
 }

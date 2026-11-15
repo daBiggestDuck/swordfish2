@@ -15,7 +15,6 @@ const MATRIX = {
   lister: { day: "happy", sunset: "shivering", night: "cold" },
   retro: { day: "happy", sunset: "shivering", night: "sleeping" },
   eds: { day: "happy", sunset: "shivering", night: "cold" },
-  trident: { day: "happy", sunset: "shivering", night: "cold" },
   "ln-1": { day: "happy", sunset: "shivering", night: "cold" },
 };
 
@@ -28,7 +27,7 @@ const ANIMATION = {
 
 const PANEL = { top: 78, bottom: 156 };
 const ALLOWED_HOSTS = new Set(["www.nasa.gov", "science.nasa.gov"]);
-const POWERED = ["lister", "eds", "trident", "ln-1"];
+const POWERED = ["lister", "eds", "ln-1"];
 
 test("sunlight picks one mood, and only the retroreflector sleeps", () => {
   assert.equal(PETS.filter((pet) => pet.passive).map((pet) => pet.id).join(), "retro");
@@ -156,14 +155,6 @@ test("the drawing changes with the mood", () => {
   assert.equal(count(retroNight, "bit"), 0);
   assert.equal(count(edsNight, "bit"), 0);
 
-  const triddyDay = shapes(present("trident", "day"));
-  const triddyNight = shapes(present("trident", "night"));
-  assert.ok(count(triddyDay, "whisker") >= 4);
-  assert.ok(count(triddyDay, "bit") >= 1);
-  assert.equal(count(triddyNight, "eye", "heavy"), 2);
-  assert.equal(count(triddyNight, "zzz"), 0);
-  assert.equal(attr(triddyNight, "mouth", "data-shape"), "flat");
-
   const nodeyDay = shapes(present("ln-1", "day"));
   const nodeyLow = shapes(present("ln-1", "day", { signal: 0 }));
   const nodeyHigh = shapes(present("ln-1", "sunset", { signal: SIGNAL_BLINK_AT }));
@@ -173,26 +164,6 @@ test("the drawing changes with the mood", () => {
   assert.equal(count(nodeyHigh, "antenna-tip", "blink"), 2);
   assert.equal(present("ln-1", "day", { signal: SIGNAL_BLINK_AT - 1 }).signalHigh, false);
   assert.equal(present("ln-1", "day", { signal: SIGNAL_BLINK_AT }).signalHigh, true);
-});
-
-test("Triddy is an ice-drill pup with frost whiskers and a powered night huddle", () => {
-  assert.equal(present("trident", "day").pet.name, "Triddy");
-  assert.match(present("trident", "day").pet.passport, /MSOLO/);
-  assert.equal(present("trident", "night").mood.id, "cold");
-  assert.doesNotMatch(present("trident", "night").reason, /sleeps/);
-  for (const phase of PHASES) {
-    const nodes = shapes(present("trident", phase.id));
-    assert.ok(count(nodes, "bit") >= 1);
-    assert.equal(count(nodes, "whisker"), 4);
-    assert.equal(count(nodes, "ear"), 2);
-    assert.equal(count(nodes, "zzz"), 0);
-  }
-  const night = shapes(present("trident", "night"));
-  assert.equal(count(night, "eye", "heavy"), 2);
-  assert.equal(count(night, "frost"), 3);
-  assert.equal(attr(night, "mouth", "data-shape"), "flat");
-  const dayBody = shapes(present("trident", "day")).find((n) => n.attrs["data-role"] === "body");
-  assert.match(dayBody.attrs.fill, /#[bcd]/i);
 });
 
 test("Nodey is a radio-beacon moth whose teal tips blink on high Signal", () => {
@@ -252,7 +223,6 @@ test("dust lifts in full sun, settles at sunset, and rests at night", () => {
   assert.ok(shapes(present("eds", "night")).every((shape) => shape.attrs.class !== "dust-float" && !String(shape.attrs.class || "").includes("dust-float")));
   assert.equal(count(shapes(present("lister", "day")), "dust"), 0);
   assert.equal(count(shapes(present("retro", "night")), "dust"), 0);
-  assert.equal(count(shapes(present("trident", "day")), "dust"), 0);
   assert.equal(count(shapes(present("ln-1", "day")), "dust"), 0);
 });
 
@@ -275,10 +245,10 @@ test("scenes stay inside the shape allowlist", () => {
 });
 
 test("catalog links stay on the cited NASA hosts", () => {
-  assert.equal(new Set(PETS.map((pet) => pet.id)).size, 5);
+  assert.equal(new Set(PETS.map((pet) => pet.id)).size, 4);
   assert.deepEqual(
     PETS.map((pet) => pet.id),
-    ["lister", "retro", "eds", "trident", "ln-1"],
+    ["lister", "retro", "eds", "ln-1"],
   );
   assert.equal(Object.keys(MOODS).length, 4);
   for (const pet of PETS) {
@@ -294,7 +264,7 @@ test("catalog links stay on the cited NASA hosts", () => {
     assert.ok(item.label.length > 0);
     urls.add(item.url);
   }
-  assert.ok(urls.size >= 5);
+  assert.ok(urls.size >= 4);
   assert.equal(SIGNAL_BLINK_AT, 70);
 });
 

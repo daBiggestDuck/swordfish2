@@ -216,7 +216,7 @@ test("mission and pet lookups join the records they name", () => {
   );
   assert.deepEqual(
     im2.pets.map((pet) => pet.id).sort(),
-    ["retroreflector", "trident"]
+    ["retroreflector"]
   );
   assert.equal(im2.mission.outcome, "partial");
   const im1 = describeMission(catalog, "im-1");
@@ -236,21 +236,7 @@ test("mission and pet lookups join the records they name", () => {
   assert.equal(retro.pet.power, "none");
   assert.equal(retro.pet.nightBehavior, "passive");
 
-  const triddy = describePet(catalog, "trident");
-  assert.equal(triddy.pet.name, "Triddy");
-  assert.equal(triddy.pet.instrument, "TRIDENT");
-  assert.equal(triddy.pet.power, "required");
-  assert.equal(triddy.pet.passive, false);
-  assert.equal(triddy.pet.nightBehavior, "needs-power");
-  assert.equal(triddy.pet.homeMissionId, "im-2");
-  assert.equal(triddy.pet.homeSiteId, "mons-mouton");
-  assert.deepEqual(triddy.pet.care, ["Power", "Warmth", "Signal"]);
-  assert.equal(triddy.pet.engineDraw.value, 34);
-  assert.equal(triddy.pet.engineDraw.key, "tridentDraw");
-  assert.deepEqual(triddy.pet.moods, { day: "happy", sunset: "shivering", night: "cold" });
-  assert.equal(triddy.pet.rarity, "Rare");
-  assert.equal(triddy.missions[0].id, "im-2");
-  assert.ok(triddy.pet.passport.includes("MSOLO"));
+  assert.equal(describePet(catalog, "trident"), null);
 
   const nodey = describePet(catalog, "ln-1");
   assert.equal(nodey.pet.name, "Nodey");
@@ -314,7 +300,7 @@ test("validation catches broken cross-references, dates, and invented sunlight p
   assert.equal(validateCatalog(poweredPassive).ok, false);
 
   const sleepingDrill = clone(catalog);
-  sleepingDrill.pets.find((pet) => pet.id === "trident").moods.night = "sleeping";
+  sleepingDrill.pets.find((pet) => pet.id === "heat-flow-drill").moods.night = "sleeping";
   assert.ok(validateCatalog(sleepingDrill).errors.some((error) => error.includes("cannot be sleeping")));
 
   const badHome = clone(catalog);

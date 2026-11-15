@@ -128,7 +128,7 @@
         <div class="local-panel">
           <div class="kicker">CLPS CATALOG · JUDGE PATH</div>
           <h1>Data / Missions</h1>
-          <p class="judge-tip"><strong style="color:var(--text)">What to do here.</strong> This is the offline NASA CLPS spine — missions, south-pole sites, and instrument pets. Switch View to <em>Sites</em> (polar / Malapert / Mons Mouton) or <em>Pets</em> (Triddy = Power, Nodey = Signal), then return to Navigator / Map with the ids verified.</p>
+          <p class="judge-tip"><strong style="color:var(--text)">What to do here.</strong> This is the offline NASA CLPS spine — missions, south-pole sites, and instrument pets. Switch View to <em>Sites</em> (polar / Malapert / Mons Mouton) or <em>Pets</em> (LISTER / EDS = Power, Nodey = Signal, Retro = passive night), then return to Navigator / Map with the ids verified.</p>
           <p class="lede">Baked facts from <code>data/catalog.json</code> (as-of stamped). Every pet maps to a flown or planned instrument — use this tab to prove provenance before the demo.</p>
           <div class="stats" id="data-stats"></div>
           <div class="toolbar">
@@ -188,7 +188,7 @@
                 </tr>
                 <tr>
                   <th>Solar-power potential</th>
-                  <td><strong style="color:var(--text)">Engine</strong> Power / Warmth · <strong style="color:var(--text)">Pets</strong> full sun → night moods (Triddy / LISTER need power)</td>
+                  <td><strong style="color:var(--text)">Engine</strong> Power / Warmth · <strong style="color:var(--text)">Pets</strong> full sun → night moods (LISTER / EDS need power)</td>
                 </tr>
                 <tr>
                   <th>Direct-to-Earth comm windows</th>
@@ -210,7 +210,7 @@
             <div class="kicker">PETS HOOK</div>
             <h2>How pets teach power &amp; comms</h2>
             <ul>
-              <li><strong style="color:var(--text)">Power</strong> — Active instruments (Triddy / TRIDENT, LISTER, EDS) get cold or stop when the Sun drops; passive retroreflectors sleep through night because the real hardware needs no power.</li>
+              <li><strong style="color:var(--text)">Power</strong> — Active instruments (LISTER, EDS) get cold or stop when the Sun drops; passive Retro (LRA) sleeps through night because the real hardware needs no power.</li>
               <li><strong style="color:var(--text)">Signal</strong> — Nodey (Lunar Node-1) is a ranging beacon: “prefer wait on Signal” mirrors needing Earth (or a relay) in view before you transmit.</li>
               <li><strong style="color:var(--text)">Same physics</strong> — Polar ridges and farside geometry change the meters Navigator / Engine show with Horizons + LOLA. The pet is the tutorial layer, not a separate toy universe.</li>
             </ul>
@@ -242,7 +242,7 @@
             <ol>
               <li><strong style="color:var(--text)">Navigator</strong> — compare two south-pole sites / dates; call out Sun→power and Earth→DTE.</li>
               <li><strong style="color:var(--text)">Map / Sites</strong> — show terrain / PSR context for the same sites.</li>
-              <li><strong style="color:var(--text)">Pets</strong> — scrub full sun → night; Power (Triddy) vs Signal (Nodey).</li>
+              <li><strong style="color:var(--text)">Pets</strong> — scrub full sun → night; Power (LISTER / EDS) vs Signal (Nodey) vs passive Retro.</li>
               <li><strong style="color:var(--text)">Data</strong> — flash as-of + NASA naming · optional Engine with <code>./run-engine.sh</code>.</li>
             </ol>
             <p>Plan &amp; awards: <a href="./PLAN.md">PLAN.md</a> · Story: <a href="./STORY.md">STORY.md</a></p>
@@ -293,10 +293,14 @@
       note.dataset.show = "1";
       note.innerHTML = `${tab.label} needs <code>${tab.need}</code> (port ${tab.port}). Start it in another terminal, then click this tab again.`;
       // Still point iframe at the backend URL so a refresh after start works via reload below
+    } else if (tab.id === "map") {
+      note.dataset.show = "1";
+      note.innerHTML =
+        "<strong>Judge tip.</strong> Pick a payload pet (LISTER / Retro / EDS / Nodey) → click a south-pole site → <em>Drop Pet on Moon</em>. The 3D pet appears on the surface; scrub the sun clock for power glow, night huddle, and Nodey signal stress when Earth is blocked.";
     } else if (tab.id === "pets") {
       note.dataset.show = "1";
       note.innerHTML =
-        "<strong>Judge tip.</strong> Pets translate the challenge physics: scrub <em>full sun → sunset → night</em>. Active instruments (Triddy / LISTER) need Power; Nodey (LN-1 beacon) teaches Signal / Earth contact; passive retroreflectors sleep through night because real hardware draws none.";
+        "<strong>Judge tip.</strong> After a Map drop, this tab mirrors the live site mood. Scrub <em>full sun → sunset → night</em> here too — Power pets (LISTER / EDS) huddle in night; Nodey teaches Signal; Retro sleeps because real hardware draws none.";
     } else {
       note.dataset.show = "0";
       note.textContent = "";

@@ -61,11 +61,21 @@
         <div class="nasa-schedule-text" id="dossier-nasa-schedule">Loading NASA mission schedule...</div>
       </div>
 
+      <div class="pet-drop-panel" aria-label="Payload pet drop">
+        <div class="pet-drop-head">
+          <span class="kicker">PAYLOAD PET</span>
+          <span class="muted">Pick → drop on Moon</span>
+        </div>
+        <div id="pet-picker" class="pet-picker" role="group" aria-label="Choose payload pet"></div>
+        <p id="pet-drop-hint" class="pet-drop-hint">Select a pet, then click a landing spot (or Inspect &amp; Pick) and confirm the drop.</p>
+      </div>
+
       <div class="picker-bar">
         <button id="btn-pick-pet-site" class="btn-accent" type="button">Inspect &amp; Pick Spot</button>
         <button id="btn-pin-compare" class="btn-ghost" type="button">+ Compare</button>
       </div>
       <div id="picked-banner" class="picked-banner" hidden></div>
+      <div id="placed-pet-banner" class="placed-pet-banner" hidden></div>
 
       <dl class="dossier-grid">
         <dt>Missions</dt><dd id="dossier-missions">—</dd>
@@ -159,10 +169,26 @@
 
               <ul id="pd-warnings" class="pd-warnings" data-story-row style="--row-idx: 7"></ul>
 
-              <div class="pd-actions" data-story-row style="--row-idx: 8">
-                <button id="btn-confirm-drop" class="btn-accent" type="button">Select This Spot</button>
+              <div class="pd-pet-row" data-story-row style="--row-idx: 8">
+                <span class="kicker">DROP THIS PET</span>
+                <div id="pd-pet-picker" class="pet-picker pet-picker-compact" role="group" aria-label="Pet to drop"></div>
+              </div>
+
+              <div class="pd-actions" data-story-row style="--row-idx: 9">
+                <button id="btn-confirm-drop" class="btn-accent" type="button">Drop Pet on Moon</button>
                 <button id="btn-cancel-drop" class="btn-ghost" type="button">Close</button>
               </div>
+            </div>
+
+            <div id="moon-pet-stage" class="moon-pet-stage" hidden>
+              <div class="moon-pet-stage-head">
+                <span class="kicker">ON THE MOON</span>
+                <strong id="moon-pet-name">—</strong>
+              </div>
+              <div id="moon-pet-art" class="moon-pet-art" aria-live="polite"></div>
+              <p id="moon-pet-mood" class="moon-pet-mood">—</p>
+              <p id="moon-pet-reason" class="moon-pet-reason">—</p>
+              <p class="moon-pet-tip muted">Scrub the sun clock above — the pet reacts to day, night, and Earth signal.</p>
             </div>
           </div>
 
@@ -171,6 +197,7 @@
             <span><i class="dot PLANNED"></i> Planned Mission</span>
             <span><i class="dot NO_LANDING"></i> Too Risky</span>
             <span><i class="dot DROP"></i> Selected Spot</span>
+            <span><i class="dot PET"></i> Dropped Pet</span>
           </div>
         </div>
       </div>
@@ -348,6 +375,16 @@
     </section>
   </main>
 
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+    }
+  }
+  </script>
+  <!-- Installs window.PayloadPets3D before map/pet_moon mount (module order). -->
+  <script type="module" src="pets-3d/install.js"></script>
   <script type="module" src="map.js"></script>
 </body>
 </html>
+

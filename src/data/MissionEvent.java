@@ -108,7 +108,7 @@ public class MissionEvent {
 
             new MissionEvent("im2-launch", "im-2",
                 "Athena Launches for the South Pole",
-                "IM-2 lifted off carrying TRIDENT (Triddy), MSolo, and a "
+                "IM-2 lifted off carrying TRIDENT, MSolo, and a "
                 + "Micro-Nova hopper toward Mons Mouton — one of the most "
                 + "extreme south-polar landing regions ever attempted.",
                 "any",

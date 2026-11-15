@@ -10,7 +10,7 @@
 |---|---|
 | Compare south-pole sites & dates | **Navigator** · **Map / Sites** · **Data** filters |
 | Sun & Earth vs the horizon | **Navigator** + **Map** (LOLA horizon) · Story Sun/Earth · Engine day–night |
-| Solar-power potential | **Engine** Power/Warmth · **Pets** sun→night moods (Triddy / LISTER) |
+| Solar-power potential | **Engine** Power/Warmth · **Pets** sun→night moods (LISTER / EDS) |
 | Direct-to-Earth comm windows | **Engine** Signal · **Pets** Nodey (LN-1) · site Earth-visibility notes |
 | NASA open data | Baked `data/` + [`data/maps/NOTICE.md`](data/maps/NOTICE.md) (Horizons, Moon Trek, LOLA, CLPS) |
 
@@ -33,7 +33,7 @@ Open **http://localhost:8765/** — one page with shared nav and tabs:
 | **Navigator** | South-pole site/date compare — Sun→power, Earth→DTE vs LOLA horizon (`web/navigator.html`) | Shell only |
 | **Story / Passport** | Mission pop-ups, Pet Passport, Sun/Earth | `./run-story.sh` → :8081 |
 | **Engine / Care** | Care meters / lunar-day loop | `./run-engine.sh` → :8082 |
-| **Pets** | Triddy, Nodey & friends art/mood demo | Shell only |
+| **Pets** | Four payload pets art/mood demo (LISTER, Retro, EDS, Nodey) | Shell only |
 | **Data / Missions** | Catalog browser over `data/catalog.json` | Shell only |
 | **About** | Challenge→product map, provenance links, 90s demo path | Shell only |
 
@@ -55,7 +55,7 @@ The shell banner (and amber tab dots) tell you when those backends are down. Eng
 - **`Data`**: TO2-AB payloads use stable mission id `peregrine-1` (aligned with missions.json).
 - **`map`**: interactive NASA lunar explorer — `web/map.html` + globe assets, `run_map.sh` / Node fallback, engine client bridge.
 - **`story`**: refreshed story server / Passport client — engine event bridge, localhost CORS, optional `days` for Passport. Default port **8081** on v0.
-- **Triddy / Nodey** kept from `pranav/pets-triddy-nodey` (archetypes + `demos/js-*`).
+- **Four adoptable pets:** LISTER, Retro (LRA), EDS, Nodey (LN-1) — engine care set + Signal beacon.
 
 ---
 
@@ -85,7 +85,7 @@ src/map/        Java lunar map server (:8080)
 src/story/      Java story / Passport / sky server (:8081)
 web/            map + navigator + engine pages (`web/map.html`, `web/navigator.html`, `web/engine.*`)
 web/story/      story UI
-demos/js-pets/  Triddy/Nodey pet-art browser demo
+demos/js-pets/  Four payload pets art/mood browser demo
 demos/js-engine/ JS meter/tutor demo (Engine tab fallback)
 demos/js-ui/    intro/stage demo
 ```
@@ -139,11 +139,13 @@ node --test test/map.test.mjs
 
 ---
 
-## Pets of note
+## Pets of note (exactly four adoptable)
 
-- **Triddy** (`trident`) — TRIDENT ice drill (PRIME-1 / IM-2 @ Mons Mouton)
+- **LISTER** — heat-flow drill (Blue Ghost 1)
+- **Retro** (`lra` / LRA) — passive laser retroreflector
+- **EDS** — electrodynamic dust shield (Blue Ghost 1)
 - **Nodey** (`ln-1`) — Lunar Node-1 nav beacon (IM-1 @ Malapert A)
-- Plus Digby, Retroflector Rex, Dusty, Sniffer, Shutterbug, Vacuumba from the Data branch archetypes
+
 
 ---
 
