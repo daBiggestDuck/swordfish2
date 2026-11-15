@@ -125,14 +125,16 @@
       panel.appendChild(iframe);
     } else if (tab.kind === "data") {
       panel.innerHTML = `
-        <div class="local-panel">
-          <div class="kicker">CLPS CATALOG · JUDGE PATH</div>
-          <h1>Data / Missions</h1>
-          <details class="local-more">
-            <summary>What to do here · provenance tip</summary>
-            <p class="judge-tip"><strong style="color:var(--text)">Judge path.</strong> Offline NASA CLPS spine — missions, south-pole sites, instrument pets. Switch View to <em>Sites</em> or <em>Pets</em>, then return to Navigator / Map with the ids verified.</p>
-            <p class="lede">Baked facts from <code>data/catalog.json</code> (as-of stamped). Every pet maps to a flown or planned instrument.</p>
-          </details>
+        <div class="local-panel data-panel">
+          <header class="data-head">
+            <div class="data-head-copy">
+              <div class="kicker">CLPS CATALOG · JUDGE PATH</div>
+              <h1>Data / Missions</h1>
+              <p class="judge-tip"><strong style="color:var(--text)">Judge path.</strong> Offline NASA CLPS spine — missions, south-pole sites, instrument pets. Switch View to <em>Sites</em> (polar / Malapert / Mons Mouton) or <em>Pets</em> (adoptable instruments: LISTER, EDS, LN-1, LRA/NGLR — TRIDENT stays a payload), then return to Navigator / Map with the ids verified.</p>
+              <p class="lede">Baked facts from <code>data/catalog.json</code> (as-of stamped). Every pet maps to a flown or planned instrument — use this tab to prove provenance before the demo. Hover a mission card for its delivery summary and sources.</p>
+            </div>
+            <figure class="data-moon" id="data-moon" aria-label="Moon map of CLPS mission target regions"></figure>
+          </header>
           <div class="stats" id="data-stats"></div>
           <div class="toolbar">
             <label class="search-wrap" style="flex:1 1 200px">Search
@@ -157,7 +159,7 @@
           </div>
           <div class="grid" id="data-grid"></div>
           <p id="data-error" class="error" hidden></p>
-          <p class="meta-foot">Catalog rules: <a href="./data/README.md">data/README.md</a> · map / Horizons bake notes: <a href="./data/maps/NOTICE.md">data/maps/NOTICE.md</a></p>
+          <p class="meta-foot">Catalog rules: <a href="./data/README.md">data/README.md</a> · map / Horizons bake notes: <a href="./data/maps/NOTICE.md">data/maps/NOTICE.md</a> · Moon image: “Moon nearside LRO color mosaic” by <a href="https://commons.wikimedia.org/wiki/File:Moon_nearside_LRO_color_mosaic_(bright).png" target="_blank" rel="noopener">NASA/GSFC/Arizona State University</a>, public domain, via Wikimedia Commons</p>
         </div>`;
     } else if (tab.kind === "about") {
       panel.innerHTML = `
@@ -364,13 +366,12 @@
     const stats = $("#data-stats");
 
     stats.innerHTML = `
-      <div class="stat"><b>${catalog.missions?.length ?? 0}</b><span>Missions</span></div>
-      <div class="stat"><b>${catalog.sites?.length ?? 0}</b><span>Sites</span></div>
-      <div class="stat"><b>${catalog.pets?.length ?? 0}</b><span>Pets</span></div>
-      <div class="stat"><b>${catalog.payloads?.length ?? 0}</b><span>Payloads</span></div>
-      <div class="stat"><b>${catalog.asOf || "—"}</b><span>Catalog as-of</span></div>`;
+      <p class="stats-line"><span class="stat-pair"><b>${catalog.missions?.length ?? 0}</b> missions</span><span class="stat-pair"><b>${catalog.sites?.length ?? 0}</b> sites</span><span class="stat-pair"><b>${catalog.pets?.length ?? 0}</b> pets</span><span class="stat-pair"><b>${catalog.payloads?.length ?? 0}</b> payloads</span><span class="stat-pair stats-asof">catalog as-of ${escapeHtml(catalog.asOf || "—")}</span></p>`;
+
+    renderDataMoon(catalog);
 
     let rows = [];
+    const sourceById = new Map((catalog.sources || []).map((s) => [s.id, s]));
     if (view === "missions") {
       rows = (catalog.missions || [])
         .filter((m) => !statusFilter || m.status === statusFilter)
@@ -384,15 +385,47 @@
         })
         .map((m) => {
           const site = (catalog.sites || []).find((s) => s.id === m.siteId);
-          return `<article class="card">
-            <h3>${escapeHtml(m.name || m.title || m.id)}</h3>
-            <p class="meta">${escapeHtml(m.provider || "")}${m.lander ? " · " + escapeHtml(m.lander) : ""}${
-              site ? " · " + escapeHtml(site.name || site.id) : m.siteId ? " · " + escapeHtml(m.siteId) : ""
-            }${m.launchDate ? " · launch " + escapeHtml(m.launchDate) : ""}</p>
-            <div class="tags">
-              <span class="tag status-${escapeHtml(m.status || "")}">${escapeHtml(m.status || "unknown")}</span>
-              <span class="tag">${escapeHtml(m.id)}</span>
-              ${m.outcome ? `<span class="tag">${escapeHtml(m.outcome)}</span>` : ""}
+          const sources = (m.sourceIds || [])
+            .map((id) => sourceById.get(id))
+            .filter(Boolean);
+          const detailBits = [
+            m.region,
+            site ? site.name || site.id : m.siteId,
+            m.nasaPayloadCount != null
+              ? `${m.nasaPayloadCount} NASA payload${m.nasaPayloadCount === 1 ? "" : "s"}`
+              : "",
+          ].filter(Boolean).map(escapeHtml).join(" · ");
+          const regionCls = { polar: "polar", "near-side": "near", "far-side": "far" }[m.region];
+          const regionLabel = { polar: "lunar south pole", "near-side": "near side", "far-side": "far side" }[m.region];
+          const glyph = regionCls
+            ? `<span class="moon-glyph" data-region="${regionCls}" title="Aims for the ${regionLabel}"><img src="web/assets/moon-nearside-lro.jpg" alt="" decoding="async"><i></i></span>`
+            : "";
+          return `<article class="card card--reveal" tabindex="0">
+            <div class="card-face">
+              ${glyph}
+              <h3>${escapeHtml(m.name || m.title || m.id)}</h3>
+              <p class="meta">${escapeHtml(m.provider || "")}${m.lander ? " · " + escapeHtml(m.lander) : ""}${
+                site ? " · " + escapeHtml(site.name || site.id) : m.siteId ? " · " + escapeHtml(m.siteId) : ""
+              }${m.launchDate ? " · launch " + escapeHtml(m.launchDate) : ""}</p>
+              <div class="tags">
+                <span class="tag status-${escapeHtml(m.status || "")}">${escapeHtml(m.status || "unknown")}</span>
+                <span class="tag">${escapeHtml(m.id)}</span>
+                ${m.outcome ? `<span class="tag">${escapeHtml(m.outcome)}</span>` : ""}
+              </div>
+            </div>
+            <div class="card-detail">
+              <div class="detail-head">
+                <span class="tag status-${escapeHtml(m.status || "")}">${escapeHtml(m.status || "unknown")}</span>
+                ${m.taskOrder ? `<span class="detail-order">${escapeHtml(m.taskOrder)}</span>` : ""}
+              </div>
+              ${m.summary ? `<p class="detail-summary">${escapeHtml(m.summary)}</p>` : ""}
+              ${detailBits ? `<p class="detail-meta">${detailBits}</p>` : ""}
+              ${m.payloadNote ? `<p class="detail-note">${escapeHtml(m.payloadNote)}</p>` : ""}
+              ${sources.length
+                ? `<div class="detail-sources">${sources
+                    .map((s) => `<a class="source-chip" href="${escapeHtml(s.url)}" target="_blank" rel="noopener">${escapeHtml(s.publisher || s.title || s.id)}</a>`)
+                    .join("")}</div>`
+                : ""}
             </div>
           </article>`;
         });
@@ -413,28 +446,67 @@
           <div class="tags"><span class="tag">${escapeHtml(s.id)}</span></div>
         </article>`);
     } else {
+      const missionById = new Map((catalog.missions || []).map((m) => [m.id, m]));
+      const siteById = new Map((catalog.sites || []).map((s) => [s.id, s]));
+      const payloadById = new Map((catalog.payloads || []).map((p) => [p.id, p]));
       rows = (catalog.pets || [])
         .filter((p) => {
           if (!q) return true;
-          const hay = [p.id, p.name, p.vibe, p.passport, ...(p.payloadIds || [])]
-            .filter(Boolean)
+          const hay = [
+            p.id, p.name, p.instrument, p.summary, p.vibe, p.passport,
+            ...(p.care || []),
+            ...(p.payloadIds || []),
+            ...(p.payloadIds || []).map((id) => payloadById.get(id)?.name),
+            p.homeMissionId ? missionById.get(p.homeMissionId)?.name : "",
+            p.homeSiteId ? siteById.get(p.homeSiteId)?.name : "",
+          ].filter(Boolean)
             .join(" ")
             .toLowerCase();
           return hay.includes(q);
         })
-        .map((p) => `<article class="card">
-          <h3>${escapeHtml(p.name || p.id)}</h3>
-          <p class="meta">${escapeHtml(p.vibe || p.passport || "")}</p>
-          <div class="tags">
-            <span class="tag">${escapeHtml(p.id)}</span>
-            ${p.rarity ? `<span class="tag">${escapeHtml(p.rarity)}</span>` : ""}
-            ${p.homeMissionId ? `<span class="tag">${escapeHtml(p.homeMissionId)}</span>` : ""}
-            ${p.homeSiteId ? `<span class="tag">${escapeHtml(p.homeSiteId)}</span>` : ""}
-          </div>
-        </article>`);
+        .map((p) => {
+          const mission = p.homeMissionId ? missionById.get(p.homeMissionId) : null;
+          const site = p.homeSiteId ? siteById.get(p.homeSiteId) : null;
+          const payloadNames = (p.payloadIds || []).map((id) => payloadById.get(id)?.name).filter(Boolean);
+          const passive = p.passive || p.nightBehavior === "passive";
+          const night = passive ? "Night: sleeps, needs no power" : "Night: needs lander power";
+          const careChips = (p.care || [])
+            .map((c) => `<span class="care-chip care-${escapeHtml(c.toLowerCase())}">${escapeHtml(c)}</span>`)
+            .join("");
+          const sources = (p.sourceIds || [])
+            .map((id) => sourceById.get(id))
+            .filter(Boolean)
+            .map((s) => `<a class="source-chip" href="${escapeHtml(s.url)}" target="_blank" rel="noopener">${escapeHtml(s.publisher || s.title || s.id)}</a>`)
+            .join("");
+          return `<article class="card pet-card">
+            <div class="pet-head">
+              <h3>${escapeHtml(p.name || p.id)}</h3>
+              <span class="pet-model" title="Model of the real ${escapeHtml(p.instrument || p.name || p.id)} instrument">${petModelSvg(p.id)}</span>
+            </div>
+            ${p.instrument ? `<p class="pet-instr">${escapeHtml(p.instrument)}${payloadNames.length ? " · " + escapeHtml(payloadNames.join(" · ")) : ""}</p>` : payloadNames.length ? `<p class="pet-instr">${escapeHtml(payloadNames.join(" · "))}</p>` : ""}
+            ${p.summary ? `<p class="meta">${escapeHtml(p.summary)}</p>` : ""}
+            ${mission || site ? `<p class="meta">Home: ${mission ? escapeHtml(mission.name || mission.id) : ""}${mission && site ? " · " : ""}${site ? escapeHtml(site.name || site.id) : ""}</p>` : ""}
+            <div class="tags">
+              ${careChips}
+              <span class="tag">${escapeHtml(night)}</span>
+              ${passive ? `<span class="tag">passive</span>` : ""}
+            </div>
+            ${sources ? `<div class="detail-sources">${sources}</div>` : ""}
+          </article>`;
+        });
     }
 
-    grid.innerHTML = rows.join("") || `<p class="meta">No matches.</p>`;
+    const noMatches = rows.length
+      ? ""
+      : `<p class="meta data-empty">No matches for “${escapeHtml(q || statusFilter)}”. <button type="button" class="data-empty-clear">Clear the filter</button> or switch View.</p>`;
+    grid.innerHTML = rows.join("") || noMatches;
+    if (!rows.length) {
+      grid.querySelector(".data-empty-clear")?.addEventListener("click", () => {
+        if ($("#data-q")) $("#data-q").value = "";
+        if ($("#data-status")) $("#data-status").value = "";
+        renderData();
+      });
+    }
   }
 
   function escapeHtml(s) {
@@ -443,6 +515,110 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  /**
+   * Flat pet "model" per real instrument, drawn in the pets branch's
+   * lander-mascot style (Moon Pals: blue lander body, white eyes with ink
+   * pupils, pink cheeks). The instrument's own part gives each pet its
+   * silhouette: LISTER's drill, the retroreflector's corner-cube plate,
+   * EDS's dust shield, TRIDENT's twin drills, LN-1's navigation mast.
+   */
+  function petModelSvg(id) {
+    const face = `
+      <ellipse cx="26" cy="19" rx="4.5" ry="5.5" fill="#eef4fb"/>
+      <ellipse cx="38" cy="19" rx="4.5" ry="5.5" fill="#eef4fb"/>
+      <ellipse cx="27.5" cy="20" rx="1.8" ry="2.6" fill="#1f2f46"/>
+      <ellipse cx="39.5" cy="20" rx="1.8" ry="2.6" fill="#1f2f46"/>
+      <ellipse cx="20" cy="26" rx="3.5" ry="2" fill="#ffbeba"/>
+      <ellipse cx="44" cy="26" rx="3.5" ry="2" fill="#ffbeba"/>`;
+    const parts = {
+      "heat-flow-drill": `
+        <rect x="16" y="8" width="32" height="22" rx="6" fill="#3d5a80"/>
+        ${face}
+        <rect x="30" y="30" width="4" height="9" fill="#8c9bbd"/>
+        <path d="M28 39 L36 39 L32 46 Z" fill="#44e2ff"/>`,
+      retroreflector: `
+        <rect x="13" y="7" width="38" height="27" rx="3" fill="#3d5a80"/>
+        <g fill="#44e2ff" opacity="0.85">
+          <rect x="18" y="10" width="6" height="5"/><rect x="29" y="10" width="6" height="5"/><rect x="40" y="10" width="6" height="5"/>
+          <rect x="18" y="17" width="6" height="5"/><rect x="40" y="17" width="6" height="5"/>
+        </g>
+        <rect x="19" y="40" width="5" height="4" fill="#8c9bbd"/>
+        <rect x="40" y="40" width="5" height="4" fill="#8c9bbd"/>
+        ${face}`,
+      "dust-shield": `
+        <path d="M12 14 Q32 0 52 14 L52 18 Q32 6 12 18 Z" fill="#44e2ff" opacity="0.55"/>
+        <rect x="16" y="16" width="32" height="20" rx="6" fill="#3d5a80"/>
+        ${face}`,
+      trident: `
+        <rect x="18" y="6" width="28" height="22" rx="6" fill="#3d5a80"/>
+        ${face}
+        <path d="M49 4 L57 4 L53 12 Z" fill="#8c9bbd"/>
+        <rect x="23" y="28" width="3" height="11" fill="#8c9bbd"/>
+        <rect x="38" y="28" width="3" height="11" fill="#8c9bbd"/>
+        <path d="M21 39 L27 39 L24 46 Z" fill="#44e2ff"/>
+        <path d="M37 39 L43 39 L40 46 Z" fill="#44e2ff"/>`,
+      "ln-1": `
+        <rect x="16" y="12" width="32" height="20" rx="6" fill="#3d5a80"/>
+        ${face}
+        <rect x="30" y="2" width="3" height="10" fill="#8c9bbd"/>
+        <circle cx="31.5" cy="4" r="3.5" fill="#44e2ff"/>
+        <path d="M24 4 Q31.5 -2 39 4" stroke="#44e2ff" stroke-width="1.5" fill="none" opacity="0.7"/>
+        <rect x="20" y="32" width="24" height="4" rx="2" fill="#8c9bbd"/>`,
+    };
+    return `<svg viewBox="0 0 64 48" role="img" aria-label="Model of the pet's real instrument">${parts[id] || parts["heat-flow-drill"]}</svg>`;
+  }
+
+  /**
+   * Moon theme, from the catalog and real imagery: an LRO nearside mosaic
+   * (NASA/GSFC/ASU, public domain) as the face, with a dot for each target
+   * region of a real mission in data/catalog.json. Position encodes region
+   * (bottom = south pole, left = near side, right = far side); the caption
+   * states the counts so the picture never claims more than the data.
+   */
+  function renderDataMoon(catalog) {
+    const moonEl = $("#data-moon");
+    if (!moonEl) return;
+    const counts = { polar: 0, "near-side": 0, "far-side": 0 };
+    for (const m of catalog.missions || []) if (counts[m.region] != null) counts[m.region]++;
+    const total = (catalog.missions || []).length;
+    const dot = (x, y, n, label) =>
+      n
+        ? `<span class="moon-dot" style="left:${x}%;top:${y}%" title="${n} mission${n === 1 ? "" : "s"} — ${label}"></span>`
+        : "";
+    moonEl.innerHTML = `
+      <span class="moon-photo" aria-hidden="true">
+        <img src="web/assets/moon-nearside-lro.jpg" alt="NASA LRO nearside mosaic of the Moon" width="118" height="118" decoding="async">
+        ${dot(50, 92, counts.polar, "lunar south pole")}
+        ${dot(8, 50, counts["near-side"], "near side")}
+        ${dot(92, 50, counts["far-side"], "far side, beyond this limb")}
+      </span>
+      <figcaption>${counts.polar} of ${total} missions aim for the south pole${counts["far-side"] ? ` · ${counts["far-side"]} for the far side` : ""}</figcaption>`;
+  }
+
+  /**
+   * Touch/click support for the mission-card hover detail (bound once).
+   * Desktop uses :hover / :focus-within; here a tap pins the detail open
+   * (one pinned card at a time), Escape unpins, source links still work.
+   */
+  function bindCardDetail(grid) {
+    if (!grid || grid.dataset.detailBound) return;
+    grid.dataset.detailBound = "1";
+    grid.addEventListener("click", (e) => {
+      const link = e.target.closest("a");
+      if (link) return; // let provenance links work
+      const card = e.target.closest(".card--reveal");
+      if (!card) return;
+      const wasPinned = card.classList.contains("card--pinned");
+      for (const c of grid.querySelectorAll(".card--pinned")) c.classList.remove("card--pinned");
+      if (!wasPinned) card.classList.add("card--pinned");
+    });
+    grid.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      const card = e.target.closest?.(".card--reveal");
+      if (card) card.classList.remove("card--pinned");
+    });
   }
 
   async function loadDataPanel() {
@@ -460,6 +636,7 @@
       $("#data-q")?.addEventListener("input", renderData);
       $("#data-status")?.addEventListener("change", renderData);
       $("#data-view")?.addEventListener("change", renderData);
+      bindCardDetail($("#data-grid"));
       renderData();
     } catch (e) {
       err.hidden = false;
