@@ -2,6 +2,13 @@
   const TABS = [
     { id: "map", label: "Map / Sites", kind: "iframe", src: "./web/map.html", health: "static" },
     {
+      id: "navigator",
+      label: "Navigator",
+      kind: "iframe",
+      src: "./web/navigator.html",
+      health: "static",
+    },
+    {
       id: "story",
       label: "Story / Passport",
       kind: "iframe",
@@ -89,7 +96,7 @@
       down
         .map((t) => `<code>${t.need}</code> → localhost:${t.port}`)
         .join(" · ") +
-      ". Map, Pets, Data, and About work from this shell alone.";
+      ". Map, Navigator, Pets, Data, and About work from this shell alone.";
   }
 
   function ensurePanel(tab) {
@@ -119,23 +126,30 @@
     } else if (tab.kind === "data") {
       panel.innerHTML = `
         <div class="local-panel">
+          <div class="kicker">CLPS CATALOG</div>
           <h1>Data / Missions</h1>
           <p class="lede">Baked CLPS catalog from the Data tip — missions, sites, payloads, and pets (including Triddy &amp; Nodey). Loaded from <code>data/catalog.json</code>.</p>
           <div class="stats" id="data-stats"></div>
           <div class="toolbar">
-            <input id="data-q" type="search" placeholder="Filter by name, id, site, status…" aria-label="Filter missions">
-            <select id="data-status" aria-label="Status filter">
-              <option value="">All statuses</option>
-              <option value="completed">completed</option>
-              <option value="planned">planned</option>
-              <option value="failed">failed</option>
-              <option value="cancelled">cancelled</option>
-            </select>
-            <select id="data-view" aria-label="View">
-              <option value="missions">Missions</option>
-              <option value="sites">Sites</option>
-              <option value="pets">Pets</option>
-            </select>
+            <label class="search-wrap" style="flex:1 1 200px">Search
+              <input id="data-q" type="search" placeholder="Filter by name, id, site, status…" aria-label="Filter missions">
+            </label>
+            <label>Status
+              <select id="data-status" aria-label="Status filter">
+                <option value="">All statuses</option>
+                <option value="completed">completed</option>
+                <option value="planned">planned</option>
+                <option value="failed">failed</option>
+                <option value="cancelled">cancelled</option>
+              </select>
+            </label>
+            <label>View
+              <select id="data-view" aria-label="View">
+                <option value="missions">Missions</option>
+                <option value="sites">Sites</option>
+                <option value="pets">Pets</option>
+              </select>
+            </label>
           </div>
           <div class="grid" id="data-grid"></div>
           <p id="data-error" class="error" hidden></p>
@@ -143,10 +157,12 @@
     } else if (tab.kind === "about") {
       panel.innerHTML = `
         <div class="local-panel">
+          <div class="kicker">SHOWCASE</div>
           <h1>About · Payload Pets</h1>
           <p class="lede">Challenge brief for this <code>v0</code> showcase — one product with shared data contracts across map, story, engine, and pets.</p>
 
           <div class="about-block">
+            <div class="kicker">BRIEF</div>
             <h2>One-liner</h2>
             <p>Adopt a real NASA CLPS instrument as a pet, pick a real lunar landing site, and keep it alive through one lunar day — with meters driven by real ephemeris and terrain data.</p>
           </div>
@@ -168,6 +184,7 @@
             <h2>This showcase shell</h2>
             <ul>
               <li><strong style="color:var(--text)">Map / Sites</strong> — interactive lunar explorer (<code>web/map.html</code>)</li>
+              <li><strong style="color:var(--text)">Navigator</strong> — south-pole site/date compare: Sun→power, Earth→DTE vs LOLA horizon (<code>web/navigator.html</code>)</li>
               <li><strong style="color:var(--text)">Story / Passport</strong> — mission pop-ups, Pet Passport, Sun/Earth view (Java on :8081)</li>
               <li><strong style="color:var(--text)">Engine / Care</strong> — care meters &amp; lunar-day loop (Java on :8082)</li>
               <li><strong style="color:var(--text)">Pets</strong> — Triddy, Nodey, and friends art/mood demo</li>
@@ -188,6 +205,28 @@
     return panel;
   }
 
+  function styleIframeEmbed(iframe) {
+    const apply = () => {
+      try {
+        const doc = iframe.contentDocument;
+        if (!doc?.documentElement) return;
+        doc.documentElement.classList.add("in-shell");
+        if (!doc.getElementById("shell-embed-css")) {
+          const link = doc.createElement("link");
+          link.id = "shell-embed-css";
+          link.rel = "stylesheet";
+          // Resolve from shell root so map + demos both find it
+          link.href = new URL("./web/shell-embed.css", location.href).href;
+          doc.head.appendChild(link);
+        }
+      } catch {
+        /* cross-origin Story/Engine backends — CSS files restyled at source */
+      }
+    };
+    iframe.addEventListener("load", apply);
+    if (iframe.contentDocument?.readyState === "complete") apply();
+  }
+
   async function activateIframe(tab, panel, ok) {
     const iframe = panel.querySelector("iframe");
     const note = panel.querySelector(".panel-note");
@@ -206,6 +245,8 @@
       note.dataset.show = "0";
       note.textContent = "";
     }
+
+    styleIframeEmbed(iframe);
 
     if (iframe.getAttribute("src") !== src) {
       iframe.src = src;

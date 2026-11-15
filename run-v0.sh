@@ -3,7 +3,7 @@
 #   ./run-v0.sh           -> http://localhost:8765/
 #   ./run-v0.sh 9000      -> http://localhost:9000/
 #
-# Map / Pets / Data / About work from this process alone.
+# Map / Navigator / Pets / Data / About work from this process alone.
 # Story (:8081) and Engine (:8082) need their Java servers in other terminals:
 #   ./run-story.sh
 #   ./run-engine.sh
@@ -13,7 +13,7 @@ PORT="${1:-8765}"
 
 echo "Payload Pets v0 showcase"
 echo "  Shell:  http://localhost:${PORT}/"
-echo "  Tabs:   Map/Sites · Story/Passport · Engine/Care · Pets · Data/Missions · About"
+echo "  Tabs:   Map/Sites · Navigator · Story/Passport · Engine/Care · Pets · Data/Missions · About"
 echo ""
 echo "Optional Java backends (separate terminals):"
 echo "  ./run-story.sh    -> http://localhost:8081/   (Story / Passport)"

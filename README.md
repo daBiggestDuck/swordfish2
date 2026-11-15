@@ -20,6 +20,7 @@ Open **http://localhost:8765/** — one page with shared nav and tabs:
 | Tab | What you get | Needs |
 |---|---|---|
 | **Map / Sites** | Interactive lunar explorer (`web/map.html`) | Shell only |
+| **Navigator** | South-pole site/date compare — Sun→power, Earth→DTE vs LOLA horizon (`web/navigator.html`) | Shell only |
 | **Story / Passport** | Mission pop-ups, Pet Passport, Sun/Earth | `./run-story.sh` → :8081 |
 | **Engine / Care** | Care meters / lunar-day loop | `./run-engine.sh` → :8082 |
 | **Pets** | Triddy, Nodey & friends art/mood demo | Shell only |
@@ -40,6 +41,7 @@ The shell banner (and amber tab dots) tell you when those backends are down. Eng
 ## What’s new (refresh)
 
 - **Unified `index.html` shell** — tabbed showcase via `./run-v0.sh` (no longer a hard redirect to the map alone).
+- **Navigator** — Lunar Landing Site Navigator challenge surface: compare Malapert / Mons Mouton / Shackleton (+ other polar sites) across dates using `data/ephemeris.json` + LOLA horizons.
 - **`Data`**: TO2-AB payloads use stable mission id `peregrine-1` (aligned with missions.json).
 - **`map`**: interactive NASA lunar explorer — `web/map.html` + globe assets, `run_map.sh` / Node fallback, engine client bridge.
 - **`story`**: refreshed story server / Passport client — engine event bridge, localhost CORS, optional `days` for Passport. Default port **8081** on v0.
@@ -71,7 +73,7 @@ src/data/       Java data pipeline
 src/engine/     Java game engine + local HTTP server (:8082)
 src/map/        Java lunar map server (:8080)
 src/story/      Java story / Passport / sky server (:8081)
-web/            map + engine pages (`web/map.html`, `web/engine.*`)
+web/            map + navigator + engine pages (`web/map.html`, `web/navigator.html`, `web/engine.*`)
 web/story/      story UI
 demos/js-pets/  Triddy/Nodey pet-art browser demo
 demos/js-engine/ JS meter/tutor demo (Engine tab fallback)

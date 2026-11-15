@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lunar Landing Site Navigator — South Pole Compare</title>
+  <link rel="stylesheet" href="navigator.css">
+  <link rel="stylesheet" href="shell-embed.css">
+</head>
+<body class="navigator-page">
+  <header class="topbar" data-role="page-chrome">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-badge eyebrow">NASA SPACE APPS · LUNAR LANDING SITE NAVIGATOR</div>
+        <h1>South Pole site &amp; date compare</h1>
+        <p class="lede">
+          Pick candidate south-pole sites and a UTC epoch. See Sun elevation → solar power
+          and Earth elevation → direct-to-Earth (DTE) comms — with local LOLA horizon masking.
+        </p>
+      </div>
+      <p id="load-status" class="status-line" role="status">Loading Horizons + LOLA…</p>
+    </div>
+  </header>
+
+  <main class="workspace" data-role="navigator">
+    <section class="panel" data-panel="controls">
+      <div class="kicker">COMPARE CONTROLS</div>
+      <div class="controls" id="controls">
+        <label>UTC date
+          <input type="date" id="nav-date" value="2026-12-03">
+        </label>
+        <label>UTC time
+          <input type="time" id="nav-time" value="12:00" step="3600">
+        </label>
+        <label>Mission window
+          <select id="nav-window">
+            <option value="7">7 days</option>
+            <option value="14" selected>14 days (~½ lunar day)</option>
+            <option value="29.5">29.5 days (full synodic)</option>
+          </select>
+        </label>
+        <label>Fine scrub (hours from midnight)
+          <input type="range" id="nav-scrub" min="0" max="23" step="1" value="12">
+        </label>
+        <button type="button" class="btn-primary" id="btn-refresh">Update</button>
+        <button type="button" class="btn-ghost" id="btn-defaults">Reset 3 polar sites</button>
+      </div>
+      <div class="epoch-row">
+        <span class="utc" id="epoch-label">—</span>
+        <span class="muted" id="eph-meta">—</span>
+      </div>
+      <div class="site-picks" id="site-picks" aria-label="South pole sites to compare"></div>
+    </section>
+
+    <aside class="honest" id="honest-note" data-panel="limits">
+      <strong>How to read this:</strong>
+      Sun above the local horizon → panels can generate power (sine of elevation, slope-aware — <em>approx</em>, not array I–V curves).
+      Earth above the local horizon → Direct-to-Earth radio is geometrically possible
+      (not a full link budget / SNR). Horizons gives body direction; LOLA 36-bin horizons mask terrain.
+      Labels stay honest when a site uses a flat-horizon fallback.
+    </aside>
+
+    <section class="compare-grid" id="compare-cards" data-panel="cards" aria-live="polite"></section>
+
+    <section class="panel chart-panel" data-panel="chart">
+      <div class="panel-head">
+        <span class="kicker">SUN &amp; EARTH VS HORIZON · SELECTED WINDOW</span>
+        <span class="muted" id="chart-meta">—</span>
+      </div>
+      <svg id="elev-chart" viewBox="0 0 720 220" role="img" aria-label="Sun and Earth elevation over the mission window"></svg>
+      <div class="chart-legend">
+        <span class="leg-sun">— Sun elevation</span>
+        <span class="leg-earth">— Earth elevation</span>
+        <span class="leg-dual">■ Dual viable (power + DTE)</span>
+        <span class="muted">Primary site series · dashed = local horizon at Sun azimuth</span>
+      </div>
+    </section>
+
+    <section class="panel" data-panel="scorecard">
+      <div class="kicker">SIDE-BY-SIDE SCORECARD</div>
+      <div class="table-wrap">
+        <table id="score-table">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" data-panel="provenance">
+      <div class="kicker">DATA PROVENANCE</div>
+      <div class="sources">
+        <div class="source-card">
+          <h4>JPL Horizons</h4>
+          <p>Sub-solar &amp; sub-Earth points from <code>data/ephemeris.json</code> (DE441 via Horizons API). Elevation is geometric over an airless Moon.</p>
+          <p><a href="https://ssd.jpl.nasa.gov/horizons/" target="_blank" rel="noopener">ssd.jpl.nasa.gov/horizons</a></p>
+        </div>
+        <div class="source-card">
+          <h4>LOLA terrain / horizons</h4>
+          <p>36-bin local horizon profiles from Moon Trek LOLA terrain (where available). Low Sun/Earth can be blocked by ridges.</p>
+          <p><a href="https://trek.nasa.gov/moon/" target="_blank" rel="noopener">trek.nasa.gov/moon</a></p>
+        </div>
+        <div class="source-card">
+          <h4>CLPS candidate sites</h4>
+          <p>South-pole CLPS targets from Moon Trek CLPS_sites + science.nasa.gov deliveries catalog.</p>
+          <p><a href="https://science.nasa.gov/lunar-discovery/deliveries/" target="_blank" rel="noopener">CLPS deliveries</a></p>
+        </div>
+        <div class="source-card">
+          <h4>Challenge fit</h4>
+          <p>Built for <em>Lunar Landing Site Navigator</em>: compare sites &amp; dates, show Sun/Earth vs horizon, judge solar power and Earth comms.</p>
+          <p><a href="https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/" target="_blank" rel="noopener">Space Apps challenge</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="navigator.js"></script>
+</body>
+</html>
