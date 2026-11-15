@@ -29,6 +29,7 @@ Challenge / planning context: see [`PLAN.md`](PLAN.md) (Payload Pets data-first 
 | `pets` | `d921b00` | `petSpriteOutline` (Moon Pals sprite outline) |
 | `ui` | `e2a0e5d` | ≡ `main` (no extra files yet) |
 | `pranav/pets-triddy-nodey` | `4dd133d` | **Triddy** (`trident`) + **Nodey** (`ln-1`) archetypes, catalog, `demos/js-*` |
+| `deployer` | `4a42a15` | `deployer/` local branch dashboard + `deploy.{sh,ps1,cmd}` |
 
 Layout:
 
@@ -115,6 +116,8 @@ node --test test/map.test.mjs
 - `petSpriteOutline` is a sprite asset from the `pets` tip — full Swing Moon Pals UI may still live only on WIP trees.
 
 ---
+
+Tip SHAs: see [`V0_TIPS.md`](V0_TIPS.md).
 
 ## Source tips used for this merge
 
