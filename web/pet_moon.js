@@ -51,32 +51,59 @@ export const DROP_PETS = Object.freeze([
 
 const DROP_IDS = new Set(DROP_PETS.map((p) => p.id));
 
+/** Catalog / engine aliases → adoptable drop id (Triddy/trident is not adoptable). */
+const DROP_ALIASES = Object.freeze({
+  lister: 'lister',
+  retro: 'retro',
+  lra: 'retro',
+  LRA: 'retro',
+  retroreflector: 'retro',
+  eds: 'eds',
+  EDS: 'eds',
+  'ln-1': 'ln-1',
+  ln1: 'ln-1',
+  nodey: 'ln-1',
+  Nodey: 'ln-1',
+});
+
+/** Normalize catalog aliases to a drop id; returns null for Triddy/unknown. */
+export function resolveDropPetId(id) {
+  if (typeof id !== 'string') return null;
+  const trimmed = id.trim();
+  if (DROP_IDS.has(trimmed)) return trimmed;
+  const aliased = DROP_ALIASES[trimmed] || DROP_ALIASES[trimmed.toLowerCase()];
+  return aliased && DROP_IDS.has(aliased) ? aliased : null;
+}
+
 export function isDropPet(id) {
-  return typeof id === 'string' && DROP_IDS.has(id);
+  return resolveDropPetId(id) != null;
 }
 
 export function getDropPet(id) {
-  return DROP_PETS.find((p) => p.id === id) || null;
+  const resolved = resolveDropPetId(id);
+  return resolved ? DROP_PETS.find((p) => p.id === resolved) || null : null;
 }
 
 export function readSelectedPetId(fallback = 'lister') {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.selectedPet);
-    if (isDropPet(raw)) return raw;
+    const resolved = resolveDropPetId(raw);
+    if (resolved) return resolved;
   } catch {
     /* ignore */
   }
-  return isDropPet(fallback) ? fallback : DROP_PETS[0].id;
+  return resolveDropPetId(fallback) || DROP_PETS[0].id;
 }
 
 export function writeSelectedPetId(petId) {
-  if (!isDropPet(petId)) return;
+  const resolved = resolveDropPetId(petId);
+  if (!resolved) return;
   try {
-    localStorage.setItem(STORAGE_KEYS.selectedPet, petId);
+    localStorage.setItem(STORAGE_KEYS.selectedPet, resolved);
   } catch {
     /* ignore */
   }
-  broadcast({ type: 'selectedPet', petId });
+  broadcast({ type: 'selectedPet', petId: resolved });
 }
 
 export function readPlacedPet() {
@@ -84,7 +111,9 @@ export function readPlacedPet() {
     const raw = localStorage.getItem(STORAGE_KEYS.placedPet);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!parsed || !isDropPet(parsed.petId)) return null;
+    const resolved = resolveDropPetId(parsed?.petId);
+    if (!parsed || !resolved) return null;
+    if (parsed.petId !== resolved) return { ...parsed, petId: resolved };
     return parsed;
   } catch {
     return null;
@@ -92,9 +121,11 @@ export function readPlacedPet() {
 }
 
 export function writePlacedPet(record) {
-  if (!record || !isDropPet(record.petId)) return null;
+  const resolved = resolveDropPetId(record?.petId);
+  if (!record || !resolved) return null;
   const payload = {
     ...record,
+    petId: resolved,
     updatedAt: new Date().toISOString(),
   };
   try {
@@ -229,12 +260,13 @@ function applyHostReactionClass(host, reaction, visual) {
  */
 export async function mountPetVisual(host, petId, skyCurrent, options = {}) {
   if (!host) return 'empty';
-  if (!isDropPet(petId) && !ART_PETS.some((p) => p.id === petId)) {
+  const resolved = resolveDropPetId(petId) || (ART_PETS.some((p) => p.id === petId) ? petId : null);
+  if (!resolved) {
     host.replaceChildren();
     return 'empty';
   }
 
-  const pose = poseForSite(petId, skyCurrent, options);
+  const pose = poseForSite(resolved, skyCurrent, options);
   const reaction = pose.reaction;
   const opts3d = {
     signal: reaction.signal,
@@ -249,14 +281,14 @@ export async function mountPetVisual(host, petId, skyCurrent, options = {}) {
   if (typeof three?.renderPet3D === 'function') {
     try {
       const existing = host._pets3dHandle;
-      if (existing && typeof existing.update === 'function' && existing.petId === petId) {
+      if (existing && typeof existing.update === 'function' && existing.petId === resolved) {
         existing.update(reaction.moodId, opts3d);
         if (typeof existing.setSignal === 'function') existing.setSignal(reaction.signal);
         applyHostReactionClass(host, reaction, '3d');
         return '3d';
       }
       applyHostReactionClass(host, reaction, '3d');
-      await three.renderPet3D(petId, reaction.moodId, host, opts3d);
+      await three.renderPet3D(resolved, reaction.moodId, host, opts3d);
       return '3d';
     } catch (err) {
       console.warn('[pet_moon] PayloadPets3D.renderPet3D failed; using SVG', err);

@@ -824,7 +824,7 @@ function clearStagedDrop() {
 async function confirmStagedDrop() {
   if (!state.stagedDrop) return;
   const ev = state.stagedDrop.evalData;
-  const petId = isDropPet(state.selectedPetId) ? state.selectedPetId : readSelectedPetId('lister');
+  const petId = readSelectedPetId(state.selectedPetId || 'lister');
   const skyCurrent = ev.sky?.current || state.sky?.current || {};
   const reaction = conditionsToReaction(petId, skyCurrent);
   const dropRecord = {
