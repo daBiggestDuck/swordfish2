@@ -113,7 +113,7 @@ public class MissionEvent {
                 + "extreme south-polar landing regions ever attempted.",
                 "any",
                 "https://blogs.nasa.gov/clps/2025/02/26/liftoff-intuitive-machines-lunar-lander-begins-journey-to-the-moon/",
-                true),
+                true)
 
             new MissionEvent("im2-landing", "im-2",
                 "Athena Lands at Mons Mouton",
@@ -122,7 +122,7 @@ public class MissionEvent {
                 + "coldest places in the solar system.",
                 "day",
                 "https://blogs.nasa.gov/clps/2025/02/",
-                true),
+                true)
 
             new MissionEvent("night-survival", "im-2",
                 "14 Days of Darkness",
