@@ -43,61 +43,132 @@ const FACE = '<circle cx="25" cy="30" r="4" fill="#1b1f3a"/><circle cx="39" cy="
 // Hand-drawn pet characters (SVG), one per real mission. Emoji is only the fallback.
 const PET_ART = {
   // Ghost: Blue Ghost 1, a friendly ghost-shaped lander with gold foil and landing legs
-  eds: '<path d="M14 54 l-5 6 M50 54 l5 6" stroke="#c9a23a" stroke-width="3" stroke-linecap="round"/>'
+  BLUE_GHOST: '<path d="M14 54 l-5 6 M50 54 l5 6" stroke="#c9a23a" stroke-width="3" stroke-linecap="round"/>'
     + '<path d="M12 34 a20 22 0 0 1 40 0 v18 l-6.7 -5 -6.6 5 -6.7 -5 -6.7 5 -6.6 -5 -6.7 5z" fill="#f4f6ff" stroke="#aab4ee" stroke-width="1.5"/>'
     + '<rect x="12" y="43" width="40" height="5" fill="#f0c95a" opacity=".9"/>' + FACE,
   // Luna: Blue Moon Mark 1, a round blue lander with a porthole belly
-  retro: '<path d="M16 50 l-6 9 M48 50 l6 9" stroke="#9fb4d8" stroke-width="3" stroke-linecap="round"/>'
+  BLUE_MOON: '<path d="M16 50 l-6 9 M48 50 l6 9" stroke="#9fb4d8" stroke-width="3" stroke-linecap="round"/>'
     + '<rect x="12" y="12" width="40" height="42" rx="18" fill="#3f8dff" stroke="#1d4fa8" stroke-width="1.5"/>'
     + '<ellipse cx="32" cy="33" rx="15" ry="13" fill="#d8ecff"/>'
     + '<path d="M32 12 v-6" stroke="#9fb4d8" stroke-width="2"/><circle cx="32" cy="5" r="2.5" fill="#fff"/>' + FACE,
   // Triddy: the TRIDENT drill, orange with a hard hat and a drill bit
-  lister: '<path d="M26 50 h12 l-6 12z" fill="#aab0bd" stroke="#6d7483" stroke-width="1.2"/>'
+  TRIDENT: '<path d="M26 50 h12 l-6 12z" fill="#aab0bd" stroke="#6d7483" stroke-width="1.2"/>'
     + '<path d="M28 54 h8 M30 58 h4" stroke="#6d7483" stroke-width="1.2"/>'
     + '<rect x="13" y="18" width="38" height="34" rx="11" fill="#ffb84d" stroke="#c77f12" stroke-width="1.5"/>'
     + '<path d="M13 22 a19 14 0 0 1 38 0z" fill="#ffd45e" stroke="#c77f12" stroke-width="1.5"/>'
     + '<rect x="10" y="21" width="44" height="4" rx="2" fill="#ffd45e" stroke="#c77f12" stroke-width="1.2"/>' + FACE,
   // Nodey: the LN-1 beacon, green with an antenna sending signal waves
-  'ln-1': '<path d="M32 16 v-8" stroke="#d6ffe6" stroke-width="2"/><circle cx="32" cy="7" r="3" fill="#ff6b6b"/>'
+  'LN-1': '<path d="M32 16 v-8" stroke="#d6ffe6" stroke-width="2"/><circle cx="32" cy="7" r="3" fill="#ff6b6b"/>'
     + '<path d="M40 6 a8 8 0 0 1 0 8 M45 3 a13 13 0 0 1 0 14 M24 6 a8 8 0 0 0 0 8 M19 3 a13 13 0 0 0 0 14" fill="none" stroke="#d6ffe6" stroke-width="1.6" stroke-linecap="round"/>'
     + '<rect x="13" y="16" width="38" height="38" rx="14" fill="#45d48a" stroke="#1f8f55" stroke-width="1.5"/>'
     + '<rect x="24" y="44" width="16" height="5" rx="2.5" fill="#1f8f55" opacity=".5"/>'
     + '<path d="M18 54 v5 M46 54 v5" stroke="#1f8f55" stroke-width="3" stroke-linecap="round"/>' + FACE,
 };
 
-/** A round pet avatar: the pet's SVG character on its own colour (emoji if a pet has no art yet). */
-function artHtml(pet) {
-  const art = PET_ART[pet.id];
-  return art ? `<svg viewBox="0 0 64 64" aria-hidden="true">${art}</svg>` : '';
+// Support both v1 story pet IDs (BLUE_GHOST, BLUE_MOON, TRIDENT, LN-1) and instrument/legacy IDs.
+const PET_3D = {
+  BLUE_GHOST: 'lister',
+  GHOST: 'lister',
+  LISTER: 'lister',
+  BLUE_MOON: 'retro',
+  LUNA: 'retro',
+  LRA: 'retro',
+  RETRO: 'retro',
+  EDS: 'eds',
+  TRIDENT: 'trident',
+  TRIDDY: 'trident',
+  'LN-1': 'ln-1',
+  LN1: 'ln-1',
+  LN_1: 'ln-1',
+  NODEY: 'ln-1',
+};
+const PET_ART_ALIASES = {
+  GHOST: 'BLUE_GHOST',
+  LISTER: 'BLUE_GHOST',
+  LUNA: 'BLUE_MOON',
+  LRA: 'BLUE_MOON',
+  RETRO: 'BLUE_MOON',
+  TRIDDY: 'TRIDENT',
+  LN1: 'LN-1',
+  LN_1: 'LN-1',
+  NODEY: 'LN-1',
+};
+const EDS_SVG_ART =
+  '<rect x="14" y="16" width="36" height="28" rx="3" fill="#1d4a42" stroke="#e0b15a" stroke-width="3"/>' +
+  '<path d="M18 24h28M18 30h28M18 36h28M24 20v20M32 20v20M40 20v20" stroke="#8fd0c4" stroke-width="1.6"/>' +
+  '<rect x="30" y="44" width="4" height="7" fill="#e0b15a"/>' +
+  '<rect x="22" y="51" width="20" height="3" rx="1.5" fill="#e0b15a"/>';
+
+function resolvePetKey(id) {
+  return String(id || '').trim().toUpperCase().replace(/\s+/g, '_');
+}
+function model3dFor(id) {
+  const k = resolvePetKey(id);
+  return PET_3D[k] || PET_3D[k.replace(/_/g, '-')] || PET_3D[k.replace(/-/g, '_')] || '';
+}
+function escHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// The pets team's 3D models (web/story/pets-3d, from Pranav's PayloadPets3D). Each story pet
-// shows the real instrument it is, or the one its lander carried:
-// Story's pets are the pets team's four, so each id maps straight to its model.
-const PET_3D = { lister: 'lister', retro: 'retro', eds: 'eds', 'ln-1': 'ln-1' };
+/** A round pet avatar: the pet's SVG character on its own colour (emoji if a pet has no art yet). */
+function artHtml(pet) {
+  const k = resolvePetKey(pet?.id);
+  const art = PET_ART[k] || PET_ART[PET_ART_ALIASES[k]] || (k === 'EDS' ? EDS_SVG_ART : '');
+  if (art) return `<svg viewBox="0 0 64 64" aria-hidden="true">${art}</svg>`;
+  return pet?.face ? `<span aria-hidden="true">${escHtml(pet.face)}</span>` : '';
+}
+
 const MOOD_3D = { happy: 'happy', warm: 'happy', cold: 'shivering', sleep: 'sleeping' };
 let pets3d = null; // set once the 3D module has loaded; until then (or without WebGL) the drawn pets show
 
 async function upgrade3d(a, opts = {}) {
-  const model = PET_3D[a.dataset.pet];
+  const model = model3dFor(a.dataset.pet);
   if (!pets3d || !model || a._h || a._loading) return;
   a._loading = true;
   try {
     a.classList.add('is3d');
-    a._h = await pets3d.renderPet3D(model, 'happy', a, { autoRotate: true, interactive: false, ...opts });
-    if (PET_3D[a.dataset.pet] && PET_3D[a.dataset.pet] !== model) a._h.setPet(PET_3D[a.dataset.pet]);
+    const handle = await pets3d.renderPet3D(model, 'happy', a, { autoRotate: true, interactive: false, ...opts });
+    const latestModel = model3dFor(a.dataset.pet);
+    if (!a.isConnected || !latestModel) {
+      handle?.dispose?.();
+      a.classList.remove('is3d');
+      a.innerHTML = artHtml({ id: a.dataset.pet, face: a.dataset.face });
+    } else {
+      a._h = handle;
+      if (latestModel !== model) a._h.setPet(latestModel);
+      const stageMood = a.closest('#stage')?.dataset?.mood;
+      if (stageMood && MOOD_3D[stageMood]) a._h.update?.(MOOD_3D[stageMood]);
+      const canvas = a.querySelector('canvas');
+      canvas?.addEventListener('webglcontextlost', () => {
+        if (a._h !== handle) return;
+        try { handle.dispose?.(); } catch {}
+        a._h = null;
+        a.classList.remove('is3d');
+        a.innerHTML = artHtml({ id: a.dataset.pet, face: a.dataset.face });
+      }, { once: true });
+    }
   } catch (e) {
     a.classList.remove('is3d');
-    a.innerHTML = artHtml({ id: a.dataset.pet });
+    a.innerHTML = artHtml({ id: a.dataset.pet, face: a.dataset.face });
   }
   a._loading = false;
 }
 
 function setAvatarPet(a, pet) {
   a.dataset.pet = pet.id || '';
-  if (a._h && PET_3D[pet.id]) a._h.setPet(PET_3D[pet.id]);
-  else if (!a._h) a.innerHTML = artHtml(pet);
-  if (!a._h) upgrade3d(a, { interactive: !!a.closest('#pet-face') });
+  a.dataset.face = pet.face || '';
+  const model = model3dFor(pet.id);
+  if (a._h && model) {
+    a._h.setPet(model);
+  } else {
+    if (a._h) {
+      try { a._h.dispose?.(); } catch {}
+      a._h = null;
+    }
+    a.classList.remove('is3d');
+    a.innerHTML = artHtml(pet);
+    if (model) upgrade3d(a, { interactive: !!a.closest('#pet-face') });
+  }
 }
 
 /** A round pet avatar: the 3D model when available, the drawn character otherwise. */
@@ -225,7 +296,7 @@ function patPet() {
   const stage = $('#stage');
   const h = document.createElement('span');
   h.className = 'heart';
-  h.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 21s-8-5.4-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.6-8 11-8 11z" fill="#62b0ff" stroke="#d8ecff" stroke-width="1"/></svg>';
+  h.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 21s-8-5.4-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.6-8 11-8 11z" fill="#F97216" stroke="#D1D4DB" stroke-width="1"/></svg>';
   h.style.left = `${46 + Math.random() * 8}%`;
   stage.append(h);
   setTimeout(() => h.remove(), 1200);

@@ -1,7 +1,25 @@
 @import "tailwindcss";
 
+/* Sterion display font from loading-screen rework (CC BY-NC, Letter Corner Studio) */
+@font-face {
+  font-family: "Sterion";
+  src: url("./assets/fonts/Sterion-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Sterion";
+  src: url("./assets/fonts/Sterion-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
 @theme inline {
-  --font-display: "Bruno Ace SC", system-ui, sans-serif;
+  --font-display: "Bruno Ace SC", "Sterion", system-ui, sans-serif;
+  --font-sterion: "Sterion", "Bruno Ace SC", system-ui, sans-serif;
   --font-sans: "Space Grotesk", system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
 
@@ -102,5 +120,18 @@
   100% {
     transform: scale(1.65);
     opacity: 0;
+  }
+}
+
+.font-sterion {
+  font-family: var(--font-sterion);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

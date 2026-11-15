@@ -21,12 +21,67 @@ type Phase = "boot" | "home" | "land" | "pet" | "destination" | "drive" | "arriv
 const TICK_MS = 180;
 const STEP_OF: Partial<Record<Phase, number>> = { land: 0, pet: 1, destination: 2, drive: 3, arrived: 3 };
 
+interface LaunchContext {
+  fromMap: boolean;
+  phase: Phase | null;
+  siteId: string | null;
+  lat: number | null;
+  lon: number | null;
+  dropName: string | null;
+}
+
+function readLaunchContext(): LaunchContext {
+  if (typeof window === "undefined") {
+    return { fromMap: false, phase: null, siteId: null, lat: null, lon: null, dropName: null };
+  }
+  const params = new URLSearchParams(window.location.search);
+  const phaseParam = params.get("phase");
+  const latRaw = params.get("lat");
+  const lonRaw = params.get("lon");
+  const latNum = latRaw !== null && latRaw !== "" ? Number(latRaw) : NaN;
+  const lonNum = lonRaw !== null && lonRaw !== "" ? Number(lonRaw) : NaN;
+  return {
+    fromMap: params.get("from") === "map",
+    phase: phaseParam === "pet" || phaseParam === "land" ? phaseParam : null,
+    siteId: params.get("site"),
+    lat: Number.isFinite(latNum) ? latNum : null,
+    lon: Number.isFinite(lonNum) ? lonNum : null,
+    dropName: params.get("dropName")?.trim() || null,
+  };
+}
+
+function nearestCatalogSite(catalog: Catalog, lat: number, lon: number): string {
+  const rad = Math.PI / 180;
+  const lat1 = lat * rad;
+  let bestId = catalog.sites[0]?.id ?? "MALAPERT_A";
+  let bestDist = Infinity;
+  for (const site of catalog.sites) {
+    const lat2 = site.lat * rad;
+    const dLat = lat2 - lat1;
+    const dLon = (site.lon - lon) * rad;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+    const dist = 2 * Math.asin(Math.min(1, Math.sqrt(h)));
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestId = site.id;
+    }
+  }
+  return bestId;
+}
+
+function formatCoordBadge(lat: number, lon: number): string {
+  const ns = lat >= 0 ? "N" : "S";
+  const ew = lon >= 0 ? "E" : "W";
+  return `${Math.abs(lat).toFixed(2)}° ${ns}, ${Math.abs(lon).toFixed(2)}° ${ew}`;
+}
+
 function nearestOther(catalog: Catalog, fromId: string): string {
   const legs = catalog.routes.filter((r) => r.from === fromId).sort((a, b) => a.distanceKm - b.distanceKm);
   return legs[0]?.to ?? catalog.sites.find((s) => s.id !== fromId)?.id ?? fromId;
 }
 
 export default function App() {
+  const launch = useMemo(() => readLaunchContext(), []);
   const [phase, setPhase] = useState<Phase>("boot");
   const [backend, setBackend] = useState<EngineBackend | null>(null);
   const [engineNote, setEngineNote] = useState<string | null>(null);
@@ -74,12 +129,17 @@ export default function App() {
       setEngineLabel(b.label);
       setEngineNote(note);
       setCatalog(cat);
-      setPhase("home");
+      if (launch.siteId && cat.sites.some((s) => s.id === launch.siteId)) {
+        setLandingId(launch.siteId);
+      } else if (launch.lat !== null && launch.lon !== null) {
+        setLandingId(nearestCatalogSite(cat, launch.lat, launch.lon));
+      }
+      setPhase(launch.phase ?? "home");
     })();
     return () => {
       alive = false;
     };
-  }, []);
+  }, [launch]);
 
   // ---------------------------------------------------------------- engine events → feed + phase
   const pushEvents = useCallback(
@@ -268,6 +328,14 @@ export default function App() {
     }
   };
 
+  const returnToMap = useCallback(() => {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: "payloadpets:back-to-map" }, "*");
+      return;
+    }
+    setPhase("land");
+  }, []);
+
   const again = () => {
     sessionRef.current = null;
     setState(null);
@@ -275,6 +343,10 @@ export default function App() {
     setVisited([]);
     setLastLeg(null);
     setPaused(false);
+    if (launch.fromMap && window.parent && window.parent !== window) {
+      returnToMap();
+      return;
+    }
     setPhase("land");
   };
 
@@ -293,7 +365,28 @@ export default function App() {
   const sprite = usePetSprite(state?.pet.id ?? petId, modelMood(state?.mood, state?.pet.passive ?? false));
   const step = STEP_OF[phase] ?? 0;
   const showSteps = phase !== "home" && phase !== "boot" && phase !== "over";
-  const onStepChange = useMemo(() => (phase === "pet" ? (i: number) => i === 0 && setPhase("land") : undefined), [phase]);
+  const onStepChange = useMemo(
+    () =>
+      phase === "pet"
+        ? (i: number) => {
+            if (i === 0) {
+              if (launch.fromMap) returnToMap();
+              else setPhase("land");
+            }
+          }
+        : undefined,
+    [phase, launch.fromMap, returnToMap],
+  );
+  const dropBadge = useMemo(
+    () =>
+      launch.lat !== null && launch.lon !== null
+        ? {
+            label: launch.dropName || "Selected Drop Point",
+            coords: formatCoordBadge(launch.lat, launch.lon),
+          }
+        : null,
+    [launch],
+  );
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-night">
@@ -334,10 +427,11 @@ export default function App() {
             petId={petId}
             name={petName}
             tipped={tipped}
+            dropBadge={dropBadge}
             onPet={setPetId}
             onName={setPetName}
             onTipped={setTipped}
-            onBack={() => setPhase("land")}
+            onBack={() => (launch.fromMap ? returnToMap() : setPhase("land"))}
             onConfirm={startRun}
             busy={busy}
           />

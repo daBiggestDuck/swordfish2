@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ArrowLeft, BatteryCharging, Check, PackageCheck, Snowflake } from "lucide-react";
+import { ArrowLeft, BatteryCharging, Check, MapPin, PackageCheck, Snowflake } from "lucide-react";
 import type { Catalog } from "@/engine/types";
 import { useMoon } from "@/components/game/MoonStage";
 import { PetModel } from "@/components/game/PetVisuals";
@@ -15,6 +15,7 @@ export function PetScreen({
   petId,
   name,
   tipped,
+  dropBadge,
   onPet,
   onName,
   onTipped,
@@ -27,6 +28,7 @@ export function PetScreen({
   petId: string;
   name: string;
   tipped: boolean;
+  dropBadge?: { label: string; coords: string } | null;
   onPet: (id: string) => void;
   onName: (v: string) => void;
   onTipped: (v: boolean) => void;
@@ -47,8 +49,16 @@ export function PetScreen({
       <BlurFade duration={0.4} className="w-full max-w-[1080px]">
         <section aria-labelledby="pet-title" className="rounded-[28px] border border-white/60 bg-mist/95 p-4 text-night shadow-[0_30px_80px_rgba(0,0,0,0.55)] sm:p-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-bold tracking-[0.18em] text-ink-2 uppercase">Step 2 · Choose your payload pet</p>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-[11px] font-bold tracking-[0.18em] text-ink-2 uppercase">Step 2 · Choose your payload pet</p>
+                {dropBadge && (
+                  <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-night px-2.5 py-0.5 font-mono text-[11px] text-orange-ui">
+                    <MapPin className="size-3 shrink-0" />
+                    <span className="truncate">{dropBadge.coords} · {dropBadge.label}</span>
+                  </span>
+                )}
+              </div>
               <h2 id="pet-title" className="mt-1 font-title text-2xl sm:text-3xl">Who rides the rover from {landing?.name ?? "the lander"}?</h2>
             </div>
             <p className="max-w-[40ch] text-xs text-ink-2">Each pet is an instrument that really flew to the Moon. Safe temperatures and power needs come from the engine.</p>
