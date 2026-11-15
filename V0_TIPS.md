@@ -1,6 +1,6 @@
 # swordfish2 `v0` tip SHAs
 
-Assembled tip document for branch `v0` @ `2818f12668205403aa5f0ae116f72d411a3d57b3` (`2fda2d8`).
+Assembled tip document for branch `v0` @ `8a850425a63c62e61ffbfda3e08e9e942abfb8bc` (`8a85042`).
 
 Verified via `git fetch origin --prune` + `gh api` / `git ls-remote` against https://github.com/daBiggestDuck/swordfish2
 
@@ -18,7 +18,7 @@ Showcase ports: **map `:8080`**, **story `:8081`**, **engine `:8082`**.
 | `pranav/pets-triddy-nodey` | `4dd133d9168322b81b2482b12529812b74e7028a` | `4dd133d` | feat: add Triddy/Nodey pets on Data tip |
 | `deployer` | `4a42a15d210a8c7fab218a05428c3ac5badd9eca` | `4a42a15` | Add public link feature with password protection and enhance dashboard routing |
 
-| `v0` (this branch) | `2818f12668205403aa5f0ae116f72d411a3d57b3` | `2fda2d8` | assembled showcase (SHA updates on next tip-doc commit) |
+| `v0` (this branch) | `8a850425a63c62e61ffbfda3e08e9e942abfb8bc` | `8a85042` | assembled showcase (SHA updates on next tip-doc commit) |
 
 ## Notes
 
