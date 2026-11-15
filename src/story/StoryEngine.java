@@ -18,6 +18,11 @@ public class StoryEngine {
     private final Set<String> seen = new HashSet<>();
     private final List<MissionMoment> history = new ArrayList<>();
 
+    /** Site stories plus general stories only (no pet-specific ones). */
+    public StoryEngine(String siteId) {
+        this(siteId, "");
+    }
+
     public StoryEngine(String siteId, String petId) {
         this(siteId, petId, MissionMoments.ALL);
     }

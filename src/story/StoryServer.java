@@ -33,7 +33,7 @@ public class StoryServer {
     private static List<MissionMoment> moments = MissionMoments.ALL;
 
     public static void main(String[] args) throws IOException {
-        int port = 8081; // the map branch uses 8080
+        int port = 8082; // map uses 8080, engine uses 8081
         Path dataDir = Path.of("data");
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("--data") && i + 1 < args.length) dataDir = Path.of(args[++i]);
@@ -87,6 +87,7 @@ public class StoryServer {
             Map<String, String> q = query(ex);
             String site = q.getOrDefault("site", "");
             double progress = progress(q);
+            double days = earthDays(q, progress);
             Pet pet = Pets.find(q.getOrDefault("pet", ""));
             StoryEngine engine = new StoryEngine(site, pet.id(), moments);
             engine.advance(progress);
@@ -94,13 +95,16 @@ public class StoryServer {
             if (name.length() > 24) name = name.substring(0, 24);
             String missionName = Missions.ALL.stream().filter(m -> m.id().equals(pet.missionId()))
                     .map(Mission::name).findFirst().orElse("CLPS mission");
-            List<String> science = new java.util.ArrayList<>(pet.science());
+            // What the pet actually did, sent by the engine. Without it (standalone page) the
+            // pet's built-in lines about its real mission are used.
+            List<String> science = new java.util.ArrayList<>();
             for (String line : q.getOrDefault("science", "").split("\\|")) {
                 String t = line.trim();
                 if (!t.isEmpty() && science.size() < 6) science.add(t.length() > 100 ? t.substring(0, 100) : t);
             }
+            if (science.isEmpty()) science.addAll(pet.science());
             PetPassport passport = new PetPassport(name, pet.label(missionName),
-                    SkyModel.name(site), PetPassport.toEarthDays(progress),
+                    SkyModel.name(site), days,
                     science, engine.history());
             json(ex, passport.toJson());
         });
@@ -109,6 +113,20 @@ public class StoryServer {
 
         server.start();
         System.out.println("Payload Pets story site: http://localhost:" + port + "/  (Ctrl+C to stop)");
+    }
+
+    /**
+     * Earth days survived. The engine branch sends its own count ({@code days} = game.earthDays(),
+     * which keeps going into the night); otherwise it comes from the day progress.
+     */
+    private static double earthDays(Map<String, String> q, double progress) {
+        try {
+            double d = Double.parseDouble(q.getOrDefault("days", ""));
+            if (d >= 0 && d < 1000) return d;
+        } catch (NumberFormatException ignored) {
+            // no or bad value: fall back to the day progress
+        }
+        return PetPassport.toEarthDays(progress);
     }
 
     private static double progress(Map<String, String> q) {
@@ -154,7 +172,20 @@ public class StoryServer {
         send(ex, 200, type, Files.readAllBytes(file));
     }
 
+    /**
+     * Lets a page served by another server on this computer (the engine on 8081, the map on 8080)
+     * call the story API. Only localhost origins are allowed, never other websites.
+     */
+    private static void allowLocalPages(HttpExchange ex) {
+        String origin = ex.getRequestHeaders().getFirst("Origin");
+        if (origin != null && origin.matches("http://(localhost|127\\.0\\.0\\.1)(:\\d{1,5})?")) {
+            ex.getResponseHeaders().set("Access-Control-Allow-Origin", origin);
+            ex.getResponseHeaders().set("Vary", "Origin");
+        }
+    }
+
     private static void send(HttpExchange ex, int code, String type, byte[] body) throws IOException {
+        allowLocalPages(ex);
         ex.getResponseHeaders().set("Content-Type", type);
         ex.getResponseHeaders().set("Cache-Control", "no-store");
         ex.sendResponseHeaders(code, body.length);

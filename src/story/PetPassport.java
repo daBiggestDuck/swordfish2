@@ -28,6 +28,7 @@ public record PetPassport(
     }
 
     public String rating() {
+        if (daysSurvived > LUNAR_DAY_EARTH_DAYS + 1) return "Night Survivor";
         if (daysSurvived >= LUNAR_DAY_EARTH_DAYS) return "Lunar Day Legend";
         if (daysSurvived >= 10) return "Seasoned Explorer";
         if (daysSurvived >= 5) return "Brave Rookie";

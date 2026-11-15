@@ -44,7 +44,7 @@ time, and remembers what was shown so the Passport can list it.
 
 ```
 browser (web/story/story.js -> story-client.js)
-   GET /api/pets, /api/missions, /api/sites  -> StoryServer (Java, port 8081)
+   GET /api/pets, /api/missions, /api/sites  -> StoryServer (Java, port 8082)
    GET /api/moments?site&pet&progress        -> StoryEngine + MissionMoments (+ data branch stories)
    GET /api/sky?site&date                    -> SkyModel (real ephemeris from data/, else simplified)
    GET /api/passport?site&pet&name&progress&science -> PetPassport
@@ -66,8 +66,8 @@ All story content and logic live in Java; the page only draws it.
 | Branch | What it has | How story fits |
 |---|---|---|
 | data (Wonil) | Java pipeline + JSON in `data/` (13 sites, 15 missions, 12 pop-up stories, JPL ephemeris, horizon profiles) | Story reads it automatically when `data/` exists; same site and mission ids |
-| engine (Aku) | JavaScript game rules: meters, actions, moods, events | `story-client.js` takes the engine's events (`missionComplete` adds Passport science, `petFainted` ends the story) |
-| map (Akshay) | Java `MapServer` on port 8080, globe in `web/` | Story moved to `web/story/` and port 8081 so the two never collide |
+| engine (Aku) | Java game rules on its own server (port 8081): power, temperature, dust, data, health; events like `fainted`, `won`, `milestone` | `story-client.js` takes the engine's events (`fainted`/`won` end the story; `milestone`, `drilled`, `ping`, `dataSent` become Passport science) and its `earthDays` for days survived. Story allows calls from localhost pages, so the engine's page can use it |
+| map (Akshay) | Java `MapServer` on port 8080, globe in `web/` | Story moved to `web/story/` and port 8082 so the two never collide |
 | pets, ui | empty so far | ui drives the game loop and calls `story-client.js`; pets can replace the emoji faces |
 
 Open questions for the team (not changed by story):
@@ -78,8 +78,11 @@ Open questions for the team (not changed by story):
 - **Sites that disagree:** data puts IM-2 at SHACKLETON_RIDGE and Blue Moon Mark 1 at
   SOUTH_POLE_BO. Story uses MONS_MOUTON for IM-2 (NASA's IM-2 materials name Mons Mouton) and
   Shackleton Connecting Ridge for Blue Moon Mark 1 (NASA's CT-3 page). Worth agreeing on one.
-- **Language:** engine is JavaScript, story/data/map are Java. The browser glue is
-  `story-client.js`, so ui can stay in JavaScript.
+- **Pets and sites in the engine:** the engine's pets are instruments (LISTER, LRA, EDS) and it
+  has a SHADOWED_CRATER site; story's pets are landers (Ghost, Luna) and it has SHACKLETON_RIDGE.
+  Both sides fall back to a default for an unknown id, so these need agreeing on.
+- **Sunlight and Earth link:** the engine uses game sunlight factors and no Earth-visibility
+  check; story's Sun & Earth view uses real positions. Worth making them agree.
 
 ## Testing it
 
@@ -91,9 +94,10 @@ git archive origin/Data data | tar -x -C /tmp   # get the data branch's JSON wit
 
 ## What plugs in later
 
-- **engine (Aku):** call `story.due(dayProgress)` each tick and pass every engine event to
-  `story.handleEngineEvent(event)`. Sun height can feed the power meter and Earth height the
-  happiness (link) meter, matching the data branch's `decayMultipliers`.
+- **engine (Aku):** after each `/api/engine/tick` or `/act`, call `story.due(state.dayProgress)`
+  and pass every event to `story.handleEngineEvent(event)`; for the Passport call
+  `story.passport(state.dayProgress, name, { earthDays: state.earthDays })`. In Java,
+  `new StoryEngine(siteId).advance(game.dayProgress())` also works.
 - **data (Wonil):** sourced mission and site data to replace the entries in `Missions.java`,
   `MissionMoments.java` and `SkyModel.java`.
 - **map (Akshay):** the site picker, using the same site ids.

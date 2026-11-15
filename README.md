@@ -12,7 +12,7 @@ Challenge / planning context: see [`PLAN.md`](PLAN.md) (Payload Pets data-first 
 
 - **`Data`**: TO2-AB payloads use stable mission id `peregrine-1` (aligned with missions.json).
 - **`map`**: interactive NASA lunar explorer — `web/map.html` + globe assets, static-hosting support (`index.html` → map), `run_map.sh` / Node fallback, engine client bridge.
-- **`story`**: refreshed story server / Passport client (merged tip after force-update).
+- **`story`**: refreshed story server / Passport client (`12e20f6`).
 - **Triddy / Nodey** kept from `pranav/pets-triddy-nodey` (archetypes + `demos/js-*`).
 
 ---
@@ -25,7 +25,7 @@ Challenge / planning context: see [`PLAN.md`](PLAN.md) (Payload Pets data-first 
 | `Data` | `6b45ba1` | `data/*.json`, `src/data/`, `build.sh`, `PLAN.md` |
 | `engine` | `7c5db21` | `src/engine/`, `web/engine.*`, `run-engine.sh`, tests |
 | `map` | `666ecee` | `src/map/`, `web/map.*`, `data/maps/`, `run_map.sh`, root `index.html` |
-| `story` | *(see merge)* | `src/story/`, `web/story/`, `run-story.sh`, `STORY.md` |
+| `story` | `12e20f6` | `src/story/`, `web/story/`, `run-story.sh`, `STORY.md` |
 | `pets` | `d921b00` | `petSpriteOutline` (Moon Pals sprite outline) |
 | `ui` | `e2a0e5d` | ≡ `main` (no extra files yet) |
 | `pranav/pets-triddy-nodey` | `4dd133d` | **Triddy** (`trident`) + **Nodey** (`ln-1`) archetypes, catalog, `demos/js-*` |
@@ -123,7 +123,7 @@ main     e2a0e5df9c2e49c794a9c13166a3f4baddd107af
 Data     6b45ba186ba0220043a8b1b9b9b12ad919f9597e
 engine   7c5db21ad61c18b7b4021cd9623ecd2716124aa0
 map      666ecee3b9a83cd434299582d3af7a05a1d99ab0
-story    (merged tip — see git log)
+story    12e20f68cd13f33f31085b61897d82faf2ec3dac
 pets     d921b00ee2787935c19841c63e398f1c06f039bb
 ui       e2a0e5df9c2e49c794a9c13166a3f4baddd107af
 pets+    4dd133d9168322b81b2482b12529812b74e7028a  (pranav/pets-triddy-nodey)
