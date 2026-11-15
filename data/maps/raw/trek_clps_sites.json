@@ -1,0 +1,167 @@
+{
+  "displayFieldName": "Site_Name",
+  "fieldAliases": {
+    "OBJECTID": "OBJECTID",
+    "Site_ID": "Site_ID",
+    "Site_Name": "Site_Name",
+    "Lander": "Lander",
+    "Vendor": "Vendor",
+    "Task_Order": "Task_Order",
+    "Region": "Region",
+    "Status": "Status",
+    "Latitude": "Latitude",
+    "Longitude": "Longitude",
+    "URL": "URL"
+  },
+  "geometryType": "esriGeometryPoint",
+  "spatialReference": {
+    "wkid": 104903,
+    "latestWkid": 104903,
+    "wkt": "GEOGCS[\"GCS_Moon_2000\",DATUM[\"D_Moon_2000\",SPHEROID[\"Moon_2000_IAU_IAG\",1737400.0,0.0]],PRIMEM[\"Reference_Meridian\",0.0],UNIT[\"Degree\",0.0174532925199433]]"
+  },
+  "fields": [
+    { "name": "OBJECTID", "type": "esriFieldTypeOID", "alias": "OBJECTID" },
+    { "name": "Site_ID", "type": "esriFieldTypeString", "alias": "Site_ID", "length": 32 },
+    { "name": "Site_Name", "type": "esriFieldTypeString", "alias": "Site_Name", "length": 128 },
+    { "name": "Lander", "type": "esriFieldTypeString", "alias": "Lander", "length": 128 },
+    { "name": "Vendor", "type": "esriFieldTypeString", "alias": "Vendor", "length": 128 },
+    { "name": "Task_Order", "type": "esriFieldTypeString", "alias": "Task_Order", "length": 32 },
+    { "name": "Region", "type": "esriFieldTypeString", "alias": "Region", "length": 32 },
+    { "name": "Status", "type": "esriFieldTypeString", "alias": "Status", "length": 32 },
+    { "name": "Latitude", "type": "esriFieldTypeDouble", "alias": "Latitude" },
+    { "name": "Longitude", "type": "esriFieldTypeDouble", "alias": "Longitude" },
+    { "name": "URL", "type": "esriFieldTypeString", "alias": "URL", "length": 256 }
+  ],
+  "sourceEndpoint": "https://trek.nasa.gov/moon/trekarcgis3/rest/services/CLPS_sites/MapServer/0/query?where=1=1&outFields=*&f=json",
+  "trekPortalUrl": "https://trek.nasa.gov/moon/#v=0.1&x=0&y=0&z=1&p=urn%3Aogc%3Adef%3Acrs%3AEPSG%3A%3A104903&d=&locale=&b=moon&e=-227.81249575048437%2C-156.621090828458%2C227.81249575048437%2C156.621090828458&sfz=&w=",
+  "features": [
+    {
+      "attributes": {
+        "OBJECTID": 1,
+        "Site_ID": "SINUS_VISCOSITATIS",
+        "Site_Name": "Sinus Viscositatis",
+        "Lander": "Peregrine Mission One",
+        "Vendor": "Astrobotic Technology",
+        "Task_Order": "TO2-AB",
+        "Region": "NEAR_SIDE",
+        "Status": "NO_LANDING",
+        "Latitude": 35.26,
+        "Longitude": -40.99,
+        "URL": "https://science.nasa.gov/mission/clps-to2-ab/"
+      },
+      "geometry": { "x": -40.99, "y": 35.26 }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 2,
+        "Site_ID": "MALAPERT_A",
+        "Site_Name": "Malapert A",
+        "Lander": "Nova-C / IM-1 (Odysseus)",
+        "Vendor": "Intuitive Machines",
+        "Task_Order": "TO2-IM",
+        "Region": "SOUTH_POLE",
+        "Status": "LANDED",
+        "Latitude": -80.13,
+        "Longitude": 1.44,
+        "URL": "https://science.nasa.gov/mission/clps-to2-im/"
+      },
+      "geometry": { "x": 1.44, "y": -80.13 }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 3,
+        "Site_ID": "MARE_CRISIUM",
+        "Site_Name": "Mare Crisium (Mons Latreille)",
+        "Lander": "Blue Ghost Mission 1",
+        "Vendor": "Firefly Aerospace",
+        "Task_Order": "TO19D",
+        "Region": "NEAR_SIDE",
+        "Status": "LANDED",
+        "Latitude": 16.18,
+        "Longitude": 59.10,
+        "URL": "https://science.nasa.gov/mission/clps-to19d/"
+      },
+      "geometry": { "x": 59.10, "y": 16.18 }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 4,
+        "Site_ID": "MONS_MOUTON",
+        "Site_Name": "Mons Mouton (Nobile Region)",
+        "Lander": "Nova-C / IM-2 (Athena), Griffin-1, IM-4",
+        "Vendor": "Intuitive Machines / Astrobotic",
+        "Task_Order": "TO-PRIME1 / TO20A / CP-22",
+        "Region": "SOUTH_POLE",
+        "Status": "LANDED",
+        "Latitude": -84.80,
+        "Longitude": 29.20,
+        "URL": "https://science.nasa.gov/mission/clps-prime-1/"
+      },
+      "geometry": { "x": 29.20, "y": -84.80 }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 5,
+        "Site_ID": "REINER_GAMMA",
+        "Site_Name": "Reiner Gamma",
+        "Lander": "Nova-C / IM-3",
+        "Vendor": "Intuitive Machines",
+        "Task_Order": "CP-11",
+        "Region": "NEAR_SIDE",
+        "Status": "PLANNED",
+        "Latitude": 7.39,
+        "Longitude": -58.96,
+        "URL": "https://science.nasa.gov/mission/clps-cp-11/"
+      },
+      "geometry": { "x": -58.96, "y": 7.39 }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 6,
+        "Site_ID": "FAR_SIDE",
+        "Site_Name": "Schrodinger Basin (Far Side)",
+        "Lander": "Blue Ghost 2 / Draper SERIES-2",
+        "Vendor": "Firefly Aerospace / Draper",
+        "Task_Order": "CP-12 / CS-11",
+        "Region": "FAR_SIDE",
+        "Status": "PLANNED",
+        "Latitude": -74.73,
+        "Longitude": 132.93,
+        "URL": "https://science.nasa.gov/mission/clps-cs-11/"
+      },
+      "geometry": { "x": 132.93, "y": -74.73 }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 7,
+        "Site_ID": "GRUITHUISEN_DOMES",
+        "Site_Name": "Gruithuisen Domes",
+        "Lander": "Blue Ghost Mission 3",
+        "Vendor": "Firefly Aerospace",
+        "Task_Order": "CP-21",
+        "Region": "NEAR_SIDE",
+        "Status": "PLANNED",
+        "Latitude": 36.30,
+        "Longitude": -40.20,
+        "URL": "https://science.nasa.gov/mission/clps-cp-21/"
+      },
+      "geometry": { "x": -40.20, "y": 36.30 }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 8,
+        "Site_ID": "SHACKLETON_RIM",
+        "Site_Name": "Shackleton Crater Rim",
+        "Lander": "Blue Moon Mark 1 / Artemis III Candidate",
+        "Vendor": "Blue Origin",
+        "Task_Order": "BM-MK1",
+        "Region": "SOUTH_POLE",
+        "Status": "PLANNED",
+        "Latitude": -89.63,
+        "Longitude": 132.32,
+        "URL": "https://www.nasa.gov/commercial-lunar-payload-services/"
+      },
+      "geometry": { "x": 132.32, "y": -89.63 }
+    }
+  ]
+}

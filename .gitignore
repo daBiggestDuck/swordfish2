@@ -1,23 +1,25 @@
-# Java build artifacts (from Data)
+# Java build artifacts
 build/
 out/
 *.class
 
-# OS (from Data + engine)
+# OS
 .DS_Store
 Thumbs.db
 
-# IDE (from Data)
+# IDE
 .idea/
 *.iml
 .vscode/
 *.swp
 
-# Node (from Data + engine)
+# Node
 node_modules/
 dist/
 
 # Staging export folders (assembler inputs; local only)
-from-Data/
-from-engine/
+from-*/
 STAGING.md
+STAGING_SHAS.txt
+DATA_ENGINE_TIPS.txt
+TIPS.txt
