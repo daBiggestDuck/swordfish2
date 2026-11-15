@@ -93,19 +93,19 @@ public class Payload {
             // ════ TO2-AB (Peregrine) ════
             p("nss", "Neutron Spectrometer System", "NSS", "spectrometer",
               "Hydrogen abundance in regolith",
-              null, "NASA ARC", false, U, U, "msolo", "to2-ab", SRC_TO2AB),
+              null, "NASA ARC", false, U, U, "msolo", "peregrine-1", SRC_TO2AB),
 
             p("lets", "Linear Energy Transfer Spectrometer", "LETS", "spectrometer",
               "Radiation dose on lunar surface",
-              null, "NASA JSC", false, U, U, "msolo", "to2-ab", SRC_TO2AB),
+              null, "NASA JSC", false, U, U, "msolo", "peregrine-1", SRC_TO2AB),
 
             p("nirvss", "Near-Infrared Volatile Spectrometer System", "NIRVSS", "spectrometer",
               "Surface volatiles and minerals",
-              null, "NASA ARC", false, U, U, "msolo", "to2-ab", SRC_TO2AB),
+              null, "NASA ARC", false, U, U, "msolo", "peregrine-1", SRC_TO2AB),
 
             p("pitms", "Peregrine Ion-Trap Mass Spectrometer", "PITMS", "spectrometer",
               "Exospheric volatiles at the surface",
-              null, "NASA GSFC", false, U, U, "msolo", "to2-ab", SRC_TO2AB),
+              null, "NASA GSFC", false, U, U, "msolo", "peregrine-1", SRC_TO2AB),
 
             p("lra-peregrine", "Laser Retroreflector Array", "LRA", "retroreflector",
               "Precise distances from orbit",
