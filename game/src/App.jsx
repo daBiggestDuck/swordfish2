@@ -69,9 +69,13 @@ export default function App() {
           deep-space starfield still covers the whole viewport. Draggable:
           grab the empty space around it. Laptop-first: the page is a
           single fixed screen. */}
+      {/* The moon sits against the right side like slide 1 of the mockup:
+          centre at ~72% width, ~75% of screen height tall. The canvas is
+          oversized so its deep-space starfield still covers the whole
+          viewport. Draggable: grab the empty space around it. */}
       <MoonGlobe
-        className="pointer-events-auto fixed top-1/2 left-[-40vw] h-[100vh] w-[180vw] -translate-y-1/2"
-        distance={4.7}
+        className="pointer-events-auto fixed top-1/2 left-[-18vw] h-[100vh] w-[180vw] -translate-y-1/2"
+        distance={3.6}
       />
 
       <main className="pointer-events-none relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-6 py-16 md:px-12">
