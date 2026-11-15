@@ -1,10 +1,20 @@
 # Payload Pets — `v0` showcase
 
+**NASA Space Apps 2026** entry for [Lunar Landing Site Navigator](https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/) — compare lunar **south-pole** landing sites for solar power and Earth communications, then teach those constraints through real [CLPS](https://www.nasa.gov/commercial-lunar-payload-services/) instrument pets.
+
 **Showcase branch** that combines the team’s parallel work on [daBiggestDuck/swordfish2](https://github.com/daBiggestDuck/swordfish2) into one tree you can run locally.
 
-Adopt a real NASA [CLPS](https://www.nasa.gov/commercial-lunar-payload-services/) instrument as a pet, pick a real lunar landing site, and keep it alive through one lunar day — with meters driven by real ephemeris and terrain data.
+### Challenge → product map
 
-Challenge / planning context: see [`PLAN.md`](PLAN.md) (Payload Pets data-first build plan) and NASA CLPS: https://www.nasa.gov/commercial-lunar-payload-services/
+| Challenge asks | Where it lives |
+|---|---|
+| Compare south-pole sites & dates | **Navigator** · **Map / Sites** · **Data** filters |
+| Sun & Earth vs the horizon | **Navigator** + **Map** (LOLA horizon) · Story Sun/Earth · Engine day–night |
+| Solar-power potential | **Engine** Power/Warmth · **Pets** sun→night moods (Triddy / LISTER) |
+| Direct-to-Earth comm windows | **Engine** Signal · **Pets** Nodey (LN-1) · site Earth-visibility notes |
+| NASA open data | Baked `data/` + [`data/maps/NOTICE.md`](data/maps/NOTICE.md) (Horizons, Moon Trek, LOLA, CLPS) |
+
+Judges: open **About** in the shell for provenance links and a 90-second demo path. Planning depth: [`PLAN.md`](PLAN.md).
 
 ---
 
@@ -25,7 +35,7 @@ Open **http://localhost:8765/** — one page with shared nav and tabs:
 | **Engine / Care** | Care meters / lunar-day loop | `./run-engine.sh` → :8082 |
 | **Pets** | Triddy, Nodey & friends art/mood demo | Shell only |
 | **Data / Missions** | Catalog browser over `data/catalog.json` | Shell only |
-| **About** | Challenge brief (from `PLAN.md`) | Shell only |
+| **About** | Challenge→product map, provenance links, 90s demo path | Shell only |
 
 Story and Engine tabs iframe the Java apps. Start them in other terminals when you want those surfaces live:
 

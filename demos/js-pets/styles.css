@@ -70,6 +70,18 @@ h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 0.2rem 0 0.4rem; }
   color: var(--muted);
 }
 
+.judge-lede {
+  max-width: 42rem;
+  margin: 0.35rem 0 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid rgba(98, 176, 255, 0.35);
+  border-radius: 8px;
+  background: rgba(98, 176, 255, 0.08);
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
 .passport {
   max-width: 36rem;
   margin: 0.35rem 0 0;

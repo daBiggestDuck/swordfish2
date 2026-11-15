@@ -126,9 +126,10 @@
     } else if (tab.kind === "data") {
       panel.innerHTML = `
         <div class="local-panel">
-          <div class="kicker">CLPS CATALOG</div>
+          <div class="kicker">CLPS CATALOG · JUDGE PATH</div>
           <h1>Data / Missions</h1>
-          <p class="lede">Baked CLPS catalog from the Data tip — missions, sites, payloads, and pets (including Triddy &amp; Nodey). Loaded from <code>data/catalog.json</code>.</p>
+          <p class="judge-tip"><strong style="color:var(--text)">What to do here.</strong> This is the offline NASA CLPS spine — missions, south-pole sites, and instrument pets. Switch View to <em>Sites</em> (polar / Malapert / Mons Mouton) or <em>Pets</em> (Triddy = Power, Nodey = Signal), then return to Navigator / Map with the ids verified.</p>
+          <p class="lede">Baked facts from <code>data/catalog.json</code> (as-of stamped). Every pet maps to a flown or planned instrument — use this tab to prove provenance before the demo.</p>
           <div class="stats" id="data-stats"></div>
           <div class="toolbar">
             <label class="search-wrap" style="flex:1 1 200px">Search
@@ -153,50 +154,98 @@
           </div>
           <div class="grid" id="data-grid"></div>
           <p id="data-error" class="error" hidden></p>
+          <p class="meta-foot">Catalog rules: <a href="./data/README.md">data/README.md</a> · map / Horizons bake notes: <a href="./data/maps/NOTICE.md">data/maps/NOTICE.md</a></p>
         </div>`;
     } else if (tab.kind === "about") {
       panel.innerHTML = `
         <div class="local-panel">
-          <div class="kicker">SHOWCASE</div>
+          <div class="kicker">NASA SPACE APPS 2026</div>
           <h1>About · Payload Pets</h1>
-          <p class="lede">Challenge brief for this <code>v0</code> showcase — one product with shared data contracts across map, story, engine, and pets.</p>
+          <p class="hero-prop">Compare lunar <strong style="color:var(--text)">south-pole</strong> landing sites for solar power and Earth communications — then feel those constraints by keeping a real CLPS instrument pet alive through one lunar day.</p>
+          <p class="lede">Challenge: <a href="https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/" target="_blank" rel="noopener">Lunar Landing Site Navigator</a>. Judges: <strong style="color:var(--text)">Navigator</strong> (site/date compare) → <strong style="color:var(--text)">Map</strong> (terrain context) → <strong style="color:var(--text)">Pets</strong> (Power / Signal moods) → <strong style="color:var(--text)">Data</strong> (provenance).</p>
 
-          <div class="about-block">
-            <div class="kicker">BRIEF</div>
-            <h2>One-liner</h2>
-            <p>Adopt a real NASA CLPS instrument as a pet, pick a real lunar landing site, and keep it alive through one lunar day — with meters driven by real ephemeris and terrain data.</p>
+          <div class="about-block callout-pole">
+            <div class="kicker">SOUTH POLE</div>
+            <h2>Why the pole, not a tourist Moon</h2>
+            <p>Artemis / CLPS polar landings sit where the Sun skims the horizon and ridges decide power. We emphasize Malapert A, Mons Mouton / Shackleton Ridge, and other polar CLPS sites — illumination, PSR proximity, and Earth line-of-sight — not a generic full-globe brochure.</p>
           </div>
 
           <div class="about-block">
-            <h2>Ship one product, four surfaces</h2>
-            <table>
+            <div class="kicker">REQUIREMENT MAP</div>
+            <h2>Challenge ask → product tab</h2>
+            <table class="req-map">
+              <thead>
+                <tr><th>Challenge asks</th><th>Where it lives</th></tr>
+              </thead>
               <tbody>
-                <tr><th>Payload Pets</th><td>Hero / emotional hook — Creativity, Presentation, Inspirational</td></tr>
-                <tr><th>Moon Map</th><td>Home screen, site picker, comparison — planning tool + Best Use of Data</td></tr>
-                <tr><th>Archive</th><td>Mission drawer and real outcomes — storytelling depth</td></tr>
-                <tr><th>Manifest</th><td>Engineering constraints on the site card — not a second game</td></tr>
+                <tr>
+                  <th>Compare south-pole sites &amp; dates</th>
+                  <td><strong style="color:var(--text)">Navigator</strong> (primary compare) · <strong style="color:var(--text)">Map / Sites</strong> · <strong style="color:var(--text)">Data</strong> filters</td>
+                </tr>
+                <tr>
+                  <th>Sun &amp; Earth vs the horizon</th>
+                  <td><strong style="color:var(--text)">Navigator</strong> + <strong style="color:var(--text)">Map</strong> (LOLA horizon context) · Story Sun/Earth view · Engine day–night loop</td>
+                </tr>
+                <tr>
+                  <th>Solar-power potential</th>
+                  <td><strong style="color:var(--text)">Engine</strong> Power / Warmth · <strong style="color:var(--text)">Pets</strong> full sun → night moods (Triddy / LISTER need power)</td>
+                </tr>
+                <tr>
+                  <th>Direct-to-Earth comm windows</th>
+                  <td><strong style="color:var(--text)">Engine</strong> Signal · <strong style="color:var(--text)">Pets</strong> Nodey (LN-1) prefers waiting on Signal · site Earth-visibility notes</td>
+                </tr>
+                <tr>
+                  <th>Intuitive for planners &amp; public</th>
+                  <td>Pets teach the physics; Navigator / Map stay the serious planning surfaces</td>
+                </tr>
+                <tr>
+                  <th>NASA open data (Horizons, LOLA, Moon Trek)</th>
+                  <td>Baked into <code>data/</code> — provenance below + <a href="./data/maps/NOTICE.md">NOTICE.md</a></td>
+                </tr>
               </tbody>
             </table>
-            <p>Night is a phase of the pet loop, not a separate page. The differentiator is that Power / Warmth / Signal are driven by <strong style="color:var(--text)">JPL Horizons + LOLA terrain</strong>, and the UI shows the math.</p>
           </div>
 
           <div class="about-block">
-            <h2>This showcase shell</h2>
+            <div class="kicker">PETS HOOK</div>
+            <h2>How pets teach power &amp; comms</h2>
             <ul>
-              <li><strong style="color:var(--text)">Map / Sites</strong> — interactive lunar explorer (<code>web/map.html</code>)</li>
-              <li><strong style="color:var(--text)">Navigator</strong> — south-pole site/date compare: Sun→power, Earth→DTE vs LOLA horizon (<code>web/navigator.html</code>)</li>
-              <li><strong style="color:var(--text)">Story / Passport</strong> — mission pop-ups, Pet Passport, Sun/Earth view (Java on :8081)</li>
-              <li><strong style="color:var(--text)">Engine / Care</strong> — care meters &amp; lunar-day loop (Java on :8082)</li>
-              <li><strong style="color:var(--text)">Pets</strong> — Triddy, Nodey, and friends art/mood demo</li>
-              <li><strong style="color:var(--text)">Data / Missions</strong> — catalog browser over baked JSON</li>
+              <li><strong style="color:var(--text)">Power</strong> — Active instruments (Triddy / TRIDENT, LISTER, EDS) get cold or stop when the Sun drops; passive retroreflectors sleep through night because the real hardware needs no power.</li>
+              <li><strong style="color:var(--text)">Signal</strong> — Nodey (Lunar Node-1) is a ranging beacon: “prefer wait on Signal” mirrors needing Earth (or a relay) in view before you transmit.</li>
+              <li><strong style="color:var(--text)">Same physics</strong> — Polar ridges and farside geometry change the meters Navigator / Engine show with Horizons + LOLA. The pet is the tutorial layer, not a separate toy universe.</li>
             </ul>
-            <p>Full plan: <a href="./PLAN.md">PLAN.md</a> · CLPS: <a href="https://www.nasa.gov/commercial-lunar-payload-services/" target="_blank" rel="noopener">nasa.gov/commercial-lunar-payload-services</a></p>
             <div class="pets-links">
-              <a href="./STORY.md">STORY.md</a>
-              <a href="./data/README.md">data/README.md</a>
-              <a href="./src/engine/README.md">engine README</a>
-              <a href="./demos/js-ui/index.html" target="_blank" rel="noopener">js-ui demo</a>
+              <a href="#navigator">Navigator</a>
+              <a href="#map">Map / Sites</a>
+              <a href="#pets">Pets</a>
+              <a href="#engine">Engine / Care</a>
+              <a href="#data">Data</a>
             </div>
+          </div>
+
+          <div class="about-block">
+            <div class="kicker">PROVENANCE</div>
+            <h2>NASA data links</h2>
+            <ul class="provenance-list">
+              <li><a href="https://ssd.jpl.nasa.gov/horizons/" target="_blank" rel="noopener">JPL Horizons</a> — Sun / Earth geometry; baked offline for the demo</li>
+              <li><a href="https://trek.nasa.gov/moon/" target="_blank" rel="noopener">NASA Moon Trek</a> — CLPS site coords, south-pole PSR / illumination, LOLA DEM services</li>
+              <li><a href="https://svs.gsfc.nasa.gov/4720" target="_blank" rel="noopener">NASA SVS CGI Moon Kit</a> — LROC WAC + LOLA global basemaps</li>
+              <li><a href="https://www.nasa.gov/commercial-lunar-payload-services/" target="_blank" rel="noopener">NASA CLPS</a> · <a href="https://science.nasa.gov/lunar-discovery/deliveries/" target="_blank" rel="noopener">delivery pages</a> — missions &amp; payloads in the catalog</li>
+              <li><a href="https://pds-geosciences.wustl.edu/missions/clps/index.htm" target="_blank" rel="noopener">PDS Geosciences CLPS node</a> — science-data trail for flown payloads</li>
+            </ul>
+            <p>Attribution detail: <a href="./data/maps/NOTICE.md">data/maps/NOTICE.md</a> · catalog honesty rules: <a href="./data/README.md">data/README.md</a></p>
+          </div>
+
+          <div class="about-block">
+            <div class="kicker">DEMO</div>
+            <h2>90-second path</h2>
+            <ol>
+              <li><strong style="color:var(--text)">Navigator</strong> — compare two south-pole sites / dates; call out Sun→power and Earth→DTE.</li>
+              <li><strong style="color:var(--text)">Map / Sites</strong> — show terrain / PSR context for the same sites.</li>
+              <li><strong style="color:var(--text)">Pets</strong> — scrub full sun → night; Power (Triddy) vs Signal (Nodey).</li>
+              <li><strong style="color:var(--text)">Data</strong> — flash as-of + NASA naming · optional Engine with <code>./run-engine.sh</code>.</li>
+            </ol>
+            <p>Plan &amp; awards: <a href="./PLAN.md">PLAN.md</a> · Story: <a href="./STORY.md">STORY.md</a></p>
           </div>
         </div>`;
     }
@@ -241,6 +290,10 @@
       note.dataset.show = "1";
       note.innerHTML = `${tab.label} needs <code>${tab.need}</code> (port ${tab.port}). Start it in another terminal, then click this tab again.`;
       // Still point iframe at the backend URL so a refresh after start works via reload below
+    } else if (tab.id === "pets") {
+      note.dataset.show = "1";
+      note.innerHTML =
+        "<strong>Judge tip.</strong> Pets translate the challenge physics: scrub <em>full sun → sunset → night</em>. Active instruments (Triddy / LISTER) need Power; Nodey (LN-1 beacon) teaches Signal / Earth contact; passive retroreflectors sleep through night because real hardware draws none.";
     } else {
       note.dataset.show = "0";
       note.textContent = "";
