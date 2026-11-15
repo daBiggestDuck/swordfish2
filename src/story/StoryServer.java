@@ -33,7 +33,7 @@ public class StoryServer {
     private static List<MissionMoment> moments = MissionMoments.ALL;
 
     public static void main(String[] args) throws IOException {
-        int port = 8081; // map uses 8080, engine uses 8082 on v0
+        int port = 8081; // v0 showcase: map 8080, story 8081, engine 8082
         Path dataDir = Path.of("data");
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("--data") && i + 1 < args.length) dataDir = Path.of(args[++i]);
@@ -60,7 +60,7 @@ public class StoryServer {
         server.createContext("/api/sites", ex -> json(ex, SkyModel.listJson()));
 
         server.createContext("/api/sky", ex -> {
-            SkyModel.Site s = SkyModel.find(query(ex).getOrDefault("site", ""));
+            SkyModel.Site s = SkyModel.find(siteId(query(ex).get("site")));
             if (s == null) {
                 send(ex, 404, "application/json; charset=utf-8", "{\"error\":\"unknown site\"}".getBytes(StandardCharsets.UTF_8));
                 return;
@@ -78,14 +78,14 @@ public class StoryServer {
 
         server.createContext("/api/moments", ex -> {
             Map<String, String> q = query(ex);
-            StoryEngine engine = new StoryEngine(q.getOrDefault("site", ""), q.getOrDefault("pet", ""), moments);
+            StoryEngine engine = new StoryEngine(siteId(q.get("site")), q.getOrDefault("pet", ""), moments);
             List<MissionMoment> due = engine.advance(progress(q));
             json(ex, Json.array(due, MissionMoment::toJson));
         });
 
         server.createContext("/api/passport", ex -> {
             Map<String, String> q = query(ex);
-            String site = q.getOrDefault("site", "");
+            String site = siteId(q.get("site"));
             double progress = progress(q);
             double days = earthDays(q, progress);
             Pet pet = Pets.find(q.getOrDefault("pet", ""));
@@ -135,6 +135,11 @@ public class StoryServer {
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+
+    /** "mons-mouton" and "MONS_MOUTON" both mean the same site. */
+    private static String siteId(String raw) {
+        return raw == null ? "" : raw.trim().replace('-', '_').toUpperCase(java.util.Locale.ROOT);
     }
 
     private static Map<String, String> query(HttpExchange ex) {

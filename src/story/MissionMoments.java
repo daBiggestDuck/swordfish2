@@ -24,6 +24,14 @@ public final class MissionMoments {
     public static final String PEREGRINE_KIT =
             "https://www.nasa.gov/wp-content/uploads/2023/12/np-2023-12-017-jsc-clps-astrobotic-press-kit-update-508.pdf";
     public static final String CT3 = "https://science.nasa.gov/lunar-science/clps-deliveries/ct-3-science/";
+    public static final String TRIDENT_DRILL =
+            "https://www.nasa.gov/missions/artemis/nasas-lunar-drill-technology-passes-tests-on-the-moon/";
+    public static final String PRIME1 =
+            "https://www.nasa.gov/centers-and-facilities/kennedy/nasas-polar-ice-experiment-paves-way-for-future-moon-missions/";
+    public static final String LN1_BEACON =
+            "https://www.nasa.gov/centers-and-facilities/marshall/nasa-lights-beacon-on-moon-with-autonomous-navigation-system-test/";
+    public static final String IM1_PROGRESS =
+            "https://www.nasa.gov/blogs/missions/2024/02/21/intuitive-machines-nasa-science-progress-toward-moon-landing/";
 
     // Site ids: keep in sync with SkyModel, the data branch (Wonil) and the map branch (Akshay).
     public static final String MARE_CRISIUM = "MARE_CRISIUM";
@@ -128,7 +136,52 @@ public final class MissionMoments {
                     "Big dreams, long night",
                     "Every lander faces the cold lunar night. Luna dreams of the day it really "
                             + "flies. For now, keep it warm and the Earth link steady!",
-                    0.92, CLPS_PAGE, Pets.BLUE_MOON)
+                    0.92, CLPS_PAGE, Pets.BLUE_MOON),
+
+            // ---- Pet: Triddy (TRIDENT drill, PRIME-1 on IM-2, Intuitive Machines) ----
+            new MissionMoment("triddy-hello", "ANY", "IM-2 Mission",
+                    "Meet Triddy",
+                    "Triddy is based on TRIDENT, the drill in NASA's PRIME-1 experiment. It flew on "
+                            + "IM-2 together with MSolo, an instrument that sniffs soil for gases.",
+                    0.03, PRIME1, Pets.TRIDDY),
+            new MissionMoment("triddy-drill", "ANY", "IM-2 Mission",
+                    "Drilling down",
+                    "TRIDENT is built to drill up to 1 meter into the Moon, bringing up soil about "
+                            + "10 cm at a time by spinning and hammering. Drilling is hungry work, so "
+                            + "keep Triddy powered!",
+                    0.30, TRIDENT_DRILL, Pets.TRIDDY),
+            new MissionMoment("triddy-sideways", "ANY", "IM-2 Mission",
+                    "Landing on its side",
+                    "IM-2 landed on Mar. 6, 2025, about 400 meters from its target at Mons Mouton, "
+                            + "and ended up on its side. MSolo still worked despite the rough landing.",
+                    0.55, TRIDENT_DRILL, Pets.TRIDDY),
+            new MissionMoment("triddy-ice", "ANY", "IM-2 Mission",
+                    "Sniffing for ice",
+                    "PRIME-1 was NASA's first try at drilling for ice near the Moon's south pole. "
+                            + "Water ice there could one day help astronauts live on the Moon.",
+                    0.80, PRIME1, Pets.TRIDDY),
+
+            // ---- Pet: Nodey (LN-1 navigation beacon on IM-1, Intuitive Machines) ----
+            new MissionMoment("nodey-hello", "ANY", "IM-1 Mission",
+                    "Meet Nodey",
+                    "Nodey is based on Lunar Node-1 (LN-1), a navigation beacon NASA flew on IM-1. "
+                            + "Its job: help explorers know exactly where they are on the Moon.",
+                    0.03, LN1_BEACON, Pets.NODEY),
+            new MissionMoment("nodey-dsn", "ANY", "IM-1 Mission",
+                    "Talking to Earth",
+                    "On the way to the Moon, LN-1 made three successful passes with NASA's Deep "
+                            + "Space Network, talking with ground stations on Earth.",
+                    0.25, IM1_PROGRESS, Pets.NODEY),
+            new MissionMoment("nodey-backup", "ANY", "IM-1 Mission",
+                    "Helping its lander",
+                    "LN-1 also gave critical backup to IM-1's own navigation system. "
+                            + "Nodey likes to help!",
+                    0.50, LN1_BEACON, Pets.NODEY),
+            new MissionMoment("nodey-beacon", "ANY", "IM-1 Mission",
+                    "A beacon on the Moon",
+                    "For 30 minutes in total in February 2024, NASA lit a navigation beacon on the "
+                            + "Moon with LN-1, testing a system that could guide future explorers.",
+                    0.75, LN1_BEACON, Pets.NODEY)
     );
 
     private MissionMoments() {}

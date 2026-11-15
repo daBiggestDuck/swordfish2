@@ -6,9 +6,11 @@ with a Pet Passport that cites NASA.
 
 ## The player's path through the site
 
-1. **Adopt a pet.** The player picks a pet (a real lander) and optionally names it.
-   - Ghost is based on Firefly's Blue Ghost Mission 1 (landed Mar. 2, 2025).
-   - Luna is based on Blue Origin's Blue Moon Mark 1 (a planned delivery).
+1. **Adopt a pet.** The player picks one of four pets, one per real CLPS mission, and can name it.
+   - Ghost: Firefly's Blue Ghost Mission 1 (landed Mar. 2, 2025). Ariha.
+   - Luna: Blue Origin's Blue Moon Mark 1 (a planned delivery). Ariha.
+   - Triddy: TRIDENT, the PRIME-1 ice drill on IM-2 (Mons Mouton). Pranav.
+   - Nodey: LN-1, the navigation beacon on IM-1 (Malapert A). Pranav.
    - Choosing a pet preselects its home landing site; the player can change it.
 2. **Pick a landing site.** Mare Crisium, Malapert A, Mons Mouton, Reiner Gamma or Shackleton
    Connecting Ridge. The site changes the stories and the sunlight the pet gets.
@@ -44,7 +46,7 @@ time, and remembers what was shown so the Passport can list it.
 
 ```
 browser (web/story/story.js -> story-client.js)
-   GET /api/pets, /api/missions, /api/sites  -> StoryServer (Java, port 8081)
+   GET /api/pets, /api/missions, /api/sites  -> StoryServer (Java, port 8082)
    GET /api/moments?site&pet&progress        -> StoryEngine + MissionMoments (+ data branch stories)
    GET /api/sky?site&date                    -> SkyModel (real ephemeris from data/, else simplified)
    GET /api/passport?site&pet&name&progress&science -> PetPassport
@@ -66,15 +68,16 @@ All story content and logic live in Java; the page only draws it.
 | Branch | What it has | How story fits |
 |---|---|---|
 | data (Wonil) | Java pipeline + JSON in `data/` (13 sites, 15 missions, 12 pop-up stories, JPL ephemeris, horizon profiles) | Story reads it automatically when `data/` exists; same site and mission ids |
-| engine (Aku) | Java game rules on its own server (port 8082 on v0): power, temperature, dust, data, health; events like `fainted`, `won`, `milestone` | `story-client.js` takes the engine's events (`fainted`/`won` end the story; `milestone`, `drilled`, `ping`, `dataSent` become Passport science) and its `earthDays` for days survived. Story allows calls from localhost pages, so the engine's page can use it |
-| map (Akshay) | Java `MapServer` on port 8080, globe in `web/` | Story moved to `web/story/` and port 8081 so the two never collide; engine uses 8082 on v0 |
+| engine (Aku) | Java game rules on its own server (port 8081): power, temperature, dust, data, health; events like `fainted`, `won`, `milestone` | `story-client.js` takes the engine's events (`fainted`/`won` end the story; `milestone`, `drilled`, `ping`, `dataSent` become Passport science) and its `earthDays` for days survived. Story allows calls from localhost pages, so the engine's page can use it |
+| map (Akshay) | Java `MapServer` on port 8080, globe in `web/` | Story moved to `web/story/` and port 8082 so the two never collide |
 | pets, ui | empty so far | ui drives the game loop and calls `story-client.js`; pets can replace the emoji faces |
 
 Open questions for the team (not changed by story):
 
-- **Pets:** the data branch defines 6 instrument pets (lister, lra, rac, msolo, scalpss,
-  planetvac). Story has 2 lander pets (Ghost = Blue Ghost 1, Luna = Blue Moon Mark 1), as asked.
-  Luna's two instruments are SCALPSS and LRA, which are also data-branch pets, so they can link.
+- **Pets:** story has the four pets the pets branch is drawing: Ghost (Blue Ghost 1) and Luna
+  (Blue Moon Mark 1) from Ariha, Triddy (`trident`) and Nodey (`ln-1`) from Pranav, using
+  Pranav's ids. The data branch's 6 instrument archetypes and the engine's LISTER/LRA/EDS
+  are different lists the team still needs to line up.
 - **Sites that disagree:** data puts IM-2 at SHACKLETON_RIDGE and Blue Moon Mark 1 at
   SOUTH_POLE_BO. Story uses MONS_MOUTON for IM-2 (NASA's IM-2 materials name Mons Mouton) and
   Shackleton Connecting Ridge for Blue Moon Mark 1 (NASA's CT-3 page). Worth agreeing on one.
@@ -103,4 +106,4 @@ git archive origin/Data data | tar -x -C /tmp   # get the data branch's JSON wit
 - **map (Akshay):** the site picker, using the same site ids.
 - **pets (Ariha):** real art in place of the emoji faces in `Pets.java`.
 - **ui:** styling in `web/story/story.css` and `web/story/index.html`; game loop calls `story-client.js`.
-- **Two more pets:** add a `Pet` in `Pets.java` and its pop-ups in `MissionMoments.java`.
+- **More pets:** add a `Pet` in `Pets.java` and its pop-ups in `MissionMoments.java` with the same id.

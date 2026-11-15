@@ -14,6 +14,7 @@ import java.util.List;
  * @param defaultSite   site to preselect, or null when the pet has no fixed home
  * @param sleepsAtNight true if the pet naps through the lunar night instead of shivering
  * @param science       lines for the Pet Passport's "science sent home"
+ * @param instrument    the real instrument the pet is, or null when the pet is the whole lander
  */
 public record Pet(
         String id,
@@ -24,17 +25,19 @@ public record Pet(
         String tagline,
         String defaultSite,
         boolean sleepsAtNight,
-        List<String> science) {
+        List<String> science,
+        String instrument) {
 
     /** Text for the Passport, e.g. "Blue Ghost Mission 1 (Firefly Aerospace)". */
     public String label(String missionName) {
-        return missionName + " (" + vendor + ")";
+        String m = missionName + " (" + vendor + ")";
+        return instrument == null ? m : instrument + " on " + m;
     }
 
     public String toJson() {
         return "{\"id\":" + Json.q(id) + ",\"name\":" + Json.q(name) + ",\"vendor\":" + Json.q(vendor)
                 + ",\"missionId\":" + Json.q(missionId) + ",\"face\":" + Json.q(face)
                 + ",\"tagline\":" + Json.q(tagline) + ",\"defaultSite\":" + Json.q(defaultSite)
-                + ",\"sleepsAtNight\":" + sleepsAtNight + "}";
+                + ",\"sleepsAtNight\":" + sleepsAtNight + ",\"instrument\":" + Json.q(instrument) + "}";
     }
 }
