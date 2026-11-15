@@ -1,11 +1,11 @@
 // Story client: the one thing other branches need to use the story.
 //
 // Used by the standalone story page (story.js) and meant for the engine/ui game loop. The engine
-// branch is a Java server (EngineServer, port 8082) whose /api/engine/tick returns
+// branch is a Java server (EngineServer, port 8082 on v0) whose /api/engine/tick returns
 // { events, state }; pass those straight in:
 //
 //   import { createStoryClient } from './story-client.js';
-//   const story = createStoryClient({ base: 'http://localhost:8081' });   // story server
+//   const story = createStoryClient({ base: 'http://localhost:8081' });   // story server (v0)
 //   story.setContext(state.site.id, petId);             // when the player picks a site and pet
 //   // after every engine tick or action:
 //   for (const m of await story.due(state.dayProgress)) showPopup(m);

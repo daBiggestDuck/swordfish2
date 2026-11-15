@@ -33,7 +33,7 @@ public class StoryServer {
     private static List<MissionMoment> moments = MissionMoments.ALL;
 
     public static void main(String[] args) throws IOException {
-        int port = 8081; // map uses 8080, engine uses 8082 (v0 showcase)
+        int port = 8081; // map uses 8080, engine uses 8082 on v0
         Path dataDir = Path.of("data");
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("--data") && i + 1 < args.length) dataDir = Path.of(args[++i]);
