@@ -962,8 +962,13 @@ async function confirmStagedDrop() {
   await loadSiteSky();
   renderSiteList();
   renderPetPickers();
+  // Face the drop pin so the on-globe 3D billboard is front-and-center (not clipped at the limb).
+  if (state.projection === '3d' && state.globe && state.placedPet) {
+    await state.globe.focusLatLon(state.placedPet.lat, state.placedPet.lon, { duration: 320 });
+  }
   renderMap();
   await refreshPlacedPetReaction(true);
+  positionSurfacePetLayer();
   window.dispatchEvent(new CustomEvent('payloadPets:siteSelected', { detail: { ...dropRecord, placedPet: state.placedPet } }));
   window.dispatchEvent(new CustomEvent('payloadpets:site-selected', { detail: { ...dropRecord, placedPet: state.placedPet } }));
   window.dispatchEvent(new CustomEvent('payloadPets:petDropped', { detail: state.placedPet }));
@@ -2637,8 +2642,16 @@ window.PayloadPetsMap = {
   renderSources();
   renderMissions();
   await loadSiteSky();
+  // Restore camera onto any previously dropped pet so the surface billboard isn't off-limb.
+  if (state.projection === '3d' && state.globe && state.placedPet && isDropPet(state.placedPet.petId)) {
+    await state.globe.focusLatLon(state.placedPet.lat, state.placedPet.lon, {
+      duration: 0,
+      animate: false,
+    });
+  }
   renderMap();
   await refreshPlacedPetReaction(true);
+  positionSurfacePetLayer();
   await refreshCompare();
 }
 

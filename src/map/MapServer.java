@@ -22,6 +22,9 @@ import java.util.Map;
 public class MapServer {
 
     private static final Path WEB_ROOT = Path.of("web").toAbsolutePath().normalize();
+    /** Repo root — needed so pet_moon.js can import ../demos/js-pets (outside web/). */
+    private static final Path REPO_ROOT = WEB_ROOT.getParent().normalize();
+    private static final Path DEMOS_ROOT = REPO_ROOT.resolve("demos").normalize();
 
     public static void main(String[] args) throws IOException {
         int port = args.length > 0 ? Integer.parseInt(args[0]) : 8080;
@@ -172,10 +175,20 @@ public class MapServer {
         } else if (path.equals("/story")) {
             path = "/story.html";
         }
-        Path file = WEB_ROOT.resolve(path.substring(1)).normalize();
-        if (!file.startsWith(WEB_ROOT) || !Files.isRegularFile(file)) {
-            send(ex, 404, "text/plain; charset=utf-8", "Not found".getBytes(StandardCharsets.UTF_8));
-            return;
+        Path file;
+        if (path.startsWith("/demos/")) {
+            // pet_moon.js imports ../demos/js-pets from /web → /demos/...
+            file = REPO_ROOT.resolve(path.substring(1)).normalize();
+            if (!file.startsWith(DEMOS_ROOT) || !Files.isRegularFile(file)) {
+                send(ex, 404, "text/plain; charset=utf-8", "Not found".getBytes(StandardCharsets.UTF_8));
+                return;
+            }
+        } else {
+            file = WEB_ROOT.resolve(path.substring(1)).normalize();
+            if (!file.startsWith(WEB_ROOT) || !Files.isRegularFile(file)) {
+                send(ex, 404, "text/plain; charset=utf-8", "Not found".getBytes(StandardCharsets.UTF_8));
+                return;
+            }
         }
         String name = file.getFileName().toString();
         String type = name.endsWith(".html") ? "text/html; charset=utf-8"

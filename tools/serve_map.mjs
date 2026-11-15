@@ -121,11 +121,23 @@ export function createMapRequestHandler(mapsRoot = DEFAULT_MAPS_ROOT, webRoot = 
     } else if (relPath === '/story') {
       relPath = '/story.html';
     }
-    const resolved = path.resolve(webRoot, '.' + relPath);
-    if (!resolved.startsWith(webRoot) || !fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) {
-      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end('Not found');
-      return;
+    // pet_moon.js imports ../demos/js-pets from /web → /demos/...
+    const demosRoot = path.join(REPO_ROOT, 'demos');
+    let resolved;
+    if (relPath.startsWith('/demos/')) {
+      resolved = path.resolve(REPO_ROOT, '.' + relPath);
+      if (!resolved.startsWith(demosRoot) || !fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) {
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Not found');
+        return;
+      }
+    } else {
+      resolved = path.resolve(webRoot, '.' + relPath);
+      if (!resolved.startsWith(webRoot) || !fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) {
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Not found');
+        return;
+      }
     }
     const ext = path.extname(resolved).toLowerCase();
     res.writeHead(200, {

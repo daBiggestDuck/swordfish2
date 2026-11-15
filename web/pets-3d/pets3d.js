@@ -398,10 +398,11 @@ function buildSceneKit({ surface, transparent, shadows }) {
   const scene = new THREE.Scene();
   scene.background = transparent ? null : new THREE.Color(0x050811);
 
-  const camera = new THREE.PerspectiveCamera(surface ? 32 : 38, 1, 0.1, 40);
+  const camera = new THREE.PerspectiveCamera(surface ? 28 : 38, 1, 0.1, 40);
   if (surface) {
-    camera.position.set(1.85, 1.35, 2.45);
-    camera.lookAt(0, 0.62, 0);
+    // Tight framing so the instrument fills the on-globe billboard.
+    camera.position.set(1.15, 0.95, 1.55);
+    camera.lookAt(0, 0.55, 0);
   } else {
     camera.position.set(2.6, 1.85, 3.4);
     camera.lookAt(0, 0.55, 0);
@@ -758,6 +759,7 @@ async function mountLivePet3D(id, moodOrPhase, el, options) {
       state.dust = [];
       state.tips = [];
       state.root = buildInstrument(state.petId, state);
+      if (surface) state.root.scale.setScalar(1.35);
       scene.add(state.root);
       modelWarmCache.add(state.petId);
       renderer.domElement.setAttribute(
@@ -805,11 +807,11 @@ async function mountLivePet3D(id, moodOrPhase, el, options) {
     const resize = () => {
       if (state.disposed) return;
       const rect = el.getBoundingClientRect();
-      const minSize = surface ? 72 : 160;
-      width = Math.max(minSize, Math.floor(rect.width) || (surface ? 96 : 320));
+      const minSize = surface ? 140 : 160;
+      width = Math.max(minSize, Math.floor(rect.width) || (surface ? 168 : 320));
       height = Math.max(
         minSize,
-        Math.floor(rect.height) || (surface ? 96 : 320),
+        Math.floor(rect.height) || (surface ? 168 : 320),
       );
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
@@ -1038,21 +1040,23 @@ function animateMood(root, state, t, reduceMotion) {
     return;
   }
   const mood = state.mood;
+  // Amplify motion on globe-surface billboards so bob/drill/shiver reads at a glance.
+  const amp = state.surface ? 1.85 : 1;
   if (mood === "happy") {
-    root.position.y = Math.sin(t * 2.2) * 0.04;
+    root.position.y = Math.sin(t * 2.2) * 0.04 * amp;
     root.rotation.z = 0;
   } else if (mood === "shivering") {
     root.position.y = 0;
-    root.rotation.z = Math.sin(t * 28) * 0.035;
-    root.position.x = Math.sin(t * 31) * 0.012;
+    root.rotation.z = Math.sin(t * 28) * 0.035 * amp;
+    root.position.x = Math.sin(t * 31) * 0.012 * amp;
   } else if (mood === "sleeping") {
     root.position.x = 0;
-    root.position.y = Math.sin(t * 1.1) * 0.018;
+    root.position.y = Math.sin(t * 1.1) * 0.018 * amp;
     root.rotation.z = 0;
   } else {
     root.position.x = 0;
-    root.position.y = 0.01 + Math.sin(t * 1.6) * 0.012;
-    root.rotation.z = Math.sin(t * 1.4) * 0.01;
+    root.position.y = 0.01 + Math.sin(t * 1.6) * 0.012 * amp;
+    root.rotation.z = Math.sin(t * 1.4) * 0.01 * amp;
   }
 
   for (const bit of state.animables) {

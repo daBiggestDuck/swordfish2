@@ -126,7 +126,7 @@ button:hover { filter: brightness(1.12); }
 
 /* On-globe surface pet — follows lat/lon screen projection in 3D mode only */
 .surface-pet-layer {
-  position: absolute; left: 0; top: 0; z-index: 3;
+  position: absolute; left: 0; top: 0; z-index: 5;
   width: 0; height: 0; pointer-events: none;
   transform: translate(-9999px, -9999px);
   will-change: transform;
@@ -134,22 +134,24 @@ button:hover { filter: brightness(1.12); }
 .surface-pet-layer[hidden] { display: none !important; }
 .surface-pet-halo {
   position: absolute; left: 50%; top: 100%;
-  width: 36px; height: 14px; margin-left: -18px; margin-top: -4px;
+  width: 72px; height: 26px; margin-left: -36px; margin-top: -6px;
   border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(255, 231, 173, .55), transparent 70%);
-  filter: blur(1px);
+  background: radial-gradient(ellipse at center, rgba(255, 231, 173, .85), rgba(255, 184, 77, .35) 45%, transparent 72%);
+  filter: blur(1.5px);
+  opacity: .95;
 }
 .surface-pet-art {
   position: absolute; left: 50%; bottom: 0;
-  width: 96px; height: 96px; margin-left: -48px; margin-bottom: 4px;
+  width: 168px; height: 168px; margin-left: -84px; margin-bottom: 2px;
   overflow: visible;
+  filter: drop-shadow(0 0 14px rgba(255, 231, 173, .75)) drop-shadow(0 6px 10px rgba(0, 0, 0, .55));
 }
 .surface-pet-art.pets3d-mount,
 .surface-pet-art .pets3d-mount {
-  width: 96px; height: 96px; background: transparent !important;
+  width: 168px; height: 168px; background: transparent !important;
 }
 .surface-pet-art .pets3d-canvas {
-  width: 96px !important; height: 96px !important;
+  width: 168px !important; height: 168px !important;
   display: block; background: transparent !important;
 }
 .surface-pet-art .pets3d-error-box,
@@ -177,10 +179,14 @@ button:hover { filter: brightness(1.12); }
 .surface-pet-art .pet-frame { width: 88px; height: auto; }
 .surface-pet-art.power-glow { filter: drop-shadow(0 0 10px rgba(255, 231, 173, .65)); }
 .surface-pet-art.signal-stress { filter: drop-shadow(0 0 10px rgba(255, 107, 107, .55)); }
-.surface-pet-layer.anim-bob .surface-pet-art { animation: petBob 1.6s ease-in-out infinite; }
-.surface-pet-layer.anim-shiver .surface-pet-art { animation: petShiver .14s linear infinite; }
-.surface-pet-layer.anim-sleep .surface-pet-art { animation: petSleep 2.8s ease-in-out infinite; }
-.surface-pet-layer.anim-huddle .surface-pet-art { animation: petHuddle 1.8s ease-in-out infinite; }
+.surface-pet-layer.anim-bob .surface-pet-art { animation: petBobSurface 1.35s ease-in-out infinite; }
+.surface-pet-layer.anim-shiver .surface-pet-art { animation: petShiverSurface .12s linear infinite; }
+.surface-pet-layer.anim-sleep .surface-pet-art { animation: petSleepSurface 2.4s ease-in-out infinite; }
+.surface-pet-layer.anim-huddle .surface-pet-art { animation: petHuddleSurface 1.55s ease-in-out infinite; }
+@keyframes petBobSurface { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@keyframes petShiverSurface { 0%, 100% { transform: translateX(0) rotate(0deg); } 50% { transform: translateX(4px) rotate(1.5deg); } }
+@keyframes petSleepSurface { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+@keyframes petHuddleSurface { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(5px) scale(0.96); } }
 
 .moon-pet-stage {
   position: absolute; left: 12px; bottom: 12px; z-index: 6;
