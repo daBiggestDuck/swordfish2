@@ -270,8 +270,8 @@ a:hover { text-decoration: underline; }
 }
 .local-panel .hero-prop { color: #c7d2e8; font-size: 0.92rem; }
 .local-panel .judge-tip {
-  background: rgba(98, 176, 255, 0.09);
-  border: 1px solid rgba(98, 176, 255, 0.38);
+  background: var(--panel-alt);
+  border: 0;
   border-radius: 8px;
   padding: 0.55rem 0.65rem;
   max-width: none;
@@ -296,9 +296,7 @@ a:hover { text-decoration: underline; }
 .toolbar label {
   display: grid;
   gap: 0.2rem;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 0.8rem;
   color: var(--muted);
 }
 .toolbar input,
@@ -318,6 +316,7 @@ a:hover { text-decoration: underline; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 0.65rem;
+  align-items: start; /* cards keep their own height — no blank bands */
 }
 
 .card {
@@ -332,9 +331,9 @@ a:hover { text-decoration: underline; }
 }
 .card .meta {
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   margin: 0 0 0.5rem;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 .card .tags {
   display: flex;
@@ -357,6 +356,76 @@ a:hover { text-decoration: underline; }
 .tag.status-failed { color: var(--bad); border-color: rgba(255, 107, 107, 0.4); background: rgba(255, 107, 107, 0.18); }
 .tag.status-planned { color: var(--accent); border-color: rgba(98, 176, 255, 0.4); background: rgba(98, 176, 255, 0.18); }
 .tag.status-cancelled { color: var(--muted); }
+
+/* ── Data / Missions: moon theme ──────────────────────────────────────
+   The section's device is the catalog's own geography: the header disc
+   plots every mission's target region (bottom = south pole, left = near
+   side, right = far side), and each mission card repeats the same flat
+   glyph at its own target. Flat colour only — the Moon is grey, the sky
+   is the panel ground, dots carry the single accent. */
+
+.data-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+.data-head-copy { flex: 1 1 420px; max-width: 72ch; }
+.data-head h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+.data-moon {
+  flex: 0 0 auto;
+  margin: 0;
+  text-align: center;
+}
+.data-moon svg { display: block; width: 118px; height: 118px; }
+.data-moon figcaption {
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--muted);
+  max-width: 150px;
+}
+@media (max-width: 720px) {
+  .data-moon { display: none; }
+}
+
+.stats-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.3rem;
+  margin: 0 0 0.9rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.stats-line .stat-pair { white-space: nowrap; }
+.stats-line .stat-pair + .stat-pair::before {
+  content: "·";
+  margin: 0 0.45rem;
+  color: var(--border);
+}
+.stats-line b {
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.moon-glyph {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.85rem;
+  width: 20px;
+  height: 20px;
+}
+.moon-glyph svg { display: block; width: 100%; height: 100%; }
+.card--reveal h3 { padding-right: 26px; }
 
 /* ── Mission cards with hover detail (Data / Missions, missions view) ──
    The card face and a detail layer occupy the same footprint: on hover /
@@ -425,7 +494,7 @@ a:hover { text-decoration: underline; }
 }
 .card--reveal .detail-summary {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   line-height: 1.5;
   color: var(--text);
 }
@@ -479,30 +548,10 @@ a:hover { text-decoration: underline; }
 }
 
 .stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 0.65rem;
+  display: block;
   margin-bottom: 1rem;
 }
-.stat {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 0.65rem 0.85rem;
-}
-.stat b {
-  display: block;
-  font-size: 1.22rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.stat span {
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
+.stats .stats-line { margin-bottom: 0; }
 
 .about-block {
   background: var(--panel);

@@ -126,10 +126,14 @@
     } else if (tab.kind === "data") {
       panel.innerHTML = `
         <div class="local-panel">
-          <div class="kicker">CLPS CATALOG · JUDGE PATH</div>
-          <h1>Data / Missions</h1>
-          <p class="judge-tip"><strong style="color:var(--text)">What to do here.</strong> This is the offline NASA CLPS spine — missions, south-pole sites, and instrument pets. Switch View to <em>Sites</em> (polar / Malapert / Mons Mouton) or <em>Pets</em> (Triddy = Power, Nodey = Signal), then return to Navigator / Map with the ids verified.</p>
-          <p class="lede">Baked facts from <code>data/catalog.json</code> (as-of stamped). Every pet maps to a flown or planned instrument — use this tab to prove provenance before the demo.</p>
+          <header class="data-head">
+            <div class="data-head-copy">
+              <h1>Data / Missions</h1>
+              <p class="judge-tip"><strong style="color:var(--text)">What to do here.</strong> This is the offline NASA CLPS spine — missions, south-pole sites, and instrument pets. Switch View to <em>Sites</em> (polar / Malapert / Mons Mouton) or <em>Pets</em> (Triddy = Power, Nodey = Signal), then return to Navigator / Map with the ids verified.</p>
+              <p class="lede">Baked facts from <code>data/catalog.json</code> (as-of stamped). Every pet maps to a flown or planned instrument — use this tab to prove provenance before the demo. Hover a mission card for its delivery summary and sources.</p>
+            </div>
+            <figure class="data-moon" id="data-moon" aria-label="Moon map of CLPS mission target regions"></figure>
+          </header>
           <div class="stats" id="data-stats"></div>
           <div class="toolbar">
             <label class="search-wrap" style="flex:1 1 200px">Search
@@ -328,11 +332,9 @@
     const stats = $("#data-stats");
 
     stats.innerHTML = `
-      <div class="stat"><b>${catalog.missions?.length ?? 0}</b><span>Missions</span></div>
-      <div class="stat"><b>${catalog.sites?.length ?? 0}</b><span>Sites</span></div>
-      <div class="stat"><b>${catalog.pets?.length ?? 0}</b><span>Pets</span></div>
-      <div class="stat"><b>${catalog.payloads?.length ?? 0}</b><span>Payloads</span></div>
-      <div class="stat"><b>${catalog.asOf || "—"}</b><span>Catalog as-of</span></div>`;
+      <p class="stats-line"><span class="stat-pair"><b>${catalog.missions?.length ?? 0}</b> missions</span><span class="stat-pair"><b>${catalog.sites?.length ?? 0}</b> sites</span><span class="stat-pair"><b>${catalog.pets?.length ?? 0}</b> pets</span><span class="stat-pair"><b>${catalog.payloads?.length ?? 0}</b> payloads</span><span class="stat-pair stats-asof">catalog as-of ${escapeHtml(catalog.asOf || "—")}</span></p>`;
+
+    renderDataMoon(catalog);
 
     let rows = [];
     if (view === "missions") {
@@ -359,8 +361,13 @@
               ? `${m.nasaPayloadCount} NASA payload${m.nasaPayloadCount === 1 ? "" : "s"}`
               : "",
           ].filter(Boolean).map(escapeHtml).join(" · ");
+          const regionDot = { polar: [60, 102], "near-side": [16, 60], "far-side": [104, 60] }[m.region];
+          const glyph = regionDot
+            ? `<span class="moon-glyph" aria-hidden="true"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="56" fill="#c9c6bd"/><circle cx="${regionDot[0]}" cy="${regionDot[1]}" r="11" fill="#44e2ff" stroke="#0b0e14" stroke-width="3"/></svg></span>`
+            : "";
           return `<article class="card card--reveal" tabindex="0">
             <div class="card-face">
+              ${glyph}
               <h3>${escapeHtml(m.name || m.title || m.id)}</h3>
               <p class="meta">${escapeHtml(m.provider || "")}${m.lander ? " · " + escapeHtml(m.lander) : ""}${
                 site ? " · " + escapeHtml(site.name || site.id) : m.siteId ? " · " + escapeHtml(m.siteId) : ""
@@ -434,6 +441,39 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  /**
+   * Moon theme, drawn from the catalog itself: a flat disc where each dot is
+   * the target region of a real mission in data/catalog.json. Position encodes
+   * region (bottom = south pole, left = near side, right = far side); the
+   * caption states the counts so the picture never claims more than the data.
+   */
+  function renderDataMoon(catalog) {
+    const moonEl = $("#data-moon");
+    if (!moonEl) return;
+    const counts = { polar: 0, "near-side": 0, "far-side": 0 };
+    for (const m of catalog.missions || []) if (counts[m.region] != null) counts[m.region]++;
+    const total = (catalog.missions || []).length;
+    const dot = (cx, cy, n, label) =>
+      n
+        ? `<g><circle cx="${cx}" cy="${cy}" r="4.5" fill="#44e2ff" stroke="#0b0e14" stroke-width="1.5"><title>${n} mission${n === 1 ? "" : "s"} — ${label}</title></circle></g>`
+        : "";
+    moonEl.innerHTML = `
+      <svg viewBox="0 0 120 120" width="118" height="118" role="img" aria-hidden="true">
+        <circle cx="60" cy="60" r="56" fill="#c9c6bd"/>
+        <g fill="#a9a69d">
+          <circle cx="45" cy="40" r="7"/><circle cx="75" cy="52" r="5"/>
+          <circle cx="52" cy="76" r="9"/><circle cx="84" cy="81" r="4"/>
+          <circle cx="34" cy="60" r="4"/><circle cx="68" cy="30" r="3.5"/>
+          <circle cx="28" cy="82" r="3"/>
+        </g>
+        <circle cx="46" cy="56" r="56" fill="#0b0e14" opacity="0.28"/>
+        ${dot(60, 109, counts.polar, "lunar south pole")}
+        ${dot(11, 60, counts["near-side"], "near side")}
+        ${dot(109, 60, counts["far-side"], "far side")}
+      </svg>
+      <figcaption>${counts.polar} of ${total} missions aim for the south pole${counts["far-side"] ? ` · ${counts["far-side"]} for the far side` : ""}</figcaption>`;
   }
 
   /**
