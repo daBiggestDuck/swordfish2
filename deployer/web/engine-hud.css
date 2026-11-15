@@ -1,0 +1,47 @@
+/* Engine data panel. The deployer adds it to the Story game page; the game's own files are unchanged.
+   It sits in the open top-left spot, under the day bar and opposite the mission log. */
+#engine-hud {
+  --eh-ink: #E6E9EE; --eh-muted: #94A3B8; --eh-accent: #F97316; --eh-edge: rgba(100,116,139,.38);
+  --eh-good: #45d48a; --eh-cold: #62b0ff; --eh-hot: #ff6b6b;
+  position: fixed; z-index: 2; left: 18px; top: 100px; width: min(250px, 40vw);
+  max-height: calc(100vh - 260px); overflow-y: auto; scrollbar-width: thin;
+  padding: 12px 14px; color: var(--eh-ink);
+  font: 12.5px/1.35 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: linear-gradient(180deg, rgba(31,41,55,.78), rgba(11,19,32,.74));
+  border: 1px solid var(--eh-edge); border-radius: 16px;
+  box-shadow: 0 1px 0 rgba(255,255,255,.12) inset, 0 18px 40px rgba(0,0,0,.45);
+  backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  transition: opacity .8s cubic-bezier(.16,1,.3,1), transform .8s cubic-bezier(.16,1,.3,1);
+}
+body.is-loading #engine-hud { opacity: 0; transform: translateY(-12px); }
+#engine-hud .eh-head { display: flex; align-items: center; gap: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--eh-accent); }
+#engine-hud .eh-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--eh-muted); flex: none; }
+#engine-hud.is-live .eh-dot { background: var(--eh-good); box-shadow: 0 0 8px var(--eh-good); }
+#engine-hud.is-down .eh-dot { background: var(--eh-hot); }
+#engine-hud .eh-toggle { margin-left: auto; background: none; border: 0; color: var(--eh-muted); font: inherit; cursor: pointer; padding: 0 2px; }
+#engine-hud .eh-toggle:hover { color: var(--eh-ink); }
+#engine-hud .eh-temp { display: flex; align-items: baseline; gap: 6px; margin: 6px 0 2px; }
+#engine-hud .eh-temp b { font: 700 1.9rem/1 "Space Grotesk", Inter, sans-serif; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+#engine-hud .eh-temp span { color: var(--eh-muted); font-size: .85rem; }
+#engine-hud .eh-status { font-size: .78rem; color: var(--eh-muted); margin-bottom: 8px; }
+#engine-hud .eh-status .ok { color: var(--eh-good); }
+#engine-hud .eh-status .cold { color: var(--eh-cold); }
+#engine-hud .eh-status .hot { color: var(--eh-hot); }
+#engine-hud .eh-meter { display: grid; grid-template-columns: 3.6rem 1fr 2.6rem; align-items: center; gap: 8px; margin: 4px 0; font-size: .8rem; }
+#engine-hud .eh-meter b, #engine-hud dd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 500; text-align: right; color: var(--eh-ink); font-variant-numeric: tabular-nums; }
+#engine-hud .eh-bar { height: 7px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+#engine-hud .eh-bar i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, #64748B, #D1D5DB); transition: width .6s linear; }
+#engine-hud .eh-bar.is-low i { background: linear-gradient(90deg, #c2410c, #F97316); }
+#engine-hud dl { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--eh-edge); font-size: .78rem; }
+#engine-hud dt { color: var(--eh-muted); }
+#engine-hud dd { margin: 0; }
+#engine-hud .eh-foot { margin-top: 8px; font-size: .66rem; color: var(--eh-muted); }
+#engine-hud .eh-msg { margin-top: 6px; font-size: .8rem; color: var(--eh-muted); }
+#engine-hud.is-collapsed .eh-body { display: none; }
+@media (max-width: 700px) {
+  /* the mission log hides on phones; keep the panel small so it never covers the drive controls */
+  #engine-hud { top: 130px; width: min(210px, calc(100vw - 36px)); max-height: 40vh; }
+  #engine-hud dl { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { #engine-hud, #engine-hud * { transition-duration: 0s !important; } }
