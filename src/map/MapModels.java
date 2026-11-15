@@ -99,12 +99,15 @@ public final class MapModels {
             m.put("lon", lon);
             m.put("region", region);
             m.put("elevationMeters", elevationMeters);
+            m.put("elevationM", elevationMeters);
             m.put("slopeDegrees", slopeDegrees);
+            m.put("slopeDegs", slopeDegrees);
             m.put("roughnessIndex", roughnessIndex);
             m.put("terrainSummary", terrainSummary);
             m.put("lightingCondition", lightingCondition);
             m.put("illuminationFlatPct", illuminationFlatPct);
             m.put("illuminationTerrainPct", illuminationTerrainPct);
+            m.put("illuminationPct", illuminationTerrainPct);
             m.put("illuminationMethod", illuminationMethod);
             m.put("illuminationSource", illuminationSource);
             m.put("earthVisibilityPct", earthVisibilityPct);
@@ -114,10 +117,16 @@ public final class MapModels {
             m.put("scienceGoal", scienceGoal);
             m.put("recommendedPayloadTypes", recommendedPayloadTypes);
             m.put("horizonProfileDeg", horizonProfileDeg);
+            m.put("horizonProfile", horizonProfileDeg);
             m.put("nearestPsrId", nearestPsrId);
             m.put("nearestPsrName", nearestPsrName);
             m.put("nearestPsrKm", nearestPsrKm);
             m.put("decayMultipliers", decayMultipliers);
+            Map<String, Double> care = new LinkedHashMap<>();
+            care.put("power", decayMultipliers.getOrDefault("power", 1.0));
+            care.put("warmth", decayMultipliers.getOrDefault("warmth", decayMultipliers.getOrDefault("oxygen", 1.0)));
+            care.put("signal", decayMultipliers.getOrDefault("signal", decayMultipliers.getOrDefault("happiness", 1.0)));
+            m.put("careMultipliers", care);
             m.put("quickmapUrl", quickmapUrl);
             m.put("trekUrl", trekUrl);
             m.put("sourceUrl", sourceUrl);
@@ -161,6 +170,10 @@ public final class MapModels {
             m.put("dependsOn", dependsOn);
             m.put("note", note);
             m.put("sourceUrl", sourceUrl);
+            m.put("duration", 60);
+            m.put("requires", Map.of("power", 25, "oxygen", 20));
+            m.put("cost", Map.of("power", -15, "oxygen", -10));
+            m.put("reward", Map.of("happiness", 20, "food", 10));
             return m;
         }
     }

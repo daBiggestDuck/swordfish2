@@ -18,22 +18,111 @@ public final class MapFilterService {
 
     private MapFilterService() {}
 
+    private static final Map<String, String> SITE_ALIASES = Map.ofEntries(
+            Map.entry("SHACKLETON_RIM", "SHACKLETON_RIM"),
+            Map.entry("SHACKLETON_RIDGE", "SHACKLETON_RIM"),
+            Map.entry("SHACKLETON-RIM", "SHACKLETON_RIM"),
+            Map.entry("SHACKLETON-RIDGE", "SHACKLETON_RIM"),
+            Map.entry("MARE_CRISIUM", "MARE_CRISIUM"),
+            Map.entry("MARE-CRISIUM", "MARE_CRISIUM"),
+            Map.entry("MALAPERT_A", "MALAPERT_A"),
+            Map.entry("MALAPERT-A", "MALAPERT_A"),
+            Map.entry("MONS_MOUTON", "MONS_MOUTON"),
+            Map.entry("MONS-MOUTON", "MONS_MOUTON"),
+            Map.entry("REINER_GAMMA", "REINER_GAMMA"),
+            Map.entry("REINER-GAMMA", "REINER_GAMMA"),
+            Map.entry("FAR_SIDE", "FAR_SIDE"),
+            Map.entry("SCHRODINGER_BASIN", "FAR_SIDE"),
+            Map.entry("SCHRODINGER-BASIN", "FAR_SIDE"),
+            Map.entry("LUNAR_FARSIDE", "FAR_SIDE"),
+            Map.entry("LUNAR-FARSIDE", "FAR_SIDE"),
+            Map.entry("NOBILE_RIM", "MONS_MOUTON"),
+            Map.entry("NOBILE_REGION", "MONS_MOUTON"),
+            Map.entry("NOBILE-REGION", "MONS_MOUTON"),
+            Map.entry("NOBILE", "MONS_MOUTON"),
+            Map.entry("SOUTH_POLE_BO", "SHACKLETON_RIM"),
+            Map.entry("SOUTH-POLE-BO", "SHACKLETON_RIM"),
+            Map.entry("SOUTH_POLE_BG4", "SHACKLETON_RIM"),
+            Map.entry("SOUTH-POLE-BG4", "SHACKLETON_RIM"),
+            Map.entry("SOUTH_POLE_NOVAD", "SHACKLETON_RIM"),
+            Map.entry("SOUTH-POLE-NOVAD", "SHACKLETON_RIM"),
+            Map.entry("SINUS_VISCOSITATIS", "SINUS_VISCOSITATIS"),
+            Map.entry("SINUS-VISCOSITATIS", "SINUS_VISCOSITATIS"),
+            Map.entry("GRUITHUISEN_DOMES", "GRUITHUISEN_DOMES"),
+            Map.entry("GRUITHUISEN-DOMES", "GRUITHUISEN_DOMES")
+    );
+
+    private static final Map<String, String> MISSION_ALIASES = Map.ofEntries(
+            Map.entry("to2-ab", "peregrine-1"),
+            Map.entry("to2-im", "im-1"),
+            Map.entry("to19d", "blue-ghost-1"),
+            Map.entry("to-prime1", "im-2"),
+            Map.entry("ct-3", "blue-moon-1"),
+            Map.entry("to20a", "griffin-1"),
+            Map.entry("cp-11", "im-3"),
+            Map.entry("cp-21", "blue-ghost-3"),
+            Map.entry("cs-3", "blue-ghost-2"),
+            Map.entry("cs-11", "draper-1"),
+            Map.entry("cp-22", "im-4")
+    );
+
+    private static String normalizeRegion(String raw) {
+        String upper = norm(raw);
+        if (upper.isEmpty() || "ALL".equals(upper)) return upper;
+        String canon = upper.replace('-', '_');
+        return switch (canon) {
+            case "NEARSIDE", "NEAR_SIDE" -> "NEAR_SIDE";
+            case "POLAR", "SOUTHPOLE", "SOUTH_POLE" -> "SOUTH_POLE";
+            case "FARSIDE", "FAR_SIDE" -> "FAR_SIDE";
+            default -> canon;
+        };
+    }
+
+    private static String normalizeStatus(String raw) {
+        String upper = norm(raw);
+        if (upper.isEmpty() || "ALL".equals(upper)) return upper;
+        String canon = upper.replace('-', '_').replace(' ', '_');
+        return switch (canon) {
+            case "FAILED", "NO_LANDING" -> "NO_LANDING";
+            case "LANDED" -> "LANDED";
+            case "PLANNED" -> "PLANNED";
+            default -> canon;
+        };
+    }
+
+    public static String normalizeSiteId(String raw) {
+        if (raw == null || raw.isBlank()) return "";
+        String upper = raw.trim().toUpperCase(Locale.ROOT);
+        if (SITE_ALIASES.containsKey(upper)) return SITE_ALIASES.get(upper);
+        String underscored = upper.replace('-', '_');
+        return SITE_ALIASES.getOrDefault(underscored, upper);
+    }
+
+    public static MapModels.LandingSite findSite(MapModels.DatasetBundle bundle, String siteId) {
+        String canon = normalizeSiteId(siteId);
+        if (canon.isEmpty()) return null;
+        return bundle.sites().stream()
+                .filter(s -> normalizeSiteId(s.id()).equals(canon) || s.id().equalsIgnoreCase(siteId.trim()))
+                .findFirst()
+                .orElse(null);
+    }
+
     public static List<MapModels.ClpsMission> filterMissions(MapModels.DatasetBundle bundle, Map<String, String> params) {
         String timeWindow = norm(params.get("timeWindow"));
         String year = norm(params.get("year"));
-        String region = norm(params.get("region"));
-        String status = norm(params.get("status"));
+        String region = normalizeRegion(params.get("region"));
+        String status = normalizeStatus(params.get("status"));
         String payloadType = norm(params.get("payloadType"));
-        String siteId = norm(params.getOrDefault("site", params.get("siteId")));
+        String siteId = normalizeSiteId(params.getOrDefault("site", params.get("siteId")));
         String q = normLower(params.get("q"));
 
         List<MapModels.ClpsMission> out = new ArrayList<>();
         for (MapModels.ClpsMission m : bundle.missions()) {
             if (!isAll(timeWindow) && !timeWindow.equals(norm(m.timeWindow()))) continue;
             if (!isAll(year) && !year.equals(String.valueOf(m.year()))) continue;
-            if (!isAll(region) && !region.equals(norm(m.region()))) continue;
-            if (!isAll(status) && !status.equals(norm(m.status()))) continue;
-            if (!isAll(siteId) && !siteId.equals(norm(m.siteId()))) continue;
+            if (!isAll(region) && !region.equals(normalizeRegion(m.region()))) continue;
+            if (!isAll(status) && !status.equals(normalizeStatus(m.status()))) continue;
+            if (!isAll(siteId) && !siteId.equals(normalizeSiteId(m.siteId()))) continue;
             if (!isAll(payloadType) && m.payloadTypes().stream().noneMatch(pt -> norm(pt).equals(payloadType))) continue;
             if (!q.isEmpty()) {
                 String haystack = (m.name() + " " + m.vendor() + " " + m.taskOrder() + " " + m.note() + " " + m.siteId())
@@ -48,9 +137,10 @@ public final class MapFilterService {
     public static List<MapModels.LandingSite> filterSites(MapModels.DatasetBundle bundle, Map<String, String> params) {
         String timeWindow = norm(params.get("timeWindow"));
         String year = norm(params.get("year"));
-        String region = norm(params.get("region"));
-        String status = norm(params.get("status"));
+        String region = normalizeRegion(params.get("region"));
+        String status = normalizeStatus(params.get("status"));
         String payloadType = norm(params.get("payloadType"));
+        String siteParam = normalizeSiteId(params.getOrDefault("site", params.get("siteId")));
         String q = normLower(params.get("q"));
 
         boolean hasMissionFilter = !isAll(timeWindow) || !isAll(year) || !isAll(status) || !isAll(payloadType);
@@ -58,15 +148,16 @@ public final class MapFilterService {
         if (hasMissionFilter) {
             for (MapModels.ClpsMission m : filterMissions(bundle, params)) {
                 if (m.siteId() != null && !m.siteId().isBlank()) {
-                    missionMatchedSites.add(norm(m.siteId()));
+                    missionMatchedSites.add(normalizeSiteId(m.siteId()));
                 }
             }
         }
 
         List<MapModels.LandingSite> out = new ArrayList<>();
         for (MapModels.LandingSite s : bundle.sites()) {
-            if (!isAll(region) && !region.equals(norm(s.region()))) continue;
-            if (hasMissionFilter && !missionMatchedSites.contains(norm(s.id()))) continue;
+            if (!isAll(region) && !region.equals(normalizeRegion(s.region()))) continue;
+            if (!isAll(siteParam) && !siteParam.equals(normalizeSiteId(s.id()))) continue;
+            if (hasMissionFilter && !missionMatchedSites.contains(normalizeSiteId(s.id()))) continue;
             if (!q.isEmpty()) {
                 String haystack = (s.id() + " " + s.name() + " " + s.terrainSummary() + " " + s.scienceGoal())
                         .toLowerCase(Locale.ROOT);
@@ -80,10 +171,8 @@ public final class MapFilterService {
     public static Map<String, Object> compareSites(MapModels.DatasetBundle bundle, List<String> siteIds) {
         List<MapModels.LandingSite> chosen = new ArrayList<>();
         for (String id : siteIds) {
-            bundle.sites().stream()
-                    .filter(s -> s.id().equalsIgnoreCase(id.trim()))
-                    .findFirst()
-                    .ifPresent(chosen::add);
+            MapModels.LandingSite found = findSite(bundle, id);
+            if (found != null) chosen.add(found);
         }
         if (chosen.isEmpty()) {
             for (int i = 0; i < Math.min(3, bundle.sites().size()); i++) {
@@ -125,8 +214,12 @@ public final class MapFilterService {
      * Given a failed mission id, discovers all downstream CLPS missions that depend on it.
      */
     public static Map<String, Object> simulateCascade(MapModels.DatasetBundle bundle, String failedMissionId) {
+        String raw = normLower(failedMissionId);
+        String aliased = MISSION_ALIASES.getOrDefault(raw, raw);
         MapModels.ClpsMission root = bundle.missions().stream()
-                .filter(m -> m.id().equalsIgnoreCase(failedMissionId))
+                .filter(m -> m.id().equalsIgnoreCase(raw)
+                        || m.id().equalsIgnoreCase(aliased)
+                        || (m.taskOrder() != null && m.taskOrder().equalsIgnoreCase(raw)))
                 .findFirst()
                 .orElse(null);
         if (root == null) {
@@ -170,10 +263,8 @@ public final class MapFilterService {
                                                       String siteId,
                                                       double maxMassKg,
                                                       double maxPowerW) {
-        MapModels.LandingSite site = bundle.sites().stream()
-                .filter(s -> s.id().equalsIgnoreCase(siteId))
-                .findFirst()
-                .orElse(bundle.sites().get(0));
+        MapModels.LandingSite foundSite = findSite(bundle, siteId);
+        MapModels.LandingSite site = foundSite != null ? foundSite : bundle.sites().get(0);
 
         boolean siteHasDte = site.earthVisibilityPct() > 10.0;
         List<Map<String, Object>> matches = new ArrayList<>();

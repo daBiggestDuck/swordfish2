@@ -41,6 +41,13 @@ This repository contains lunar cartography, terrain elevation, ephemeris, and Co
   - `https://pds-geosciences.wustl.edu/missions/clps/index.htm`
 - **Attribution**: *National Aeronautics and Space Administration (NASA) — Science Mission Directorate (SMD) CLPS Program & Planetary Data System (PDS) Geosciences Node at Washington University in St. Louis.*
 
+### 5. NASA Goddard Scientific Visualization Studio (SVS) — CGI Moon Kit (#4720)
+- **Portal URL**: `https://svs.gsfc.nasa.gov/4720`
+- **Global Raster Assets**:
+  - LROC WAC Color/Albedo Mosaic (`lroc_color_2k.jpg`, 2048×1024): `https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_2k.jpg` -> `web/assets/lroc_wac_global.jpg`
+  - LRO LOLA Global Digital Elevation Model (`ldem_3_8bit.jpg`, 1024×512): `https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/ldem_3_8bit.jpg` -> `web/assets/lola_dem_global.jpg`
+- **Attribution**: *Ernie Wright (USRA), Noah Petro (NASA/GSFC), LRO LROC Science Team (ASU), and LRO LOLA Science Team (NASA/GSFC/MIT).*
+
 ## Licensing & Usage Terms
 Under **17 U.S.C. § 105** and NASA Media Usage Guidelines, data and imagery produced by NASA (LROC, Moon Trek, LOLA, Diviner, JPL Horizons, and CLPS program pages) are in the **public domain** and not subject to copyright protection in the United States, provided appropriate credit is given and NASA endorsement is not implied.
 

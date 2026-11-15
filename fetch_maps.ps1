@@ -1,4 +1,4 @@
-﻿param(
+param(
     [switch]$OfflineValidate,
     [string]$StartTime = "2026-11-10",
     [string]$StopTime = "2026-12-09 12:00",
@@ -21,7 +21,9 @@ $requiredFiles = @(
     (Join-Path $rawDir "trek_clps_sites.json"),
     (Join-Path $rawDir "trek_south_pole_psr.json"),
     (Join-Path $rawDir "trek_lola_terrain_profiles.json"),
-    (Join-Path $rawDir "horizons_lunar_ephemeris.json")
+    (Join-Path $rawDir "horizons_lunar_ephemeris.json"),
+    (Join-Path $repoRoot "web\assets\lroc_wac_global.jpg"),
+    (Join-Path $repoRoot "web\assets\lola_dem_global.jpg")
 )
 
 if ($OfflineValidate) {
@@ -68,5 +70,16 @@ $quickMapUrl = "https://quickmap.lroc.im-ldi.com/?prjExtent=-2456929.2929293%2C-
 Write-Host "Fetching LROC QuickMap state snapshot: $quickMapUrl"
 Invoke-WebRequest -Uri $quickMapUrl -OutFile (Join-Path $rawDir "quickmap_lroc_snapshot.html") -UseBasicParsing
 
-Write-Host "Done. Raw NASA map responses stored in $rawDir; backend adapts new records automatically."
+# 5. Real NASA SVS CGI Moon Kit #4720 LROC WAC Mosaic & LRO LOLA Global DEM rasters for 3D globe texturing
+$assetsDir = Join-Path $repoRoot "web\assets"
+New-Item -ItemType Directory -Force -Path $assetsDir | Out-Null
+$wacGlobalUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_2k.jpg"
+Write-Host "Fetching NASA SVS LROC WAC Global Mosaic: $wacGlobalUrl"
+Invoke-WebRequest -Uri $wacGlobalUrl -OutFile (Join-Path $assetsDir "lroc_wac_global.jpg") -UseBasicParsing
+
+$lolaDemUrl = "https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/ldem_3_8bit.jpg"
+Write-Host "Fetching NASA SVS LRO LOLA Global DEM relief: $lolaDemUrl"
+Invoke-WebRequest -Uri $lolaDemUrl -OutFile (Join-Path $assetsDir "lola_dem_global.jpg") -UseBasicParsing
+
+Write-Host "Done. Raw NASA map responses stored in $rawDir and web rasters in $assetsDir; backend adapts new records automatically."
 
