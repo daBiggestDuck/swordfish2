@@ -1,7 +1,9 @@
 # CLPS Pet Game — landing screen
 
-The entry screen of the one-tab UI overhaul: a real WebGL Moon (the v1 map
-globe), a deep-space starfield, and the game pitch from the story section.
+The entry screen of the new game flow: a real WebGL Moon (the v1 map
+globe), a deep-space starfield, and the game pitch from the story
+section. Next up (separate work): map site selection and the 3D game,
+built on the engine and pets data.
 
 ## Stack
 
@@ -19,8 +21,7 @@ npm install
 npm run dev      # http://localhost:8768
 ```
 
-Start leads to the showcase shell's Story tab (`:8767` in dev, `../index.html`
-from a built app). Grab the sky to spin the Moon.
+Start is a placeholder until the map site-selection + 3D game screens land.
 
 ## Palette
 
