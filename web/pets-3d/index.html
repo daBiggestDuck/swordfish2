@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Payload Pets · 3D instruments</title>
+    <meta name="description" content="Procedural Three.js models of LISTER, Retro, EDS, Triddy, and Nodey.">
+    <link rel="stylesheet" href="styles.css">
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <header class="mast">
+      <p class="eyebrow">Payload Pets · 3D</p>
+      <h1>Instrument models</h1>
+      <p class="lede">
+        Catalog four: <strong>LISTER</strong> heat-flow drill,
+        <strong>Retro</strong> corner-cube reflector, <strong>EDS</strong> dust shield,
+        <strong>Nodey</strong> LN-1 beacon. <strong>Triddy</strong> (TRIDENT ice auger) stays
+        available for moon-drop. Mount with <code>renderPet3D(id, mood, el)</code>
+        or <code>window.PayloadPets3D</code>.
+      </p>
+    </header>
+    <main id="app"></main>
+    <section class="api-note">
+      <p><strong style="color:var(--text)">Drop sibling API</strong></p>
+      <pre>import { renderPet3D } from "/web/pets-3d/pets3d.js";
+
+const handle = renderPet3D("lister", "day", mountEl);
+handle.update("night");       // phases or moods
+handle.setPet("LRA");         // aliases: lra, retro, LRA
+handle.setSignal(90);         // Nodey antenna glow
+handle.dispose();</pre>
+      <p>
+        Also: <code>CANONICAL_PETS</code>, <code>resolvePetId</code>, <code>resolveMood</code>
+        from <code>api.js</code> (no WebGL). SVG moods remain in <code>demos/js-pets</code>.
+      </p>
+    </section>
+    <script type="module" src="./viewer.js"></script>
+  </body>
+</html>
