@@ -1,16 +1,21 @@
-# Java build artifacts
-build/
-
-# OS
+# From Data tip
+out/
+*.class
 .DS_Store
-Thumbs.db
+data/*.json
+!data/sites.json
+!data/missions.json
+!data/payloads.json
+!data/pet-archetypes.json
+!data/ephemeris.json
+!data/horizons/
+!data/game-missions.json
+!data/mission-events.json
 
-# IDE
-.idea/
-*.iml
-.vscode/
-*.swp
-
-# Node (future)
+# From engine tip
 node_modules/
-dist/
+
+# Staging export folders (assembler inputs; not part of product tree)
+from-Data/
+from-engine/
+STAGING.md
