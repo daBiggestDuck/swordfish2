@@ -1,0 +1,299 @@
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.datatransfer.StringSelection;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+
+/** A small, self-contained Swing game about real lunar missions. */
+public class Pet_1 extends JFrame {
+	private static final Color INK = new Color(31, 47, 70);
+	private static final Color BLUE = new Color(39, 103, 166);
+	private static final Color PALE = new Color(238, 246, 251);
+	private static final String[] SITES = {"Mare Crisium", "Mons Mouton", "Malapert A", "Reiner Gamma"};
+	private static final String[] MISSIONS = {"Blue Ghost 1", "Blue Moon Mark 1"};
+	private final JComboBox<String> missionBox = new JComboBox<>(MISSIONS);
+	private final JComboBox<String> siteBox = new JComboBox<>(SITES);
+	private final JComboBox<String> compareBox = new JComboBox<>(SITES);
+	private final JSpinner datePicker = new JSpinner(new SpinnerDateModel());
+	private final JLabel powerLabel = new JLabel();
+	private final JLabel warmthLabel = new JLabel();
+	private final JLabel signalLabel = new JLabel();
+	private final JLabel dayLabel = new JLabel("Lunar day: 0 / 14");
+	private final JLabel statusLabel = new JLabel("Choose a home, then press Play.");
+	private final JLabel planLabel = new JLabel();
+	private final PetScene scene = new PetScene();
+	private final JProgressBar powerBar = meter();
+	private final JProgressBar warmthBar = meter();
+	private final JProgressBar signalBar = meter();
+	private final Timer timer;
+	private final List<String> stories = new ArrayList<>();
+	private int power = 76, warmth = 68, signal = 54, science = 0;
+	private double elapsed;
+	private boolean running, popupOpen, heaterOn;
+	private int eventIndex;
+	private final double[] eventDays = {2.0, 5.2, 8.7, 11.4};
+	private final String[] eventTitles = {
+		"Blue Ghost 1: a lunar sunset", "IM-1: a tilted landing", "LuGRE: finding the way", "Blue Ghost 1: science at work"
+	};
+	private final String[] eventText = {
+		"Firefly Aerospace's Blue Ghost Mission 1 captured a view of sunset from the Moon. The changing light is beautiful—and a real challenge for solar-powered landers.",
+		"Intuitive Machines' IM-1 lander, Odysseus, came to rest tilted after landing. Mission teams adapted operations to the vehicle's position.",
+		"The Lunar GNSS Receiver Experiment (LuGRE) demonstrated reception of navigation signals far beyond Earth orbit, including at the lunar surface.",
+		"Blue Ghost carried NASA payloads including LEXI, LMS, and the Next Generation Lunar Retroreflector. Each one studies a different part of the Moon environment."
+	};
+	private final String[] eventUrls = {
+		"https://www.nasa.gov/missions/clps/firefly-aerospace/", "https://www.nasa.gov/missions/artemis/clps/nasas-intuitive-machines-moon-landing/",
+		"https://nasa.gov/", "https://www.nasa.gov/missions/clps/firefly-aerospace/"
+	};
+
+	public Pet_1() {
+		super("Moon Pals — lunar lander pets");
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setMinimumSize(new Dimension(900, 690));
+		setSize(1100, 790);
+		setLocationRelativeTo(null);
+		datePicker.setEditor(new JSpinner.DateEditor(datePicker, "MMM d, yyyy"));
+		timer = new Timer(100, e -> advance());
+		setContentPane(build());
+		updateAll();
+	}
+
+	private JPanel build() {
+		JPanel root = new JPanel(new BorderLayout(12, 12));
+		root.setBackground(PALE);
+		root.setBorder(new EmptyBorder(14, 18, 14, 18));
+		JPanel header = new JPanel(new BorderLayout());
+		header.setOpaque(false);
+		JLabel title = new JLabel("MOON PALS  ☾");
+		title.setFont(new Font("SansSerif", Font.BOLD, 25));
+		title.setForeground(INK);
+		JLabel subtitle = new JLabel("Two real CLPS missions. One very lunar day.");
+		subtitle.setForeground(new Color(91, 112, 132));
+		header.add(title, BorderLayout.NORTH);
+		header.add(subtitle, BorderLayout.SOUTH);
+		root.add(header, BorderLayout.NORTH);
+
+		JTabbedPane tabs = new JTabbedPane();
+		tabs.addTab("Pet & mission", dashboard());
+		tabs.addTab("Moon Pen Pals", postcardPage());
+		tabs.addTab("Night Nightlight", nightPage());
+		tabs.addTab("Recipe Box", recipePage());
+		tabs.addTab("Lost & Found", lostPage());
+		root.add(tabs, BorderLayout.CENTER);
+		return root;
+	}
+
+	private JPanel dashboard() {
+		JPanel page = new JPanel(new BorderLayout(12, 10));
+		page.setOpaque(false);
+		JPanel controls = card();
+		controls.setLayout(new FlowLayout(FlowLayout.LEFT, 9, 8));
+		controls.add(new JLabel("Mission")); controls.add(missionBox);
+		controls.add(new JLabel("Home")); controls.add(siteBox);
+		controls.add(new JLabel("Landing date")); controls.add(datePicker);
+		JButton best = button("Best landing date");
+		best.addActionListener(e -> findBestDate()); controls.add(best);
+		JButton play = button("▶  Play / Pause");
+		play.addActionListener(e -> togglePlay()); controls.add(play);
+		missionBox.addActionListener(e -> { scene.repaint(); updateAll(); });
+		siteBox.addActionListener(e -> updateAll());
+		datePicker.addChangeListener(e -> updatePlan());
+		page.add(controls, BorderLayout.NORTH);
+
+		JPanel center = new JPanel(new GridLayout(1, 2, 12, 0));
+		center.setOpaque(false);
+		JPanel petCard = card(); petCard.setLayout(new BorderLayout(6, 8));
+		scene.setPreferredSize(new Dimension(400, 290));
+		petCard.add(scene, BorderLayout.CENTER);
+		JPanel status = new JPanel(new BorderLayout(5, 5)); status.setOpaque(false);
+		JPanel meters = new JPanel(new GridLayout(3, 2, 8, 5)); meters.setOpaque(false);
+		meters.add(new JLabel("Power ☀")); meters.add(powerBar);
+		meters.add(new JLabel("Warmth 🌡")); meters.add(warmthBar);
+		meters.add(new JLabel("Signal 📡")); meters.add(signalBar);
+		status.add(meters, BorderLayout.CENTER);
+		JPanel care = new JPanel(new FlowLayout(FlowLayout.LEFT, 7, 0)); care.setOpaque(false);
+		JButton tilt = button("Tilt panels ☀"); tilt.addActionListener(e -> { power = Math.min(100, power + 14); statusLabel.setText("Panels tilted toward the Sun."); updateAll(); });
+		JButton heater = button("Heater: " + (heaterOn ? "ON" : "OFF")); heater.addActionListener(e -> { heaterOn = !heaterOn; heater.setText("Heater: " + (heaterOn ? "ON" : "OFF")); statusLabel.setText(heaterOn ? "Heater on; it uses power." : "Heater off."); });
+		JButton link = button("Wait for Earth link 📡"); link.addActionListener(e -> { signal = Math.min(100, signal + 18); statusLabel.setText("Earth is in view; signal improved."); updateAll(); });
+		care.add(tilt); care.add(heater); care.add(link);
+		status.add(care, BorderLayout.SOUTH);
+		petCard.add(status, BorderLayout.SOUTH);
+		center.add(petCard);
+
+		JPanel right = card(); right.setLayout(new BoxLayout(right, BoxLayout.Y_AXIS));
+		JLabel planTitle = new JLabel("SUN & EARTH PLANNER"); planTitle.setFont(new Font("SansSerif", Font.BOLD, 15)); planTitle.setForeground(BLUE);
+		right.add(planTitle); right.add(Box.createVerticalStrut(8));
+		planLabel.setVerticalAlignment(SwingConstants.TOP); planLabel.setForeground(INK);
+		right.add(planLabel); right.add(Box.createVerticalStrut(14));
+		right.add(new JLabel("Compare with a second site:"));
+		right.add(compareBox); compareBox.addActionListener(e -> updatePlan());
+		right.add(Box.createVerticalStrut(8));
+		JLabel caveat = new JLabel("Planning estimates only—not mission navigation data.");
+		caveat.setFont(new Font("SansSerif", Font.ITALIC, 11)); caveat.setForeground(Color.GRAY); right.add(caveat);
+		right.add(Box.createVerticalGlue());
+		JLabel day = new JLabel("LUNAR DAY"); day.setForeground(BLUE); day.setFont(new Font("SansSerif", Font.BOLD, 14)); right.add(day);
+		dayLabel.setFont(new Font("SansSerif", Font.BOLD, 19)); dayLabel.setForeground(INK); right.add(dayLabel);
+		right.add(statusLabel); right.add(Box.createVerticalStrut(10));
+		JButton passport = button("Get Pet Passport ✨"); passport.addActionListener(e -> showPassport()); right.add(passport);
+		center.add(right);
+		page.add(center, BorderLayout.CENTER);
+		return page;
+	}
+
+	private JPanel postcardPage() {
+		JPanel p = card(); p.setLayout(new BorderLayout(10, 10));
+		p.add(heading("MOON PEN PALS", "Write a postcard; a CLPS lander carries your words to its lunar home."), BorderLayout.NORTH);
+		JTextArea note = new JTextArea("Dear Moon,\n\n", 7, 45); note.setLineWrap(true); note.setWrapStyleWord(true);
+		p.add(new JScrollPane(note), BorderLayout.CENTER);
+		JPanel bottom = new JPanel(new FlowLayout(FlowLayout.LEFT)); bottom.setOpaque(false);
+		JComboBox<String> site = new JComboBox<>(SITES); JButton deliver = button("Send with " + missionBox.getSelectedItem());
+		missionBox.addActionListener(e -> deliver.setText("Send with " + missionBox.getSelectedItem()));
+		JLabel result = new JLabel("Pick a site and send your note.");
+		deliver.addActionListener(e -> result.setText("📬 " + missionBox.getSelectedItem() + " is carrying your postcard to " + site.getSelectedItem() + " (a playful mission postcard)."));
+		bottom.add(new JLabel("Destination:")); bottom.add(site); bottom.add(deliver); bottom.add(result); p.add(bottom, BorderLayout.SOUTH);
+		return p;
+	}
+
+	private JPanel nightPage() {
+		JPanel p = card(); p.setLayout(new BorderLayout(10, 10));
+		p.add(heading("LUNAR NIGHT NIGHTLIGHT", "A bedtime story about a little lander facing the long lunar night."), BorderLayout.NORTH);
+		JTextArea story = new JTextArea("When the Sun slipped below the horizon, the little lander tucked its panels in and watched the stars. Its powered instruments rested, while the tiny retroreflector waited quietly—no power required.\n\nThe night was long, but morning would come again.");
+		story.setEditable(false); story.setLineWrap(true); story.setWrapStyleWord(true); story.setFont(new Font("Serif", Font.PLAIN, 20)); story.setBackground(new Color(20, 31, 56)); story.setForeground(new Color(235, 239, 255)); story.setBorder(new EmptyBorder(28, 30, 28, 30));
+		p.add(story, BorderLayout.CENTER); return p;
+	}
+
+	private JPanel recipePage() {
+		JPanel p = card(); p.setLayout(new BorderLayout(10, 10));
+		p.add(heading("REGOLITH RECIPE BOX", "Mix payload mass, power, and a landing site into a mission idea."), BorderLayout.NORTH);
+		JPanel form = new JPanel(new GridLayout(0, 2, 12, 12)); form.setOpaque(false);
+		JSpinner mass = new JSpinner(new SpinnerNumberModel(8, 1, 100, 1)); JSpinner watts = new JSpinner(new SpinnerNumberModel(12, 1, 100, 1)); JComboBox<String> site = new JComboBox<>(SITES);
+		form.add(new JLabel("Payload mass (kg)")); form.add(mass); form.add(new JLabel("Power budget (W)")); form.add(watts); form.add(new JLabel("Landing site")); form.add(site);
+		JButton cook = button("Cook a mission 🍲"); JLabel output = new JLabel("Your recipe will appear here.");
+		cook.addActionListener(e -> output.setText("Recipe: " + mass.getValue() + " kg payload, " + watts.getValue() + " W at " + site.getSelectedItem() + ". Check real mission requirements before treating this as a design."));
+		JPanel wrap = new JPanel(new BorderLayout(8, 12)); wrap.setOpaque(false); wrap.add(form, BorderLayout.NORTH); wrap.add(cook, BorderLayout.CENTER); wrap.add(output, BorderLayout.SOUTH); p.add(wrap, BorderLayout.CENTER); return p;
+	}
+
+	private JPanel lostPage() {
+		JPanel p = card(); p.setLayout(new BorderLayout(8, 8));
+		p.add(heading("LUNAR LOST & FOUND", "A cheerful help desk for real hardware and science on the Moon."), BorderLayout.NORTH);
+		String[] items = {"Blue Ghost 1 — Firefly Aerospace lander; carried NASA CLPS payloads.", "LuGRE — lunar GNSS receiver experiment, flown on Blue Ghost 1.", "LEXI — imager studying Earth's magnetosphere from the lunar surface.", "NGLR — a passive lunar retroreflector; it needs no power to reflect laser light.", "Odysseus (IM-1) — Intuitive Machines lander that came to rest tilted."};
+		JList<String> list = new JList<>(items); list.setFont(new Font("SansSerif", Font.PLAIN, 15)); list.setFixedCellHeight(42); p.add(new JScrollPane(list), BorderLayout.CENTER);
+		JButton source = button("Open NASA CLPS page"); source.addActionListener(e -> openUrl("https://www.nasa.gov/commercial-lunar-payload-services/")); p.add(source, BorderLayout.SOUTH); return p;
+	}
+
+	private JPanel heading(String title, String sub) {
+		JPanel h = new JPanel(new GridLayout(0, 1, 0, 4)); h.setOpaque(false);
+		JLabel t = new JLabel(title); t.setFont(new Font("SansSerif", Font.BOLD, 17)); t.setForeground(BLUE); h.add(t);
+		JLabel s = new JLabel(sub); s.setForeground(INK); h.add(s); return h;
+	}
+
+	private JPanel card() { JPanel p = new JPanel(); p.setBackground(Color.WHITE); p.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(216, 228, 237)), new EmptyBorder(12, 12, 12, 12))); return p; }
+	private JButton button(String text) { JButton b = new JButton(text); b.setFocusPainted(false); return b; }
+	private JProgressBar meter() { JProgressBar b = new JProgressBar(0, 100); b.setStringPainted(true); b.setPreferredSize(new Dimension(160, 18)); return b; }
+
+	private void updateAll() {
+		powerLabel.setText("" + power); warmthLabel.setText("" + warmth); signalLabel.setText("" + signal);
+		powerBar.setValue(power); powerBar.setString(power + "%"); warmthBar.setValue(warmth); warmthBar.setString(warmth + "%"); signalBar.setValue(signal); signalBar.setString(signal + "%");
+		dayLabel.setText("Lunar day: " + Math.min(14, (int) elapsed) + " / 14");
+		scene.repaint(); updatePlan();
+	}
+
+	private void updatePlan() {
+		String home = (String) siteBox.getSelectedItem(); if (home == null) return;
+		LocalDate date = ((java.util.Date) datePicker.getValue()).toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+		int estimate = estimatePower(home, date);
+		String earth = ((date.getDayOfYear() + home.length()) % 5 == 0) ? "Not visible (estimate)" : "Visible for a radio link (estimate)";
+		StringBuilder text = new StringBuilder("<html><b>Home: ").append(home).append("</b><br>Landing date: ").append(date.format(DateTimeFormatter.MEDIUM)).append("<br>☀ Estimated solar opportunity: ").append(estimate).append("%<br>🌍 Earth: ").append(earth).append("<br><br><b>Sun & Earth at the site</b><br>Sun height: ").append(10 + estimate / 3).append("° above horizon (illustrative)<br>Horizon and terrain affect real visibility.");
+		String compare = (String) compareBox.getSelectedItem();
+		if (compare != null && !compare.equals(home)) text.append("<br><br><b>Side-by-side: ").append(compare).append("</b><br>Solar opportunity: ").append(estimatePower(compare, date)).append("%<br>Earth visibility: planning estimate");
+		planLabel.setText(text.append("</html>").toString());
+	}
+
+	private int estimatePower(String site, LocalDate date) {
+		int offset = site.equals("Mare Crisium") ? 0 : site.equals("Mons Mouton") ? 13 : site.equals("Malapert A") ? 8 : 18;
+		return Math.max(12, Math.min(96, 58 + (int) (18 * Math.sin((date.getDayOfYear() + offset) * Math.PI / 182.5)) + (site.length() % 9)));
+	}
+
+	private void findBestDate() {
+		String site = (String) siteBox.getSelectedItem(); LocalDate best = LocalDate.now(); int score = -1;
+		for (int i = 0; i < 365; i++) { LocalDate d = LocalDate.now().plusDays(i); int s = estimatePower(site, d); if (s > score) { score = s; best = d; } }
+		datePicker.setValue(java.util.Date.from(best.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()));
+		statusLabel.setText("Best estimated solar opportunity in the next year: " + best + "."); updatePlan();
+	}
+
+	private void togglePlay() {
+		if (elapsed >= 14) { elapsed = 0; eventIndex = 0; stories.clear(); science = 0; power = 76; warmth = 68; signal = 54; }
+		running = !running; if (running) timer.start(); else timer.stop();
+		statusLabel.setText(running ? "Lunar day in progress — 14 days in about 25 seconds." : "Simulation paused.");
+	}
+
+	private void advance() {
+		if (!running || popupOpen) return;
+		elapsed += .056;
+		power = Math.max(0, power - 1);
+		if (heaterOn && power > 0) { warmth = Math.min(100, warmth + 1); power = Math.max(0, power - 1); }
+		else warmth = Math.max(5, warmth - (elapsed > 9 ? 2 : 1));
+		signal = Math.max(10, signal - (elapsed > 10 ? 2 : 1));
+		if (eventIndex < eventDays.length && elapsed >= eventDays[eventIndex]) showMissionMoment(eventIndex++);
+		if (elapsed >= 14) { elapsed = 14; running = false; timer.stop(); statusLabel.setText("Lunar day complete! Your pet earned a passport."); showPassport(); }
+		updateAll();
+	}
+
+	private void showMissionMoment(int index) {
+		running = false; popupOpen = true; timer.stop();
+		String title = eventTitles[index]; stories.add(title);
+		JTextArea body = new JTextArea(eventText[index] + "\n\nNASA source: " + eventUrls[index]); body.setWrapStyleWord(true); body.setLineWrap(true); body.setEditable(false); body.setOpaque(false); body.setColumns(40); body.setRows(5);
+		JPanel content = new JPanel(new BorderLayout(5, 8)); content.add(body, BorderLayout.CENTER);
+		JButton source = button("Open NASA source"); source.addActionListener(e -> openUrl(eventUrls[index])); content.add(source, BorderLayout.SOUTH);
+		JOptionPane.showMessageDialog(this, content, "Mission moment • " + title, JOptionPane.INFORMATION_MESSAGE);
+		popupOpen = false;
+		if (elapsed < 14) { running = true; timer.start(); }
+	}
+
+	private void showPassport() {
+		String mission = (String) missionBox.getSelectedItem(), site = (String) siteBox.getSelectedItem();
+		String source = mission.startsWith("Blue Ghost") ? "https://www.nasa.gov/missions/clps/firefly-aerospace/" : "https://www.nasa.gov/commercial-lunar-payload-services/";
+		String met = mission.startsWith("Blue Ghost") ? "LuGRE, LEXI, LMS, NGLR and more" : "Blue Moon Mark 1 mission profile";
+		String passport = "MOON PAL PET PASSPORT\nPet: " + mission + " lander\nMission: " + mission + "\nHome: " + site + "\nDays survived: " + (int) elapsed + " / 14\nRating: " + (elapsed >= 14 ? "Lunar legend ★★★★★" : elapsed >= 7 ? "Brave explorer ★★★★☆" : "Moon trainee ★★★☆☆") + "\nScience sent home: " + science + " notes; " + met + "\nStories met: " + (stories.isEmpty() ? "No mission moments yet" : String.join(", ", stories)) + "\nNASA: " + source;
+		JTextArea text = new JTextArea(passport, 12, 44); text.setEditable(false); text.setLineWrap(true); text.setWrapStyleWord(true);
+		JButton copy = button("Copy passport"); copy.addActionListener(e -> { Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(passport), null); copy.setText("Copied ✓"); });
+		JButton link = button("Open NASA source"); link.addActionListener(e -> openUrl(source));
+		JPanel panel = new JPanel(new BorderLayout(8, 8)); panel.add(new JScrollPane(text), BorderLayout.CENTER); JPanel buttons = new JPanel(); buttons.add(copy); buttons.add(link); panel.add(buttons, BorderLayout.SOUTH);
+		JOptionPane.showMessageDialog(this, panel, "Your Pet Passport", JOptionPane.PLAIN_MESSAGE);
+	}
+
+	private void openUrl(String address) { try { if (Desktop.isDesktopSupported()) Desktop.getDesktop().browse(new java.net.URI(address)); } catch (Exception ex) { statusLabel.setText("Could not open link: " + address); } }
+
+	private class PetScene extends JPanel {
+		PetScene() { setBackground(new Color(15, 27, 49)); }
+		protected void paintComponent(Graphics raw) {
+			super.paintComponent(raw); Graphics2D g = (Graphics2D) raw.create(); g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			int w = getWidth(), h = getHeight();
+			g.setColor(new Color(235, 240, 255)); for (int i = 0; i < 34; i++) { int x = (i * 73 + 19) % Math.max(1, w); int y = (i * 47 + 13) % Math.max(1, h / 2); g.fillOval(x, y, i % 4 == 0 ? 3 : 2, i % 4 == 0 ? 3 : 2); }
+			g.setColor(new Color(235, 195, 115)); g.fillOval(w - 76, 35, 40, 40);
+			g.setColor(new Color(142, 135, 131)); g.fillOval(-30, h - 88, w + 60, 130);
+			g.setColor(new Color(116, 111, 110)); for (int i = 0; i < 12; i++) g.fillOval((i * 61) % Math.max(1, w), h - 42 - (i % 3) * 9, 15 + i % 15, 5);
+			int cx = w / 2, cy = h - 110;
+			// Blue Ghost and Blue Moon are shown as distinct, friendly lander mascots.
+			g.setColor(new Color(45, 122, 176)); g.fillRoundRect(cx - 32, cy - 35, 64, 55, 12, 12);
+			if (missionBox.getSelectedIndex() == 0) {
+				g.setColor(new Color(60, 151, 196)); g.fillRect(cx - 100, cy - 18, 59, 30); g.fillRect(cx + 41, cy - 18, 59, 30);
+				g.setColor(new Color(115, 202, 224)); for (int x = cx - 94; x < cx - 43; x += 13) g.drawLine(x, cy - 17, x, cy + 10); for (int x = cx + 47; x < cx + 99; x += 13) g.drawLine(x, cy - 17, x, cy + 10);
+			} else {
+				g.setColor(new Color(124, 183, 205)); g.fillRoundRect(cx - 84, cy - 24, 42, 37, 8, 8); g.fillRoundRect(cx + 42, cy - 24, 42, 37, 8, 8);
+				g.setColor(new Color(166, 217, 226)); g.fillOval(cx - 18, cy - 52, 36, 27);
+			}
+			g.setColor(new Color(227, 239, 244)); g.fillOval(cx - 17, cy - 21, 10, 12); g.fillOval(cx + 7, cy - 21, 10, 12);
+			g.setColor(INK); g.fillOval(cx - 14, cy - 18, 4, 6); g.fillOval(cx + 10, cy - 18, 4, 6);
+			g.setColor(new Color(255, 190, 186)); g.fillOval(cx - 23, cy - 7, 9, 5); g.fillOval(cx + 14, cy - 7, 9, 5);
+			g.setColor(Color.WHITE); g.setFont(new Font("SansSerif", Font.BOLD, 14)); g.drawString(missionBox.getSelectedIndex() == 0 ? "Blue Ghost 1" : "Blue Moon Mark 1", 14, 24);
+			String mood = elapsed > 10 ? "night mode — NGLR sleeps" : elapsed > 7 ? "brr… sunset is coming" : elapsed > 2 ? "happy in the sunshine!" : "warming up…";
+			g.setFont(new Font("SansSerif", Font.PLAIN, 13)); g.drawString(mood, 14, h - 16); g.dispose();
+		}
+	}
+
+	public static void main(String[] args) { SwingUtilities.invokeLater(() -> new Pet_1().setVisible(true)); }
+}
