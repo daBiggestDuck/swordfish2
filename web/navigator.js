@@ -462,7 +462,9 @@ async function boot() {
   try {
     const [{ bundle: b }, ephRaw] = await Promise.all([
       getBrowserDatasetState(),
-      fetch('../data/ephemeris.json').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch(new URL('../data/ephemeris.json', import.meta.url).href)
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
     ]);
     bundle = b;
     if (ephRaw?.rows?.length) {

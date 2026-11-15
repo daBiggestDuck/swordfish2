@@ -46,6 +46,8 @@ button:hover { filter: brightness(1.12); }
 .btn-primary { background: var(--accent); color: #051024; }
 .btn-accent { background: var(--good); color: #051c12; }
 .btn-ghost { background: var(--panel-alt); color: var(--text); border-color: var(--border); }
+a.btn-ghost { display: inline-flex; align-items: center; border-radius: 6px; border: 1px solid var(--border); padding: .34rem .7rem; font-size: .8rem; font-weight: 600; text-decoration: none; transition: filter .15s, border-color .15s; }
+a.btn-ghost:hover { filter: brightness(1.12); text-decoration: none; }
 .btn-danger { background: rgba(255, 107, 107, .16); color: var(--bad); border-color: rgba(255, 107, 107, .4); }
 
 .filter-bar {

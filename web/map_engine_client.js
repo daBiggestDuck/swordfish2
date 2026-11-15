@@ -1213,13 +1213,15 @@ async function fetchJsonOrFallback(relPath, fallbackObj) {
 export function getBrowserDatasetState() {
   if (!cachedBrowserStatePromise) {
     cachedBrowserStatePromise = (async () => {
+      const urlFor = (rel) =>
+        typeof window !== 'undefined' ? new URL(rel, import.meta.url).href : rel;
       const [main, quickmap, trekSites, trekPsr, lola, horizons] = await Promise.all([
-        fetchJsonOrFallback('../data/maps/lunar_map_data.json', BUNDLED_MAP_DATA.main),
-        fetchJsonOrFallback('../data/maps/raw/quickmap_lroc_stack3314.json', BUNDLED_MAP_DATA.quickmap),
-        fetchJsonOrFallback('../data/maps/raw/trek_clps_sites.json', BUNDLED_MAP_DATA.trekSites),
-        fetchJsonOrFallback('../data/maps/raw/trek_south_pole_psr.json', BUNDLED_MAP_DATA.trekPsr),
-        fetchJsonOrFallback('../data/maps/raw/trek_lola_terrain_profiles.json', BUNDLED_MAP_DATA.lola),
-        fetchJsonOrFallback('../data/maps/raw/horizons_lunar_ephemeris.json', BUNDLED_MAP_DATA.horizons),
+        fetchJsonOrFallback(urlFor('../data/maps/lunar_map_data.json'), BUNDLED_MAP_DATA.main),
+        fetchJsonOrFallback(urlFor('../data/maps/raw/quickmap_lroc_stack3314.json'), BUNDLED_MAP_DATA.quickmap),
+        fetchJsonOrFallback(urlFor('../data/maps/raw/trek_clps_sites.json'), BUNDLED_MAP_DATA.trekSites),
+        fetchJsonOrFallback(urlFor('../data/maps/raw/trek_south_pole_psr.json'), BUNDLED_MAP_DATA.trekPsr),
+        fetchJsonOrFallback(urlFor('../data/maps/raw/trek_lola_terrain_profiles.json'), BUNDLED_MAP_DATA.lola),
+        fetchJsonOrFallback(urlFor('../data/maps/raw/horizons_lunar_ephemeris.json'), BUNDLED_MAP_DATA.horizons),
       ]);
       const bundle = buildMapDataset({ main, quickmap, trekSites, trekPsr, lola, horizons });
       const rawSources = {

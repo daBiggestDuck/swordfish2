@@ -21,7 +21,8 @@ import java.util.Map;
  */
 public class MapServer {
 
-    private static final Path WEB_ROOT = Path.of("web").toAbsolutePath().normalize();
+    private static final Path REPO_ROOT = Path.of(".").toAbsolutePath().normalize();
+    private static final Path WEB_ROOT = REPO_ROOT.resolve("web").normalize();
 
     public static void main(String[] args) throws IOException {
         int port = args.length > 0 ? Integer.parseInt(args[0]) : 8080;
@@ -164,16 +165,39 @@ public class MapServer {
     }
 
     private static void serveStatic(HttpExchange ex) throws IOException {
-        String path = ex.getRequestURI().getPath();
+        String rawPath = ex.getRequestURI().getPath();
+        String path = rawPath;
         if (path.equals("/")) {
             path = Files.isRegularFile(WEB_ROOT.resolve("index.html")) ? "/index.html" : "/map.html";
         } else if (path.equals("/map")) {
             path = "/map.html";
         } else if (path.equals("/story")) {
             path = "/story.html";
+        } else if (path.equals("/readme")) {
+            path = "/readme.html";
         }
-        Path file = WEB_ROOT.resolve(path.substring(1)).normalize();
-        if (!file.startsWith(WEB_ROOT) || !Files.isRegularFile(file)) {
+        String rel = path.startsWith("/") ? path.substring(1) : path;
+        String rawRel = rawPath.startsWith("/") ? rawPath.substring(1) : rawPath;
+        Path file = null;
+        if (path.equals("/readme.html")) {
+            Path repoReadme = REPO_ROOT.resolve("readme.html").normalize();
+            if (repoReadme.startsWith(REPO_ROOT) && Files.isRegularFile(repoReadme)) {
+                file = repoReadme;
+            }
+        }
+        if (file == null) {
+            Path webCandidate = WEB_ROOT.resolve(rel).normalize();
+            if (webCandidate.startsWith(WEB_ROOT) && Files.isRegularFile(webCandidate)) {
+                file = webCandidate;
+            }
+        }
+        if (file == null) {
+            Path repoCandidate = REPO_ROOT.resolve(rawRel).normalize();
+            if (repoCandidate.startsWith(REPO_ROOT) && Files.isRegularFile(repoCandidate)) {
+                file = repoCandidate;
+            }
+        }
+        if (file == null) {
             send(ex, 404, "text/plain; charset=utf-8", "Not found".getBytes(StandardCharsets.UTF_8));
             return;
         }
@@ -182,6 +206,7 @@ public class MapServer {
                 : name.endsWith(".css") ? "text/css; charset=utf-8"
                 : name.endsWith(".js") ? "text/javascript; charset=utf-8"
                 : name.endsWith(".json") ? "application/json; charset=utf-8"
+                : name.endsWith(".md") ? "text/markdown; charset=utf-8"
                 : name.endsWith(".svg") ? "image/svg+xml"
                 : name.endsWith(".png") ? "image/png"
                 : (name.endsWith(".jpg") || name.endsWith(".jpeg")) ? "image/jpeg"

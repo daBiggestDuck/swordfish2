@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>User Guide &amp; NASA Data Credits — Payload Pets</title>
+  <link rel="stylesheet" href="./showcase.css">
+  <script>
+    if (/\/web\/readme\.html$/i.test(window.location.pathname)) {
+      window.location.replace("../readme.html" + window.location.search + window.location.hash);
+    }
+  </script>
+</head>
+<body>
+  <header class="topnav">
+    <div class="brand">
+      <div class="brand-badge">USER GUIDE &amp; CREDITS</div>
+      <div class="brand-mark">Payload <span>Pets</span></div>
+    </div>
+    <div class="nav-meta" style="margin-left:auto;">
+      <a href="../index.html#map">Back to Showcase</a>
+      <a href="./map.html">Interactive Moon Map</a>
+    </div>
+  </header>
+
+  <main class="stage">
+    <div class="local-panel md-panel-wrap">
+      <div class="kicker">PAYLOAD PETS · USER GUIDE</div>
+      <h1>User Guide &amp; NASA Attribution</h1>
+      <div id="web-readme-mount"></div>
+    </div>
+  </main>
+
+  <script src="./md_preview.js" defer></script>
+  <script defer>
+    window.addEventListener("DOMContentLoaded", () => {
+      const mount = document.getElementById("web-readme-mount");
+      const api = window.MarkdownPreview;
+      if (!mount || !api) return;
+      const params = new URLSearchParams(window.location.search);
+      const fromQuery = params.get("doc");
+      const initialDoc = api.normalizeDocPath(fromQuery || "", "README.md") || "README.md";
+      api.mountMarkdownViewer(mount, {
+        rootPrefix: "../",
+        initialDoc,
+      });
+    });
+  </script>
+</body>
+</html>

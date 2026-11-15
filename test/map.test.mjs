@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { PassThrough } from 'node:stream';
 import {
   loadMapDataset,
@@ -17,6 +18,7 @@ import {
   createMapRequestHandler,
 } from '../tools/serve_map.mjs';
 import { handleClientApi } from '../web/map_engine_client.js';
+import { createStoryClient } from '../web/story/story-client.js';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..');
 const MAPS_ROOT = path.join(REPO_ROOT, 'data', 'maps');
@@ -428,4 +430,95 @@ test('cross-branch compatibility: Data/story/engine site aliases, filters, missi
   assert.equal(snappedMare.nearestSiteId, 'MARE_CRISIUM');
   assert.equal(snappedMare.lat, 16.18);
   assert.equal(snappedMare.lon, 59.1);
+});
+
+test('Live Server static routes and Story client offline fallback work cleanly', async () => {
+  const story = createStoryClient();
+  const [missions, pets, sites, sky] = await Promise.all([
+    story.missions(),
+    story.pets(),
+    story.sites(),
+    story.sky('SHACKLETON_RIDGE', '2026-10-19'),
+  ]);
+  assert.ok(Array.isArray(missions) && missions.length >= 11);
+  assert.ok(Array.isArray(pets) && pets.length === 4);
+  assert.ok(Array.isArray(sites) && sites.length === 5);
+  assert.equal(sky.real, true);
+  assert.ok(Array.isArray(sky.sun) && sky.sun.length === 178);
+  assert.ok(Number.isFinite(sky.avgPowerPct));
+
+  story.setContext('SHACKLETON_RIDGE', 'LISTER');
+  const dueMoments = await story.due(0.5);
+  assert.ok(dueMoments.length >= 3);
+  const dupMoments = await story.due(0.5);
+  assert.equal(dupMoments.length, 0);
+
+  const passport = await story.passport(1.0, 'Astro');
+  assert.equal(passport.petName, 'Astro');
+  assert.equal(passport.rating, 'Lunar Day Legend');
+  assert.ok(passport.sources.length >= 1);
+
+  const handler = createMapRequestHandler(MAPS_ROOT, path.join(REPO_ROOT, 'web'));
+  for (const [route, pattern] of [
+    ['/index.html', /Payload/],
+    ['/web/map.html', /Lunar Map/],
+    ['/web/navigator.html', /Navigator/],
+    ['/web/story/index.html', /Payload Pets/],
+    ['/demos/js-engine/index.html', /Game rules/],
+    ['/demos/js-pets/index.html', /Pet art/],
+  ]) {
+    const res = await invokeHandler(handler, route);
+    assert.equal(res.status, 200, `Expected 200 for ${route}`);
+    assert.match(res.text, pattern);
+  }
+  const catalogRes = await invokeHandler(handler, '/data/catalog.json');
+  assert.equal(catalogRes.status, 200);
+  const catalog = JSON.parse(catalogRes.text);
+  assert.ok(Array.isArray(catalog.missions) && catalog.missions.length >= 1);
+});
+
+test('Markdown preview renderer formats user README.md GFM elements, excludes dev docs, and server serves /README.md and /readme.html', async () => {
+  const require = createRequire(import.meta.url);
+  const { PROJECT_DOCS, renderMarkdown, normalizeDocPath, README_FALLBACK } = require('../web/md_preview.js');
+
+  assert.deepEqual(
+    PROJECT_DOCS.map((d) => d.path),
+    ['README.md', 'data/maps/NOTICE.md']
+  );
+
+  const readmeText = fs.readFileSync(path.join(REPO_ROOT, 'README.md'), 'utf8');
+  assert.ok(README_FALLBACK.length > 500);
+  assert.doesNotMatch(readmeText, /PLAN\.md|STORY\.md|data\/README\.md|run-v0\.sh|node --test/);
+
+  const rendered = renderMarkdown(readmeText, { currentDoc: 'README.md' });
+  assert.match(rendered.html, /<h1[^>]*>Payload Pets — User Guide<\/h1>/);
+  assert.match(rendered.html, /<table class="md-table">[\s\S]*<th[^>]*>Tab<\/th>/);
+  assert.match(rendered.html, /<table class="md-table">[\s\S]*<th[^>]*>Pet<\/th>/);
+  assert.match(rendered.html, /<code>LRA<\/code>/);
+  assert.match(rendered.html, /data-md-doc="data\/maps\/NOTICE\.md"/);
+  assert.doesNotMatch(rendered.html, /data-md-doc="PLAN\.md"/);
+  assert.ok(rendered.toc.some((entry) => entry.level === 2 && /Inside the App/.test(entry.text)));
+
+  const codeSample = renderMarkdown('```txt\nsample block\n```');
+  assert.match(codeSample.html, /<div class="md-code-block">[\s\S]*<pre><code>sample block/);
+
+  assert.equal(normalizeDocPath('./maps/NOTICE.md', 'data/README.md'), 'data/maps/NOTICE.md');
+  assert.equal(normalizeDocPath('../README.md', 'data/README.md'), 'README.md');
+  assert.equal(normalizeDocPath('https://example.com/a.md', 'README.md'), null);
+
+  const unsafe = renderMarkdown('<script>alert(1)</script>\n\n[bad](javascript:alert(1))');
+  assert.ok(!unsafe.html.includes('<script>'));
+  assert.ok(!unsafe.html.includes('href="javascript:'));
+
+  const handler = createMapRequestHandler(MAPS_ROOT, path.join(REPO_ROOT, 'web'));
+  for (const [route, pattern] of [
+    ['/README.md', /Payload Pets — User Guide/],
+    ['/data/maps/NOTICE.md', /LROC QuickMap/],
+    ['/readme.html', /User Guide &amp; NASA Data Credits/],
+    ['/readme', /User Guide &amp; NASA Data Credits/],
+  ]) {
+    const res = await invokeHandler(handler, route);
+    assert.equal(res.status, 200, `Expected 200 for ${route}`);
+    assert.match(res.text, pattern);
+  }
 });

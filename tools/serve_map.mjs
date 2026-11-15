@@ -56,6 +56,7 @@ const MIME_TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.md': 'text/markdown; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
@@ -119,10 +120,34 @@ export function createMapRequestHandler(mapsRoot = DEFAULT_MAPS_ROOT, webRoot = 
     } else if (relPath === '/map') {
       relPath = '/map.html';
     } else if (relPath === '/story') {
-      relPath = '/story.html';
+      relPath = fs.existsSync(path.join(webRoot, 'story.html')) ? '/story.html' : '/story/index.html';
+    } else if (relPath === '/readme') {
+      relPath = '/readme.html';
     }
-    const resolved = path.resolve(webRoot, '.' + relPath);
-    if (!resolved.startsWith(webRoot) || !fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) {
+
+    const resolveSafeFile = (baseDir, reqPath) => {
+      let decoded;
+      try {
+        decoded = decodeURIComponent(reqPath);
+      } catch {
+        return null;
+      }
+      const candidate = path.resolve(baseDir, '.' + decoded);
+      if (candidate !== baseDir && !candidate.startsWith(baseDir + path.sep)) return null;
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
+        const indexCandidate = path.join(candidate, 'index.html');
+        if (fs.existsSync(indexCandidate) && fs.statSync(indexCandidate).isFile()) return indexCandidate;
+        return null;
+      }
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
+      return null;
+    };
+
+    const resolved =
+      relPath === '/readme.html'
+        ? resolveSafeFile(REPO_ROOT, relPath) || resolveSafeFile(webRoot, relPath)
+        : resolveSafeFile(webRoot, relPath) || resolveSafeFile(REPO_ROOT, url.pathname) || resolveSafeFile(REPO_ROOT, relPath);
+    if (!resolved) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('Not found');
       return;

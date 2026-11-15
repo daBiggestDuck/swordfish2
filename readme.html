@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>User Guide &amp; NASA Data Credits — Payload Pets</title>
+  <meta name="description" content="User guide and official NASA data sources for Payload Pets — Lunar Landing Site Navigator.">
+  <link rel="stylesheet" href="./web/showcase.css">
+</head>
+<body>
+  <header class="topnav">
+    <div class="brand">
+      <div class="brand-badge">USER GUIDE &amp; CREDITS</div>
+      <div class="brand-mark">Payload <span>Pets</span></div>
+    </div>
+
+    <div class="nav-meta" style="margin-left:auto;">
+      <a href="./index.html#map">Back to Showcase</a>
+      <a href="./web/map.html">Interactive Moon Map</a>
+      <a href="https://www.nasa.gov/commercial-lunar-payload-services/" target="_blank" rel="noopener">CLPS</a>
+    </div>
+  </header>
+
+  <main class="stage">
+    <div class="local-panel md-panel-wrap">
+      <div class="kicker">PAYLOAD PETS · USER GUIDE</div>
+      <h1>User Guide &amp; NASA Attribution</h1>
+      <p class="lede">Learn how to explore lunar landing sites, compare solar power and Earth communications, and review official NASA data sources.</p>
+      <div id="standalone-readme-mount"></div>
+    </div>
+  </main>
+
+  <script src="./web/md_preview.js" defer></script>
+  <script defer>
+    window.addEventListener("DOMContentLoaded", () => {
+      const mount = document.getElementById("standalone-readme-mount");
+      const api = window.MarkdownPreview;
+      if (!mount || !api) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const fromQuery = params.get("doc");
+      const fromHash = window.location.hash ? decodeURIComponent(window.location.hash.slice(1)) : "";
+      const initialDoc =
+        api.normalizeDocPath(fromQuery || "", "README.md") ||
+        api.normalizeDocPath(fromHash || "", "README.md") ||
+        "README.md";
+
+      api.mountMarkdownViewer(mount, {
+        rootPrefix: "./",
+        initialDoc,
+        onDocChange: (docPath) => {
+          const url = new URL(window.location.href);
+          if (docPath && docPath !== "README.md") {
+            url.searchParams.set("doc", docPath);
+          } else {
+            url.searchParams.delete("doc");
+          }
+          history.replaceState(null, "", url.pathname + url.search + url.hash);
+        },
+      });
+    });
+  </script>
+</body>
+</html>

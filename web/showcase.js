@@ -16,6 +16,7 @@
       health: "http://localhost:8081/api/missions",
       need: "./run-story.sh",
       port: 8081,
+      fallback: "./web/story/index.html",
     },
     {
       id: "engine",
@@ -36,6 +37,7 @@
     },
     { id: "data", label: "Data / Missions", kind: "data" },
     { id: "about", label: "About", kind: "about" },
+    { id: "readme", label: "User Guide", kind: "readme", health: "static" },
   ];
 
   const $ = (sel, el = document) => el.querySelector(sel);
@@ -44,9 +46,25 @@
   const bannerEl = $("#shell-banner");
   const status = Object.fromEntries(TABS.map((t) => [t.id, t.health === "static" ? "static" : "unknown"]));
 
+  function parseHash() {
+    const raw = (location.hash || "#map").slice(1);
+    if (!raw) return { id: "map", doc: null };
+    const colonIdx = raw.indexOf(":");
+    const rawId = (colonIdx >= 0 ? raw.slice(0, colonIdx) : raw).toLowerCase();
+    let rawDoc = null;
+    if (colonIdx >= 0) {
+      try {
+        rawDoc = decodeURIComponent(raw.slice(colonIdx + 1));
+      } catch {
+        rawDoc = raw.slice(colonIdx + 1);
+      }
+    }
+    const id = TABS.some((t) => t.id === rawId) ? rawId : "map";
+    return { id, doc: id === "readme" && rawDoc ? rawDoc : null };
+  }
+
   function hashTab() {
-    const h = (location.hash || "#map").slice(1).toLowerCase();
-    return TABS.some((t) => t.id === h) ? h : "map";
+    return parseHash().id;
   }
 
   function setDot(id, state) {
@@ -90,13 +108,24 @@
       bannerEl.textContent = "";
       return;
     }
+    const needBackend = down.filter((t) => !t.fallback);
+    if (!needBackend.length) {
+      bannerEl.dataset.show = "1";
+      bannerEl.innerHTML =
+        "Running in static Live Server mode (built-in JS fallbacks active for " +
+        down.map((t) => t.label).join(" &amp; ") +
+        "). Optional Java servers: " +
+        down.map((t) => `<code>${t.need}</code> (:${t.port})`).join(" · ") +
+        ".";
+      return;
+    }
     bannerEl.dataset.show = "1";
     bannerEl.innerHTML =
       "Story / Engine tabs need their Java servers. In other terminals: " +
-      down
+      needBackend
         .map((t) => `<code>${t.need}</code> → localhost:${t.port}`)
         .join(" · ") +
-      ". Map, Navigator, Pets, Data, and About work from this shell alone.";
+      ". Map, Navigator, Pets, Data, About, and README work from this shell alone.";
   }
 
   function ensurePanel(tab) {
@@ -154,7 +183,7 @@
           </div>
           <div class="grid" id="data-grid"></div>
           <p id="data-error" class="error" hidden></p>
-          <p class="meta-foot">Catalog rules: <a href="./data/README.md">data/README.md</a> · map / Horizons bake notes: <a href="./data/maps/NOTICE.md">data/maps/NOTICE.md</a></p>
+          <p class="meta-foot">NASA map &amp; Horizons provenance: <a href="./data/maps/NOTICE.md">NASA Data &amp; Credits</a></p>
         </div>`;
     } else if (tab.kind === "about") {
       panel.innerHTML = `
@@ -163,6 +192,11 @@
           <h1>About · Payload Pets</h1>
           <p class="hero-prop">Compare lunar <strong style="color:var(--text)">south-pole</strong> landing sites for solar power and Earth communications — then feel those constraints by keeping a real CLPS instrument pet alive through one lunar day.</p>
           <p class="lede">Challenge: <a href="https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/" target="_blank" rel="noopener">Lunar Landing Site Navigator</a>. Judges: <strong style="color:var(--text)">Navigator</strong> (site/date compare) → <strong style="color:var(--text)">Map</strong> (terrain context) → <strong style="color:var(--text)">Pets</strong> (Power / Signal moods) → <strong style="color:var(--text)">Data</strong> (provenance).</p>
+          <div class="about-actions">
+            <button type="button" class="btn-preview-readme" data-open-readme="README.md">Open User Guide</button>
+            <a class="about-btn-link" href="#readme:data/maps/NOTICE.md" data-open-readme="data/maps/NOTICE.md">NASA Data &amp; Credits</a>
+            <a class="about-btn-link" href="./readme.html" target="_blank" rel="noopener">Open Guide Page ↗</a>
+          </div>
 
           <div class="about-block callout-pole">
             <div class="kicker">SOUTH POLE</div>
@@ -233,7 +267,7 @@
               <li><a href="https://www.nasa.gov/commercial-lunar-payload-services/" target="_blank" rel="noopener">NASA CLPS</a> · <a href="https://science.nasa.gov/lunar-discovery/deliveries/" target="_blank" rel="noopener">delivery pages</a> — missions &amp; payloads in the catalog</li>
               <li><a href="https://pds-geosciences.wustl.edu/missions/clps/index.htm" target="_blank" rel="noopener">PDS Geosciences CLPS node</a> — science-data trail for flown payloads</li>
             </ul>
-            <p>Attribution detail: <a href="./data/maps/NOTICE.md">data/maps/NOTICE.md</a> · catalog honesty rules: <a href="./data/README.md">data/README.md</a></p>
+            <p>Attribution detail: <a href="./data/maps/NOTICE.md">NASA Data &amp; Credits</a></p>
           </div>
 
           <div class="about-block">
@@ -243,10 +277,18 @@
               <li><strong style="color:var(--text)">Navigator</strong> — compare two south-pole sites / dates; call out Sun→power and Earth→DTE.</li>
               <li><strong style="color:var(--text)">Map / Sites</strong> — pick a pet, drop it on a south-pole site, scrub the sun clock to watch 3D moods (power glow / night / signal stress).</li>
               <li><strong style="color:var(--text)">Pets</strong> — same live drop mirrors here; scrub full sun → night for Power vs Signal vs passive Retro.</li>
-              <li><strong style="color:var(--text)">Data</strong> — flash as-of + NASA naming · optional Engine with <code>./run-engine.sh</code>.</li>
+              <li><strong style="color:var(--text)">Data</strong> — browse verified NASA CLPS missions, landing sites, and payload instruments.</li>
             </ol>
-            <p>Plan &amp; awards: <a href="./PLAN.md">PLAN.md</a> · Story: <a href="./STORY.md">STORY.md</a></p>
+            <p>Full guide: <a href="./README.md">User Guide</a></p>
           </div>
+        </div>`;
+    } else if (tab.kind === "readme") {
+      panel.innerHTML = `
+        <div class="local-panel md-panel-wrap">
+          <div class="kicker">USER GUIDE &amp; NASA CREDITS</div>
+          <h1>Payload Pets User Guide</h1>
+          <p class="lede">Learn how to explore lunar landing sites, compare solar power and Earth communications, and view official NASA data attribution.</p>
+          <div id="readme-viewer-mount"></div>
         </div>`;
     }
 
@@ -435,10 +477,41 @@
     }
   }
 
-  async function show(id) {
+  let readmeViewer = null;
+
+  function ensureReadmeViewer(panel, initialDoc) {
+    const mount = panel.querySelector("#readme-viewer-mount");
+    if (!mount) return;
+    const api = window.MarkdownPreview;
+    if (!api) {
+      mount.innerHTML = `<p class="error">Markdown preview helper (<code>web/md_preview.js</code>) is unavailable. Open <a href="./README.md">README.md</a> directly.</p>`;
+      return;
+    }
+    if (!readmeViewer) {
+      readmeViewer = api.mountMarkdownViewer(mount, {
+        rootPrefix: "./",
+        initialDoc: initialDoc || "README.md",
+        onDocChange: (nextDoc) => {
+          if (hashTab() === "readme") {
+            const targetHash = nextDoc && nextDoc !== "README.md" ? `#readme:${nextDoc}` : "#readme";
+            if (location.hash !== targetHash) {
+              history.replaceState(null, "", targetHash);
+            }
+          }
+        },
+      });
+    } else if (initialDoc) {
+      readmeViewer.loadDoc(initialDoc);
+    }
+  }
+
+  async function show(id, docPath = null) {
     const tab = TABS.find((t) => t.id === id) || TABS[0];
-    if (location.hash.slice(1) !== tab.id) {
-      history.replaceState(null, "", `#${tab.id}`);
+    const activeDoc = tab.id === "readme" ? (docPath || readmeViewer?.getCurrentDoc?.() || "README.md") : null;
+    const nextHash =
+      tab.id === "readme" && activeDoc && activeDoc !== "README.md" ? `#readme:${activeDoc}` : `#${tab.id}`;
+    if (location.hash !== nextHash) {
+      history.replaceState(null, "", nextHash);
     }
 
     for (const t of TABS) {
@@ -459,7 +532,35 @@
       await activateIframe(tab, panel, ok);
     } else if (tab.kind === "data") {
       await loadDataPanel();
+    } else if (tab.kind === "readme") {
+      ensureReadmeViewer(panel, docPath);
     }
+  }
+
+  function bindMarkdownLinks() {
+    document.addEventListener("click", (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+      const openBtn = e.target.closest("[data-open-readme]");
+      if (openBtn) {
+        e.preventDefault();
+        show("readme", openBtn.dataset.openReadme || "README.md");
+        return;
+      }
+
+      const anchor = e.target.closest("a[href]");
+      if (!anchor || anchor.closest(".md-viewer")) return;
+      if (anchor.target === "_blank") return;
+
+      const href = anchor.getAttribute("href") || "";
+      const api = window.MarkdownPreview;
+      const normalized = api?.normalizeDocPath?.(href, "README.md");
+      const allowed = api?.PROJECT_DOCS?.some((d) => d.path === normalized);
+      if (normalized && allowed) {
+        e.preventDefault();
+        show("readme", normalized);
+      }
+    });
   }
 
   function buildTabs() {
@@ -490,10 +591,15 @@
 
   async function boot() {
     buildTabs();
+    bindMarkdownLinks();
     await Promise.all(TABS.map(probe));
     updateBanner();
-    await show(hashTab());
-    window.addEventListener("hashchange", () => show(hashTab()));
+    const initial = parseHash();
+    await show(initial.id, initial.doc);
+    window.addEventListener("hashchange", () => {
+      const parsed = parseHash();
+      show(parsed.id, parsed.doc);
+    });
     // Re-probe backends periodically so Story/Engine light up without a full reload
     setInterval(async () => {
       await Promise.all(TABS.filter((t) => t.need).map(probe));
