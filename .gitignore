@@ -1,21 +1,23 @@
-# From Data tip
+# Java build artifacts (from Data)
+build/
 out/
 *.class
+
+# OS (from Data + engine)
 .DS_Store
-data/*.json
-!data/sites.json
-!data/missions.json
-!data/payloads.json
-!data/pet-archetypes.json
-!data/ephemeris.json
-!data/horizons/
-!data/game-missions.json
-!data/mission-events.json
+Thumbs.db
 
-# From engine tip
+# IDE (from Data)
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# Node (from Data + engine)
 node_modules/
+dist/
 
-# Staging export folders (assembler inputs; not part of product tree)
+# Staging export folders (assembler inputs; local only)
 from-Data/
 from-engine/
 STAGING.md
