@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payload Pets: Lunar Day</title>
+  <meta name="description" content="Drive a rover across the Moon in 3D with your two payload pets and live through one 14-day lunar day.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+  <link rel="stylesheet" href="rover.css">
+</head>
+<body class="is-loading">
+  <canvas id="scene" aria-label="3D Moon surface. Your rover carries your two pets."></canvas>
+
+  <!-- top left: day + chapter -->
+  <header class="hud hud-day glass">
+    <div class="eyebrow">Lunar day · <span id="site">Mare Crisium</span></div>
+    <div class="day"><span id="day">Day 1</span><small> / 14</small></div>
+    <div class="track"><i id="track"></i></div>
+    <div id="chapter" class="chapter">Chapter 1 · Sunrise</div>
+    <div id="sky-read" class="sky-read"></div>
+    <div id="rover-read" class="sky-read"></div>
+  </header>
+
+  <!-- top right: mission log -->
+  <aside class="hud hud-log glass" aria-live="polite">
+    <div class="eyebrow">Mission log</div>
+    <ol id="log" class="log"></ol>
+  </aside>
+
+  <!-- story toast -->
+  <div id="toast" class="toast glass" role="status">
+    <div class="toast-tag">Real mission</div>
+    <b id="toast-title"></b>
+    <p id="toast-text"></p>
+    <a id="toast-src" target="_blank" rel="noopener">NASA source ↗</a>
+  </div>
+
+  <!-- bottom: crew + meters + controls -->
+  <footer class="hud hud-bottom">
+    <div id="crew" class="crew glass"></div>
+    <div class="meters glass">
+      <div class="meter"><span>Power</span><div class="bar"><i id="m-power"></i></div><b id="v-power">80</b></div>
+      <div class="meter"><span>Warmth</span><div class="bar warm"><i id="m-warmth"></i></div><b id="v-warmth">70</b></div>
+      <div class="meter"><span>Hull</span><div class="bar hull"><i id="m-hull"></i></div><b id="v-hull">100</b></div>
+      <div class="opts">
+        <button id="opt-track" class="opt" type="button" aria-pressed="false"><i></i><span>Solar panel: stowed</span><kbd>P</kbd></button>
+        <button id="opt-heat" class="opt" type="button" aria-pressed="false"><i></i><span>Heater: off</span><kbd>H</kbd></button>
+        <button id="opt-send" class="opt send" type="button"><b class="sig"></b><span>Send data home</span><kbd>F</kbd></button>
+      </div>
+    </div>
+    <div class="keys glass"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive · <kbd>F</kbd> send data · <kbd>C</kbd> view</div>
+  </footer>
+  <div class="touch">
+    <button data-k="left" aria-label="Steer left">◀</button>
+    <button data-k="up" aria-label="Drive forward">▲</button>
+    <button data-k="down" aria-label="Reverse">▼</button>
+    <button data-k="right" aria-label="Steer right">▶</button>
+  </div>
+
+  <!-- intro banner -->
+  <div id="banner" class="banner"><b id="banner-title">Touchdown</b><span id="banner-text"></span></div>
+
+  <!-- loading -->
+  <div id="loading" class="loading"><div class="spinner"></div><span>Preparing the Moon…</span></div>
+
+  <!-- end: the story -->
+  <div id="end" class="end">
+    <div class="end-card glass">
+      <div class="eyebrow">The story</div>
+      <h1 id="end-title">One lunar day</h1>
+      <p id="end-lead" class="lead"></p>
+      <article class="passport-card" aria-label="Lunar Pet Passport">
+        <div class="cert">
+          <div class="cert-top"><span class="seal" aria-hidden="true">CLPS</span><span id="pp-no" class="cert-no"></span></div>
+          <p class="cert-kicker">Lunar Pet Passport</p>
+          <h3 class="cert-title">Certificate of Lunar Service</h3>
+          <p class="cert-sub">This certifies that the crew below completed one full lunar day on the surface of the Moon.</p>
+          <div id="pp-photos" class="pp-photos"></div>
+          <dl id="pp-fields" class="pp-fields"></dl>
+          <div class="cert-foot">
+            <div><span id="pp-date"></span><small>Date issued</small></div>
+            <div id="pp-stamp" class="pp-stamp"></div>
+            <div><span class="sig">Payload Pets Mission Control</span><small>Signed</small></div>
+          </div>
+          <div id="pp-mrz" class="pp-mrz" aria-hidden="true"></div>
+        </div>
+      </article>
+      <div id="end-pets" class="end-pets"></div>
+      <h2>What you found</h2>
+      <ol id="end-stories" class="end-stories"></ol>
+      <div class="end-row"><button id="again" class="btn primary" type="button">Play the day again</button></div>
+    </div>
+  </div>
+
+  <script type="module" src="rover.js"></script>
+</body>
+</html>

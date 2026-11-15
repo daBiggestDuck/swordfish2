@@ -3,47 +3,44 @@ package story;
 import java.util.List;
 
 /**
- * The four story pets, one per real CLPS mission (pets branch: Ariha and Pranav).
- *  - Ariha: Ghost (Blue Ghost Mission 1) and Luna (Blue Moon Mark 1).
- *  - Pranav: Triddy (TRIDENT drill on IM-2) and Nodey (LN-1 beacon on IM-1). Their ids match
- *    Pranav's catalog ("trident", "ln-1"); lookups ignore case.
- *
- * Facts checked against NASA pages (see the source links in MissionMoments).
+ * The four story pets: the same four adoptable pets as the pets team (web/pets-3d on main):
+ * LISTER, Retro, EDS and Nodey, with the same ids (lister, retro, eds, ln-1). Lookups ignore case,
+ * and "LRA" (the engine's id) also finds Retro.
  */
 public final class Pets {
 
-    public static final String BLUE_GHOST = "BLUE_GHOST";
-    public static final String BLUE_MOON = "BLUE_MOON";
-    public static final String TRIDDY = "TRIDENT";
-    public static final String NODEY = "LN-1";
+    public static final String LISTER = "lister";
+    public static final String RETRO = "retro";
+    public static final String EDS = "eds";
+    public static final String NODEY = "ln-1";
 
     public static final List<Pet> ALL = List.of(
-            new Pet(BLUE_GHOST, "Ghost", "Firefly Aerospace", "blue-ghost-1", "\uD83D\uDC7B",
-                    "Brave and sunny. Based on Firefly's first Moon lander, which carried 10 NASA instruments.",
+            new Pet(LISTER, "LISTER", "Firefly Aerospace", "blue-ghost-1", "\u26CF\uFE0F",
+                    "Curious digger. LISTER drilled into the Moon to measure the heat flowing out of it, riding on Blue Ghost 1.",
                     MissionMoments.MARE_CRISIUM, false,
-                    List.of("Switched on all 10 NASA instruments and collected data on the Moon",
-                            "Kept working through sunset and into the lunar night"),
-                    null,
-                    "The real Blue Ghost 1 landed on Mar. 2, 2025, ran all 10 NASA instruments, worked into "
-                            + "the lunar night, and ended its mission on Mar. 16, 2025."),
-            new Pet(BLUE_MOON, "Luna", "Blue Origin", "blue-moon-1", "\uD83D\uDD35",
-                    "Shy and curious. A planned delivery to the south pole that hasn't flown yet.",
-                    MissionMoments.SHACKLETON_RIDGE, false,
-                    List.of("Practiced caring for a lander that will film its own landing (SCALPSS)",
-                            "Practiced for a mission carrying a mirror (LRA) so orbiters can find it"),
-                    null,
-                    "The real Blue Moon Mark 1 has not flown yet. NASA lists it as a planned delivery to "
-                            + "the Moon's south pole."),
-            new Pet(TRIDDY, "Triddy", "Intuitive Machines", "im-2", "\u26CF\uFE0F",
-                    "Hungry and determined. Based on TRIDENT, the ice drill that flew on IM-2 to Mons Mouton.",
-                    MissionMoments.MONS_MOUTON, false,
-                    List.of("Built to drill 1 meter down, bringing up soil about 10 cm at a time",
-                            "Helped MSolo sniff the soil for signs of water ice"),
-                    "TRIDENT drill",
-                    "The real IM-2 lander ended up on its side near Mons Mouton on Mar. 6, 2025. "
-                            + "MSolo still worked despite the rough landing."),
+                    List.of("Drilled into the Moon to measure heat flowing out of it",
+                            "Worked through the lunar day on Blue Ghost 1"),
+                    "LISTER heat-flow drill",
+                    "Blue Ghost 1 landed on Mar. 2, 2025, ran all 10 NASA instruments including LISTER, "
+                            + "worked into the lunar night, and ended its mission on Mar. 16, 2025."),
+            new Pet(RETRO, "Retro", "Blue Origin", "blue-moon-1", "\uD83D\uDD35",
+                    "Calm and patient. Retro is a laser retroreflector: just mirrors, so it needs no power and naps through the night.",
+                    MissionMoments.SHACKLETON_RIDGE, true,
+                    List.of("Bounced laser light back so orbiters can pinpoint the lander",
+                            "Needed no power at all, even in the lunar night"),
+                    "Laser retroreflector (LRA)",
+                    "Retroreflectors have flown on earlier CLPS landers. Blue Moon Mark 1, a planned "
+                            + "delivery to the south pole, will carry one too."),
+            new Pet(EDS, "EDS", "Firefly Aerospace", "blue-ghost-1", "\uD83D\uDC7B",
+                    "Neat and tidy. EDS is a dust shield that uses electric fields to push sticky Moon dust off surfaces.",
+                    MissionMoments.MARE_CRISIUM, false,
+                    List.of("Used electric fields to push Moon dust off its surfaces",
+                            "Helped keep Blue Ghost 1's hardware clean"),
+                    "Electrodynamic Dust Shield (EDS)",
+                    "Blue Ghost 1 landed on Mar. 2, 2025 carrying EDS among its 10 NASA instruments, "
+                            + "and all 10 switched on and collected data on the Moon."),
             new Pet(NODEY, "Nodey", "Intuitive Machines", "im-1", "\uD83D\uDCE1",
-                    "Chatty and helpful. Based on LN-1, the navigation beacon that flew on IM-1 to Malapert A.",
+                    "Chatty and helpful. Nodey is LN-1, the navigation beacon that flew on IM-1 to Malapert A.",
                     MissionMoments.MALAPERT_A, false,
                     List.of("Lit a navigation beacon on the Moon for future explorers",
                             "Backed up its lander's own navigation system"),
@@ -53,7 +50,8 @@ public final class Pets {
 
     /** Finds a pet by id, ignoring case ("trident" works too). Unknown ids give the first pet. */
     public static Pet find(String id) {
-        return ALL.stream().filter(p -> p.id().equalsIgnoreCase(id)).findFirst().orElse(ALL.get(0));
+        String want = ("lra".equalsIgnoreCase(id) || "retroreflector".equalsIgnoreCase(id)) ? RETRO : id; // aliases
+        return ALL.stream().filter(p -> p.id().equalsIgnoreCase(want)).findFirst().orElse(ALL.get(0));
     }
 
     private Pets() {}

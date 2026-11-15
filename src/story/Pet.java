@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * A pet is a real CLPS lander turned cute.
  *
- * @param id            stable key used by the API and moments (e.g. "BLUE_GHOST")
+ * @param id            stable key used by the API and moments (e.g. "lister")
  * @param name          default pet name
  * @param vendor        company that built the real lander
  * @param missionId     id of the matching entry in {@link Missions}
@@ -40,6 +40,6 @@ public record Pet(
         return "{\"id\":" + Json.q(id) + ",\"name\":" + Json.q(name) + ",\"vendor\":" + Json.q(vendor)
                 + ",\"missionId\":" + Json.q(missionId) + ",\"face\":" + Json.q(face)
                 + ",\"tagline\":" + Json.q(tagline) + ",\"defaultSite\":" + Json.q(defaultSite)
-                + ",\"sleepsAtNight\":" + sleepsAtNight + ",\"instrument\":" + Json.q(instrument) + "}";
+                + ",\"sleepsAtNight\":" + sleepsAtNight + ",\"instrument\":" + Json.q(instrument) + ",\"fate\":" + Json.q(fate) + "}";
     }
 }
