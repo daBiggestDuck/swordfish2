@@ -33,7 +33,7 @@ public class StoryServer {
     private static List<MissionMoment> moments = MissionMoments.ALL;
 
     public static void main(String[] args) throws IOException {
-        int port = 8081; // v0 showcase: map 8080, story 8081, engine 8082
+        int port = 8081; // matches main: map 8080, story 8081, engine 8082
         Path dataDir = Path.of("data");
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("--data") && i + 1 < args.length) dataDir = Path.of(args[++i]);
@@ -106,7 +106,8 @@ public class StoryServer {
             PetPassport passport = new PetPassport(name, pet.label(missionName),
                     SkyModel.name(site), days,
                     science, engine.history());
-            json(ex, passport.toJson());
+            String body = passport.toJson();
+            json(ex, body.substring(0, body.length() - 1) + ",\"fate\":" + Json.q(pet.fate()) + "}");
         });
 
         server.createContext("/", StoryServer::serveStatic);
@@ -173,6 +174,7 @@ public class StoryServer {
                 : name.endsWith(".js") ? "text/javascript; charset=utf-8"
                 : name.endsWith(".svg") ? "image/svg+xml"
                 : name.endsWith(".png") ? "image/png"
+                : name.endsWith(".jpg") ? "image/jpeg"
                 : "application/octet-stream";
         send(ex, 200, type, Files.readAllBytes(file));
     }
