@@ -65,39 +65,110 @@ const PET_ART = {
     + '<path d="M18 54 v5 M46 54 v5" stroke="#1f8f55" stroke-width="3" stroke-linecap="round"/>' + FACE,
 };
 
-/** A round pet avatar: the pet's SVG character on its own colour (emoji if a pet has no art yet). */
-function artHtml(pet) {
-  const art = PET_ART[pet.id];
-  return art ? `<svg viewBox="0 0 64 64" aria-hidden="true">${art}</svg>` : '';
+// Support both v1 story pet IDs (BLUE_GHOST, BLUE_MOON, TRIDENT, LN-1) and instrument/legacy IDs.
+const PET_3D = {
+  BLUE_GHOST: 'lister',
+  GHOST: 'lister',
+  LISTER: 'lister',
+  BLUE_MOON: 'retro',
+  LUNA: 'retro',
+  LRA: 'retro',
+  RETRO: 'retro',
+  EDS: 'eds',
+  TRIDENT: 'trident',
+  TRIDDY: 'trident',
+  'LN-1': 'ln-1',
+  LN1: 'ln-1',
+  LN_1: 'ln-1',
+  NODEY: 'ln-1',
+};
+const PET_ART_ALIASES = {
+  GHOST: 'BLUE_GHOST',
+  LISTER: 'BLUE_GHOST',
+  LUNA: 'BLUE_MOON',
+  LRA: 'BLUE_MOON',
+  RETRO: 'BLUE_MOON',
+  TRIDDY: 'TRIDENT',
+  LN1: 'LN-1',
+  LN_1: 'LN-1',
+  NODEY: 'LN-1',
+};
+const EDS_SVG_ART =
+  '<rect x="14" y="16" width="36" height="28" rx="3" fill="#1d4a42" stroke="#e0b15a" stroke-width="3"/>' +
+  '<path d="M18 24h28M18 30h28M18 36h28M24 20v20M32 20v20M40 20v20" stroke="#8fd0c4" stroke-width="1.6"/>' +
+  '<rect x="30" y="44" width="4" height="7" fill="#e0b15a"/>' +
+  '<rect x="22" y="51" width="20" height="3" rx="1.5" fill="#e0b15a"/>';
+
+function resolvePetKey(id) {
+  return String(id || '').trim().toUpperCase().replace(/\s+/g, '_');
+}
+function model3dFor(id) {
+  const k = resolvePetKey(id);
+  return PET_3D[k] || PET_3D[k.replace(/_/g, '-')] || PET_3D[k.replace(/-/g, '_')] || '';
+}
+function escHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// The pets team's 3D models (web/story/pets-3d, from Pranav's PayloadPets3D). Each story pet
-// shows the real instrument it is, or the one its lander carried:
-// Ghost -> LISTER (flew on Blue Ghost 1), Luna -> the retroreflector Blue Moon Mark 1 carries.
-const PET_3D = { BLUE_GHOST: 'lister', BLUE_MOON: 'retro', TRIDENT: 'trident', 'LN-1': 'ln-1' };
+/** A round pet avatar: the pet's SVG character on its own colour (emoji if a pet has no art yet). */
+function artHtml(pet) {
+  const k = resolvePetKey(pet?.id);
+  const art = PET_ART[k] || PET_ART[PET_ART_ALIASES[k]] || (k === 'EDS' ? EDS_SVG_ART : '');
+  if (art) return `<svg viewBox="0 0 64 64" aria-hidden="true">${art}</svg>`;
+  return pet?.face ? `<span aria-hidden="true">${escHtml(pet.face)}</span>` : '';
+}
+
 const MOOD_3D = { happy: 'happy', warm: 'happy', cold: 'shivering', sleep: 'sleeping' };
 let pets3d = null; // set once the 3D module has loaded; until then (or without WebGL) the drawn pets show
 
 async function upgrade3d(a, opts = {}) {
-  const model = PET_3D[a.dataset.pet];
+  const model = model3dFor(a.dataset.pet);
   if (!pets3d || !model || a._h || a._loading) return;
   a._loading = true;
   try {
     a.classList.add('is3d');
-    a._h = await pets3d.renderPet3D(model, 'happy', a, { autoRotate: true, interactive: false, ...opts });
-    if (PET_3D[a.dataset.pet] && PET_3D[a.dataset.pet] !== model) a._h.setPet(PET_3D[a.dataset.pet]);
+    const handle = await pets3d.renderPet3D(model, 'happy', a, { autoRotate: true, interactive: false, ...opts });
+    const latestModel = model3dFor(a.dataset.pet);
+    if (!a.isConnected || !latestModel) {
+      handle?.dispose?.();
+      a.classList.remove('is3d');
+      a.innerHTML = artHtml({ id: a.dataset.pet, face: a.dataset.face });
+    } else {
+      a._h = handle;
+      if (latestModel !== model) a._h.setPet(latestModel);
+      const stageMood = a.closest('#stage')?.dataset?.mood;
+      if (stageMood && MOOD_3D[stageMood]) a._h.update?.(MOOD_3D[stageMood]);
+      const canvas = a.querySelector('canvas');
+      canvas?.addEventListener('webglcontextlost', () => {
+        if (a._h !== handle) return;
+        try { handle.dispose?.(); } catch {}
+        a._h = null;
+        a.classList.remove('is3d');
+        a.innerHTML = artHtml({ id: a.dataset.pet, face: a.dataset.face });
+      }, { once: true });
+    }
   } catch (e) {
     a.classList.remove('is3d');
-    a.innerHTML = artHtml({ id: a.dataset.pet });
+    a.innerHTML = artHtml({ id: a.dataset.pet, face: a.dataset.face });
   }
   a._loading = false;
 }
 
 function setAvatarPet(a, pet) {
   a.dataset.pet = pet.id || '';
-  if (a._h && PET_3D[pet.id]) a._h.setPet(PET_3D[pet.id]);
-  else if (!a._h) a.innerHTML = artHtml(pet);
-  if (!a._h) upgrade3d(a, { interactive: !!a.closest('#pet-face') });
+  a.dataset.face = pet.face || '';
+  const model = model3dFor(pet.id);
+  if (a._h && model) {
+    a._h.setPet(model);
+  } else {
+    if (a._h) {
+      try { a._h.dispose?.(); } catch {}
+      a._h = null;
+    }
+    a.classList.remove('is3d');
+    a.innerHTML = artHtml(pet);
+    if (model) upgrade3d(a, { interactive: !!a.closest('#pet-face') });
+  }
 }
 
 /** A round pet avatar: the 3D model when available, the drawn character otherwise. */

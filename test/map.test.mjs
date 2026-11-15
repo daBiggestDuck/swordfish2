@@ -562,3 +562,45 @@ test('Live Server and showcase Engine regression checks', async () => {
   assert.match(engineCss, /header p\s*\{[^}]*margin:\s*\.?15rem auto 0/s);
   assert.match(engineCss, /max-width:\s*480px/);
 });
+
+test('Story pet model aliases/fallbacks and Map surface 3D framing prevent blank/clipped models', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const storyApi = await import('../web/story/pets-3d/api.js');
+
+  const storyJs = await readFile(path.join(REPO_ROOT, 'web', 'story', 'story.js'), 'utf8');
+  for (const id of ['BLUE_GHOST', 'LISTER', 'BLUE_MOON', 'LRA', 'RETRO', 'EDS', 'TRIDENT', 'TRIDDY', 'LN-1', 'NODEY']) {
+    assert.match(storyJs, new RegExp(`['"]?${id}['"]?\\s*:`));
+  }
+  for (const canonical of ['lister', 'retro', 'eds', 'trident', 'ln-1']) {
+    assert.equal(storyApi.resolvePetId(canonical), canonical);
+  }
+  assert.match(storyJs, /EDS_SVG_ART/);
+  assert.match(storyJs, /a\._h\.dispose\?\.\(\)/);
+  assert.match(storyJs, /webglcontextlost/);
+
+  const storyCss = await readFile(path.join(REPO_ROOT, 'web', 'story', 'story.css'), 'utf8');
+  for (const id of ['BLUE_GHOST', 'LISTER', 'BLUE_MOON', 'LRA', 'EDS', 'TRIDENT', 'LN-1', 'NODEY']) {
+    assert.match(storyCss, new RegExp(`\\[data-pet="${id}"\\]`));
+  }
+
+  const pets3dJs = await readFile(path.join(REPO_ROOT, 'web', 'pets-3d', 'pets3d.js'), 'utf8');
+  assert.doesNotMatch(pets3dJs, /setScalar\(1\.35\)/);
+  assert.match(pets3dJs, /SURFACE_PET_SCALE/);
+  const fovMatch = pets3dJs.match(/PerspectiveCamera\(\s*surface\s*\?\s*(\d+)\s*:/);
+  const posMatch = pets3dJs.match(/if \(surface\) \{[\s\S]*?camera\.position\.set\(([^)]+)\)[\s\S]*?camera\.lookAt\(([^)]+)\)/);
+  assert.ok(fovMatch && posMatch, 'Expected surface camera configuration in web/pets-3d/pets3d.js');
+  const fov = Number(fovMatch[1]);
+  const [cx, cy, cz] = posMatch[1].split(',').map((n) => Number(n.trim()));
+  const [tx, ty, tz] = posMatch[2].split(',').map((n) => Number(n.trim()));
+  const dist = Math.hypot(cx - tx, cy - ty, cz - tz);
+  const frustumHeight = 2 * dist * Math.tan(((fov / 2) * Math.PI) / 180);
+  assert.ok(fov >= 34, `Expected surface FOV >= 34 to avoid edge clipping, got ${fov}`);
+  assert.ok(frustumHeight >= 1.9, `Expected surface frustum height >= 1.9 units for 1.58u tall models, got ${frustumHeight.toFixed(2)}`);
+
+  const mapCss = await readFile(path.join(REPO_ROOT, 'web', 'map.css'), 'utf8');
+  const surfArtMatch = mapCss.match(/\.surface-pet-art\s*\{[^}]*width:\s*(\d+)px;\s*height:\s*(\d+)px;/s);
+  assert.ok(surfArtMatch, 'Expected .surface-pet-art dimensions in web/map.css');
+  const surfW = Number(surfArtMatch[1]);
+  const surfH = Number(surfArtMatch[2]);
+  assert.ok(surfW >= 80 && surfW <= 120 && surfW === surfH, `Expected balanced square surface-pet-art <= 120px, got ${surfW}x${surfH}`);
+});

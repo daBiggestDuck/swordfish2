@@ -150,7 +150,7 @@ a.btn-ghost:hover { filter: brightness(1.12); text-decoration: none; }
 .surface-pet-layer[hidden] { display: none !important; }
 .surface-pet-halo {
   position: absolute; left: 50%; top: 100%;
-  width: 72px; height: 26px; margin-left: -36px; margin-top: -6px;
+  width: 48px; height: 18px; margin-left: -24px; margin-top: -5px;
   border-radius: 50%;
   background: radial-gradient(ellipse at center, rgba(255, 231, 173, .85), rgba(245, 158, 11, .35) 45%, transparent 72%);
   filter: blur(1.5px);
@@ -158,16 +158,16 @@ a.btn-ghost:hover { filter: brightness(1.12); text-decoration: none; }
 }
 .surface-pet-art {
   position: absolute; left: 50%; bottom: 0;
-  width: 168px; height: 168px; margin-left: -84px; margin-bottom: 2px;
+  width: 104px; height: 104px; margin-left: -52px; margin-bottom: 3px;
   overflow: visible;
-  filter: drop-shadow(0 0 14px rgba(255, 231, 173, .75)) drop-shadow(0 6px 10px rgba(0, 0, 0, .55));
+  filter: drop-shadow(0 0 12px rgba(255, 231, 173, .72)) drop-shadow(0 5px 8px rgba(0, 0, 0, .55));
 }
 .surface-pet-art.pets3d-mount,
 .surface-pet-art .pets3d-mount {
-  width: 168px; height: 168px; background: transparent !important;
+  width: 104px; height: 104px; background: transparent !important;
 }
 .surface-pet-art .pets3d-canvas {
-  width: 168px !important; height: 168px !important;
+  width: 104px !important; height: 104px !important;
   display: block; background: transparent !important;
 }
 .surface-pet-art .pets3d-error-box,
@@ -199,10 +199,10 @@ a.btn-ghost:hover { filter: brightness(1.12); text-decoration: none; }
 .surface-pet-layer.anim-shiver .surface-pet-art { animation: petShiverSurface .12s linear infinite; }
 .surface-pet-layer.anim-sleep .surface-pet-art { animation: petSleepSurface 2.4s ease-in-out infinite; }
 .surface-pet-layer.anim-huddle .surface-pet-art { animation: petHuddleSurface 1.55s ease-in-out infinite; }
-@keyframes petBobSurface { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-@keyframes petShiverSurface { 0%, 100% { transform: translateX(0) rotate(0deg); } 50% { transform: translateX(4px) rotate(1.5deg); } }
-@keyframes petSleepSurface { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
-@keyframes petHuddleSurface { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(5px) scale(0.96); } }
+@keyframes petBobSurface { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes petShiverSurface { 0%, 100% { transform: translateX(0) rotate(0deg); } 50% { transform: translateX(2.5px) rotate(1.5deg); } }
+@keyframes petSleepSurface { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+@keyframes petHuddleSurface { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(3px) scale(0.96); } }
 
 .moon-pet-stage {
   position: absolute; left: 12px; bottom: 12px; z-index: 6;

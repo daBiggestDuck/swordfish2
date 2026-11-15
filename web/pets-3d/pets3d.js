@@ -269,6 +269,20 @@ function spriteCacheKey(petId, mood, signal, powerGlow, signalStress, size) {
   return `${petId}:${mood}:${Math.round(Number(signal) || 0)}:${powerGlow ? 1 : 0}:${signalStress ? 1 : 0}:${size}`;
 }
 
+const SURFACE_PET_SCALE = Object.freeze({
+  lister: 1,
+  retro: 1.22,
+  eds: 1,
+  trident: 1.04,
+  "ln-1": 0.96,
+});
+
+function applyInstrumentScale(root, petId, { surface = false } = {}) {
+  if (!root) return;
+  const scale = surface ? SURFACE_PET_SCALE[petId] || 1 : 1;
+  root.scale.setScalar(scale);
+}
+
 /**
  * One-shot blit of the procedural instrument into a transparent PNG.
  * Same geometry/mood lighting as renderPet3D — for Flat Map / South Pole SVG markers.
@@ -309,13 +323,13 @@ export async function capturePetSprite(id, moodOrPhase, options = {}) {
     transparent: true,
     shadows: false,
   });
-  // Slightly wider FOV so the full instrument fits the square sprite.
   camera.fov = 36;
-  camera.position.set(2.05, 1.45, 2.55);
-  camera.lookAt(0, 0.58, 0);
+  camera.position.set(1.95, 1.42, 2.55);
+  camera.lookAt(0, 0.66, 0);
   camera.updateProjectionMatrix();
 
   state.root = buildInstrument(petId, state);
+  applyInstrumentScale(state.root, petId, { surface: true });
   state.root.rotation.y = 0.55;
   scene.add(state.root);
   modelWarmCache.add(petId);
@@ -398,11 +412,11 @@ function buildSceneKit({ surface, transparent, shadows }) {
   const scene = new THREE.Scene();
   scene.background = transparent ? null : new THREE.Color(0x050811);
 
-  const camera = new THREE.PerspectiveCamera(surface ? 28 : 38, 1, 0.1, 40);
+  const camera = new THREE.PerspectiveCamera(surface ? 36 : 38, 1, 0.1, 40);
   if (surface) {
-    // Tight framing so the instrument fills the on-globe billboard.
-    camera.position.set(1.15, 0.95, 1.55);
-    camera.lookAt(0, 0.55, 0);
+    // Frame tall/wide rigs (EDS, LN-1, LISTER) with comfortable headroom so bob/rotation never clips.
+    camera.position.set(1.95, 1.42, 2.55);
+    camera.lookAt(0, 0.66, 0);
   } else {
     camera.position.set(2.6, 1.85, 3.4);
     camera.lookAt(0, 0.55, 0);
@@ -759,7 +773,7 @@ async function mountLivePet3D(id, moodOrPhase, el, options) {
       state.dust = [];
       state.tips = [];
       state.root = buildInstrument(state.petId, state);
-      if (surface) state.root.scale.setScalar(1.35);
+      applyInstrumentScale(state.root, state.petId, { surface });
       scene.add(state.root);
       modelWarmCache.add(state.petId);
       renderer.domElement.setAttribute(
@@ -807,11 +821,11 @@ async function mountLivePet3D(id, moodOrPhase, el, options) {
     const resize = () => {
       if (state.disposed) return;
       const rect = el.getBoundingClientRect();
-      const minSize = surface ? 140 : 160;
-      width = Math.max(minSize, Math.floor(rect.width) || (surface ? 168 : 320));
+      const minSize = surface ? 96 : 160;
+      width = Math.max(minSize, Math.floor(rect.width) || (surface ? 104 : 320));
       height = Math.max(
         minSize,
-        Math.floor(rect.height) || (surface ? 168 : 320),
+        Math.floor(rect.height) || (surface ? 104 : 320),
       );
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
@@ -1040,8 +1054,8 @@ function animateMood(root, state, t, reduceMotion) {
     return;
   }
   const mood = state.mood;
-  // Amplify motion on globe-surface billboards so bob/drill/shiver reads at a glance.
-  const amp = state.surface ? 1.85 : 1;
+  // Subtle motion amplification on globe-surface billboards without clipping canvas edges.
+  const amp = state.surface ? 1.25 : 1;
   if (mood === "happy") {
     root.position.y = Math.sin(t * 2.2) * 0.04 * amp;
     root.rotation.z = 0;

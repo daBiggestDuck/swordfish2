@@ -40,10 +40,10 @@ a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 button, select, input { font-family: inherit; color: var(--text); }
 
-[data-pet="BLUE_GHOST"] { --pet: #fde68a; }
-[data-pet="BLUE_MOON"]  { --pet: #ea580c; }
-[data-pet="TRIDENT"]    { --pet: #f59e0b; }
-[data-pet="LN-1"]       { --pet: #45d48a; }
+[data-pet="BLUE_GHOST"], [data-pet="LISTER"], [data-pet="GHOST"] { --pet: #fde68a; }
+[data-pet="BLUE_MOON"], [data-pet="LRA"], [data-pet="RETRO"], [data-pet="LUNA"] { --pet: #ea580c; }
+[data-pet="TRIDENT"], [data-pet="TRIDDY"], [data-pet="EDS"] { --pet: #f59e0b; }
+[data-pet="LN-1"], [data-pet="LN1"], [data-pet="NODEY"] { --pet: #45d48a; }
 
 .starfield {
   position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .5;
