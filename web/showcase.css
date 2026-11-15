@@ -244,15 +244,25 @@ a:hover { text-decoration: underline; }
   margin: 0 auto;
 }
 
-/* Data / Missions backdrop: real lunar regolith from the LRO mosaic,
-   dimmed to a whisper so content scrolls over the surface. The uniform
-   colour layer is a scrim, not a visible gradient. */
+/* Data / Missions backdrop + palette: the section's own tokens mapped to
+   the client palette (#0B1320 / #1F2937 / #64748B / #D1D5DB / #F97316),
+   over real lunar regolith from the LRO mosaic. The texture is
+   pre-darkened in the asset itself (curves-mapped, desaturated), so the
+   background needs no scrim layer. --muted is lifted one slate step
+   (#94A3B8) from the palette's #64748B, which fails 4.5:1 on every
+   surface here; #64748B stays in the family for borders and chips. */
 .data-panel {
+  --bg: #0b1320;
+  --panel: #1f2937;
+  --panel-alt: #2a3441;
+  --border: #475569;
+  --text: #d1d5db;
+  --muted: #94a3b8;
+  --accent: #f97316;
+  --accent-dim: rgba(249, 115, 22, 0.14);
   background-color: var(--bg);
-  background-image:
-    linear-gradient(rgba(11, 14, 20, 0.94), rgba(11, 14, 20, 0.94)),
-    url("assets/regolith-texture.jpg");
-  background-size: auto, 340px;
+  background-image: url("assets/regolith-texture.jpg");
+  background-size: 420px;
 }
 
 .local-panel .kicker,
@@ -365,7 +375,7 @@ a:hover { text-decoration: underline; }
 }
 .tag.status-completed { color: var(--good); border-color: rgba(69, 212, 138, 0.4); background: rgba(69, 212, 138, 0.18); }
 .tag.status-failed { color: var(--bad); border-color: rgba(255, 107, 107, 0.4); background: rgba(255, 107, 107, 0.18); }
-.tag.status-planned { color: var(--accent); border-color: rgba(98, 176, 255, 0.4); background: rgba(98, 176, 255, 0.18); }
+.tag.status-planned { color: var(--accent); border-color: rgba(249, 115, 22, 0.4); background: rgba(249, 115, 22, 0.16); }
 .tag.status-cancelled { color: var(--muted); }
 
 /* ── Data / Missions: moon theme ──────────────────────────────────────
@@ -417,8 +427,8 @@ a:hover { text-decoration: underline; }
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #44e2ff;
-  border: 1.5px solid #0b0e14;
+  background: var(--accent);
+  border: 1.5px solid #0b1320;
   transform: translate(-50%, -50%);
 }
 .data-moon figcaption {
@@ -474,8 +484,8 @@ a:hover { text-decoration: underline; }
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #44e2ff;
-  border: 1px solid #0b0e14;
+  background: var(--accent);
+  border: 1px solid #0b1320;
   transform: translate(-50%, -50%);
 }
 .moon-glyph[data-region="polar"] i { left: 50%; top: 90%; }
@@ -583,13 +593,13 @@ a:hover { text-decoration: underline; }
 @media (hover: hover) and (pointer: fine) {
   .card--reveal:hover {
     background: var(--panel-alt);
-    border-color: rgba(98, 176, 255, 0.45);
+    border-color: rgba(249, 115, 22, 0.45);
   }
 }
 .card--reveal:focus-visible,
 .card--reveal.card--pinned {
   background: var(--panel-alt);
-  border-color: rgba(98, 176, 255, 0.45);
+  border-color: rgba(249, 115, 22, 0.45);
 }
 
 .card--reveal .detail-head {
@@ -644,7 +654,7 @@ a:hover { text-decoration: underline; }
 }
 .source-chip:hover,
 .source-chip:focus-visible {
-  border-color: rgba(98, 176, 255, 0.5);
+  border-color: rgba(249, 115, 22, 0.5);
   color: var(--text);
 }
 
