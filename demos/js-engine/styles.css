@@ -1,26 +1,31 @@
-/* Engine demo fallback — team palette, same tokens as web/engine.css
-   (#0B1320 / #1F2937 / #64748B / #D1D5DB / #F97316; muted text lifted to #94A3B8 for contrast). */
+/* Engine demo fallback — warm space palette, same tokens as web/engine.css */
 :root {
   color-scheme: dark;
-  --bg: #0b1320;
-  --panel: #1f2937;
-  --panel-alt: #2a3441;
-  --border: #475569;
-  --text: #d1d5db;
-  --muted: #94a3b8;
-  --accent: #f97316;
+  --maroon: #7f1d1d;
+  --orange: #ea580c;
+  --amber: #f59e0b;
+  --cream: #fef3c7;
+  --space: #111827;
+
+  --bg: var(--space);
+  --panel: #1a2234;
+  --panel-alt: #222b40;
+  --border: #3a4258;
+  --text: #e8d9a8;
+  --muted: #c4b896;
+  --accent: var(--orange);
   --good: #4ade80;
-  --warn: #fbbf24;
+  --warn: var(--amber);
   --bad: #f87171;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --ink: #0b1320;
+  --ink: var(--space);
   --paper: var(--text);
   --night: var(--bg);
   --night-2: var(--panel-alt);
   --gold: var(--accent);
-  --gold-ink: #0b1320;
+  --gold-ink: var(--space);
   --stamp: var(--bad);
-  --sea: #44e2ff;
+  --sea: #fde68a;
   --line: var(--border);
   --serif: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   --sans: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;

@@ -1,18 +1,24 @@
 /* Payload Pets: story page. Shares the map branch's palette and "mission control" look. */
 :root {
-  --bg: #0b0e14;
-  --panel: #141922;
-  --panel-alt: #1a212e;
-  --border: #2a3244;
-  --text: #e6ecf8;
-  --muted: #8c9bbd;
-  --accent: #62b0ff;
+  --maroon: #7f1d1d;
+  --orange: #ea580c;
+  --amber: #f59e0b;
+  --cream: #fef3c7;
+  --space: #111827;
+
+  --bg: var(--space);
+  --panel: #1a2234;
+  --panel-alt: #222b40;
+  --border: #3a4258;
+  --text: var(--cream);
+  --muted: #c4b896;
+  --accent: var(--orange);
   --good: #45d48a;
-  --warn: #ffb84d;
-  --bad: #ff6b6b;
-  --ice: #44e2ff;
-  --sun: #ffd45e;
-  --plan: #8e9bff;
+  --warn: var(--amber);
+  --bad: #f87171;
+  --ice: #fde68a;
+  --sun: #f59e0b;
+  --plan: #ea580c;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --curve-out: cubic-bezier(0.16, 1, 0.3, 1);
   --pet: var(--accent);           /* each pet sets its own colour (data-pet) */
@@ -26,26 +32,27 @@ body {
   line-height: 1.45;
   min-height: 100vh;
   background:
-    radial-gradient(900px 420px at 80% -8%, rgba(98, 176, 255, 0.10), transparent 60%),
+    radial-gradient(900px 420px at 80% -8%, rgba(234, 88, 12, 0.12), transparent 60%),
+    radial-gradient(700px 380px at 10% 90%, rgba(127, 29, 29, 0.22), transparent 55%),
     var(--bg);
 }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 button, select, input { font-family: inherit; color: var(--text); }
 
-[data-pet="BLUE_GHOST"] { --pet: #a9b6ff; }
-[data-pet="BLUE_MOON"]  { --pet: #62b0ff; }
-[data-pet="TRIDENT"]    { --pet: #ffb84d; }
+[data-pet="BLUE_GHOST"] { --pet: #fde68a; }
+[data-pet="BLUE_MOON"]  { --pet: #ea580c; }
+[data-pet="TRIDENT"]    { --pet: #f59e0b; }
 [data-pet="LN-1"]       { --pet: #45d48a; }
 
 .starfield {
-  position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .45;
+  position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .5;
   background-image:
-    radial-gradient(1px 1px at 20px 30px, #fff 50%, transparent 51%),
-    radial-gradient(1px 1px at 140px 90px, #cfe4ff 50%, transparent 51%),
-    radial-gradient(1.4px 1.4px at 230px 170px, #fff 50%, transparent 51%),
-    radial-gradient(1px 1px at 70px 210px, #ffe9c4 50%, transparent 51%),
-    radial-gradient(1px 1px at 300px 50px, #fff 50%, transparent 51%);
+    radial-gradient(1px 1px at 20px 30px, #fef3c7 50%, transparent 51%),
+    radial-gradient(1px 1px at 140px 90px, #f59e0b 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 230px 170px, #fef3c7 50%, transparent 51%),
+    radial-gradient(1px 1px at 70px 210px, #ea580c 50%, transparent 51%),
+    radial-gradient(1px 1px at 300px 50px, #fef3c7 50%, transparent 51%);
   background-size: 340px 260px;
 }
 .topbar, .layout, .foot { position: relative; z-index: 1; }
@@ -258,8 +265,8 @@ input[type=range] { padding: 0; border: 0; background: transparent; accent-color
 .postcard { position: relative; background: var(--panel); border: 1px solid var(--border); border-top: 3px solid var(--accent); }
 .postcard::after {
   content: ""; position: absolute; top: 1rem; right: 1rem; width: 50px; height: 60px; border-radius: 6px;
-  border: 2px dashed rgba(98, 176, 255, .5);
-  background: radial-gradient(circle at 50% 45%, #d9d9e6 0 32%, transparent 33%), rgba(98, 176, 255, .1);
+  border: 2px dashed rgba(234, 88, 12, .5);
+  background: radial-gradient(circle at 50% 45%, #fef3c7 0 32%, transparent 33%), rgba(234, 88, 12, .12);
 }
 .postmark { margin: 0 0 .35rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
 .postcard h3, .postcard #popup-text { padding-right: 66px; }
@@ -347,7 +354,7 @@ button:disabled { opacity: .45; cursor: not-allowed; filter: none; }
 .dot { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; margin-right: .45rem; box-shadow: inset 0 -2px 2px rgba(0,0,0,.35), 0 0 8px currentColor; }
 .d-sun { background: var(--sun); color: var(--sun); } .d-warm { background: var(--bad); color: var(--bad); } .d-sig { background: var(--accent); color: var(--accent); }
 
-body { background: radial-gradient(1000px 500px at 85% -10%, rgba(98,176,255,.16), transparent 60%), radial-gradient(800px 500px at -10% 40%, rgba(142,155,255,.10), transparent 60%), #070a11; }
+body { background: radial-gradient(1000px 500px at 85% -10%, rgba(234,88,12,.16), transparent 60%), radial-gradient(800px 500px at -10% 40%, rgba(127,29,29,.18), transparent 60%), #111827; }
 .card {
   border-radius: 16px;
   background: linear-gradient(180deg, #1b2230 0%, #121722 100%);
@@ -402,7 +409,7 @@ body {
 .pp-main { padding-bottom: 2.6rem; }
 
 /* ---------------------------------------------------------------- chapters + designed passport */
-.chapter { position: absolute; left: 12px; bottom: 10px; font-family: var(--mono); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--warn); background: rgba(0,0,0,.6); border: 1px solid rgba(255,184,77,.45); border-radius: 6px; padding: .2rem .55rem; }
+.chapter { position: absolute; left: 12px; bottom: 10px; font-family: var(--mono); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--warn); background: rgba(0,0,0,.6); border: 1px solid rgba(245, 158, 11,.45); border-radius: 6px; padding: .2rem .55rem; }
 .passport { max-width: 600px; background: repeating-linear-gradient(135deg, rgba(31,75,143,.035) 0 12px, transparent 12px 24px), linear-gradient(180deg, #f8f3e6, #ebe2ca); }
 .pp-band { background: linear-gradient(90deg, #0f2550, #1f4b8f 60%, #3a6fc0); border-bottom: 3px solid #d9b65a; }
 .pp-main { padding-bottom: 1rem; }

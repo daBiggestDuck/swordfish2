@@ -534,38 +534,38 @@
       <ellipse cx="44" cy="26" rx="3.5" ry="2" fill="#ffbeba"/>`;
     const parts = {
       "heat-flow-drill": `
-        <rect x="16" y="8" width="32" height="22" rx="6" fill="#3d5a80"/>
+        <rect x="16" y="8" width="32" height="22" rx="6" fill="#7f1d1d"/>
         ${face}
-        <rect x="30" y="30" width="4" height="9" fill="#8c9bbd"/>
-        <path d="M28 39 L36 39 L32 46 Z" fill="#44e2ff"/>`,
+        <rect x="30" y="30" width="4" height="9" fill="#c4b896"/>
+        <path d="M28 39 L36 39 L32 46 Z" fill="#f59e0b"/>`,
       retroreflector: `
-        <rect x="13" y="7" width="38" height="27" rx="3" fill="#3d5a80"/>
-        <g fill="#44e2ff" opacity="0.85">
+        <rect x="13" y="7" width="38" height="27" rx="3" fill="#7f1d1d"/>
+        <g fill="#f59e0b" opacity="0.85">
           <rect x="18" y="10" width="6" height="5"/><rect x="29" y="10" width="6" height="5"/><rect x="40" y="10" width="6" height="5"/>
           <rect x="18" y="17" width="6" height="5"/><rect x="40" y="17" width="6" height="5"/>
         </g>
-        <rect x="19" y="40" width="5" height="4" fill="#8c9bbd"/>
-        <rect x="40" y="40" width="5" height="4" fill="#8c9bbd"/>
+        <rect x="19" y="40" width="5" height="4" fill="#c4b896"/>
+        <rect x="40" y="40" width="5" height="4" fill="#c4b896"/>
         ${face}`,
       "dust-shield": `
-        <path d="M12 14 Q32 0 52 14 L52 18 Q32 6 12 18 Z" fill="#44e2ff" opacity="0.55"/>
-        <rect x="16" y="16" width="32" height="20" rx="6" fill="#3d5a80"/>
+        <path d="M12 14 Q32 0 52 14 L52 18 Q32 6 12 18 Z" fill="#f59e0b" opacity="0.55"/>
+        <rect x="16" y="16" width="32" height="20" rx="6" fill="#7f1d1d"/>
         ${face}`,
       trident: `
-        <rect x="18" y="6" width="28" height="22" rx="6" fill="#3d5a80"/>
+        <rect x="18" y="6" width="28" height="22" rx="6" fill="#7f1d1d"/>
         ${face}
-        <path d="M49 4 L57 4 L53 12 Z" fill="#8c9bbd"/>
-        <rect x="23" y="28" width="3" height="11" fill="#8c9bbd"/>
-        <rect x="38" y="28" width="3" height="11" fill="#8c9bbd"/>
-        <path d="M21 39 L27 39 L24 46 Z" fill="#44e2ff"/>
-        <path d="M37 39 L43 39 L40 46 Z" fill="#44e2ff"/>`,
+        <path d="M49 4 L57 4 L53 12 Z" fill="#c4b896"/>
+        <rect x="23" y="28" width="3" height="11" fill="#c4b896"/>
+        <rect x="38" y="28" width="3" height="11" fill="#c4b896"/>
+        <path d="M21 39 L27 39 L24 46 Z" fill="#f59e0b"/>
+        <path d="M37 39 L43 39 L40 46 Z" fill="#f59e0b"/>`,
       "ln-1": `
-        <rect x="16" y="12" width="32" height="20" rx="6" fill="#3d5a80"/>
+        <rect x="16" y="12" width="32" height="20" rx="6" fill="#7f1d1d"/>
         ${face}
-        <rect x="30" y="2" width="3" height="10" fill="#8c9bbd"/>
-        <circle cx="31.5" cy="4" r="3.5" fill="#44e2ff"/>
-        <path d="M24 4 Q31.5 -2 39 4" stroke="#44e2ff" stroke-width="1.5" fill="none" opacity="0.7"/>
-        <rect x="20" y="32" width="24" height="4" rx="2" fill="#8c9bbd"/>`,
+        <rect x="30" y="2" width="3" height="10" fill="#c4b896"/>
+        <circle cx="31.5" cy="4" r="3.5" fill="#f59e0b"/>
+        <path d="M24 4 Q31.5 -2 39 4" stroke="#f59e0b" stroke-width="1.5" fill="none" opacity="0.7"/>
+        <rect x="20" y="32" width="24" height="4" rx="2" fill="#c4b896"/>`,
     };
     return `<svg viewBox="0 0 64 48" role="img" aria-label="Model of the pet's real instrument">${parts[id] || parts["heat-flow-drill"]}</svg>`;
   }

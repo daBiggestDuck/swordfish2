@@ -1,24 +1,30 @@
 /* Pets demo — matched to web/map.css tokens; 3D mounts via PayloadPets3D */
 :root {
   color-scheme: dark;
-  --bg: #0b0e14;
-  --panel: #141922;
-  --panel-alt: #1a212e;
-  --border: #2a3244;
-  --text: #e6ecf8;
-  --muted: #8c9bbd;
-  --accent: #62b0ff;
+  --maroon: #7f1d1d;
+  --orange: #ea580c;
+  --amber: #f59e0b;
+  --cream: #fef3c7;
+  --space: #111827;
+
+  --bg: var(--space);
+  --panel: #1a2234;
+  --panel-alt: #222b40;
+  --border: #3a4258;
+  --text: var(--cream);
+  --muted: #c4b896;
+  --accent: var(--orange);
   --good: #45d48a;
-  --warn: #ffb84d;
-  --bad: #ff6b6b;
-  --ice: #44e2ff;
+  --warn: var(--amber);
+  --bad: #f87171;
+  --ice: #fde68a;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --ink: #051024;
+  --ink: var(--space);
   --paper: var(--text);
   --night: var(--bg);
   --night-2: var(--panel-alt);
   --gold: var(--accent);
-  --gold-ink: #051024;
+  --gold-ink: var(--space);
   --sea: var(--ice);
   --line: var(--border);
   --serif: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
@@ -30,7 +36,7 @@ body {
   font-family: var(--sans); line-height: 1.4;
 }
 .skip {
-  position: absolute; left: 1rem; top: -3rem; background: var(--accent); color: #051024;
+  position: absolute; left: 1rem; top: -3rem; background: var(--accent); color: var(--ink);
   padding: 0.4rem 0.7rem; border-radius: 6px; font-weight: 600; font-size: 0.8rem;
 }
 .skip:focus { top: 0.5rem; }
@@ -44,7 +50,7 @@ body {
   border: 1px solid var(--border); background: var(--panel-alt); font-size: 0.82rem; line-height: 1.4;
 }
 .moon-link.is-live {
-  border-color: rgba(255, 184, 77, 0.55); background: rgba(255, 184, 77, 0.1); color: var(--warn);
+  border-color: rgba(245, 158, 11, 0.55); background: rgba(245, 158, 11, 0.1); color: var(--warn);
 }
 h1, h2, .mood, .cell-label, .adopt-name { font-family: var(--sans); font-weight: 700; letter-spacing: -0.01em; }
 h1 { font-size: 1.35rem; line-height: 1.2; margin: 0.1rem 0 0.45rem; }

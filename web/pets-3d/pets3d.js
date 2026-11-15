@@ -59,10 +59,10 @@ let sharedFarm = null;
 const modelWarmCache = new Set();
 
 const PALETTE = Object.freeze({
-  happy: { light: 0xffe7ad, ambient: 0x6a7a99, accent: 0x62b0ff, tint: 1 },
+  happy: { light: 0xffe7ad, ambient: 0x6a7a99, accent: 0xea580c, tint: 1 },
   shivering: { light: 0xe0b15a, ambient: 0x4a5568, accent: 0xffb84d, tint: 0.85 },
-  sleeping: { light: 0x9bb0c6, ambient: 0x1a2438, accent: 0x44e2ff, tint: 0.55 },
-  cold: { light: 0xa8c4e0, ambient: 0x243448, accent: 0x44e2ff, tint: 0.7 },
+  sleeping: { light: 0x9bb0c6, ambient: 0x1a2438, accent: 0xf59e0b, tint: 0.55 },
+  cold: { light: 0xa8c4e0, ambient: 0x243448, accent: 0xf59e0b, tint: 0.7 },
 });
 
 async function acquireLiveSlot() {
@@ -414,10 +414,10 @@ function buildSceneKit({ surface, transparent, shadows }) {
   key.position.set(3.2, 5.5, 2.4);
   key.castShadow = Boolean(shadows);
   scene.add(key);
-  const fill = new THREE.DirectionalLight(0x62b0ff, 0.35);
+  const fill = new THREE.DirectionalLight(0xea580c, 0.35);
   fill.position.set(-3, 2, -2);
   scene.add(fill);
-  const rim = new THREE.PointLight(0x44e2ff, 0.4, 12);
+  const rim = new THREE.PointLight(0xf59e0b, 0.4, 12);
   rim.position.set(-1.5, 0.4, 2.2);
   scene.add(rim);
 

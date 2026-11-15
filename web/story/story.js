@@ -225,7 +225,7 @@ function patPet() {
   const stage = $('#stage');
   const h = document.createElement('span');
   h.className = 'heart';
-  h.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 21s-8-5.4-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.6-8 11-8 11z" fill="#62b0ff" stroke="#d8ecff" stroke-width="1"/></svg>';
+  h.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 21s-8-5.4-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.6-8 11-8 11z" fill="#ea580c" stroke="#d8ecff" stroke-width="1"/></svg>';
   h.style.left = `${46 + Math.random() * 8}%`;
   stage.append(h);
   setTimeout(() => h.remove(), 1200);

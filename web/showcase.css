@@ -1,16 +1,24 @@
-/* Showcase shell — visual tokens matched to web/map.css (Map / Sites source of truth). */
+/* Showcase shell — warm space palette (Map / Sites tokens in web/map.css stay in sync). */
 :root {
-  --bg: #0b0e14;
-  --panel: #141922;
-  --panel-alt: #1a212e;
-  --border: #2a3244;
-  --text: #e6ecf8;
-  --muted: #8c9bbd;
-  --accent: #62b0ff;
+  /* Core 5 from brand board */
+  --maroon: #7f1d1d;
+  --orange: #ea580c;
+  --amber: #f59e0b;
+  --cream: #fef3c7;
+  --space: #111827;
+
+  --bg: var(--space);
+  --panel: #1a2234;
+  --panel-alt: #222b40;
+  --border: #3a4258;
+  --text: var(--cream);
+  --muted: #c4b896;
+  --accent: var(--orange);
+  --accent-ink: var(--space);
   --good: #45d48a;
-  --warn: #ffb84d;
-  --bad: #ff6b6b;
-  --ice: #44e2ff;
+  --warn: var(--amber);
+  --bad: #f87171;
+  --ice: #fde68a;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --font: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   --nav-h: 3.25rem;
@@ -18,7 +26,7 @@
   --bg-panel: var(--panel-alt);
   --line: var(--border);
   --ok: var(--good);
-  --accent-dim: rgba(98, 176, 255, 0.14);
+  --accent-dim: rgba(234, 88, 12, 0.16);
 }
 
 * { box-sizing: border-box; }
@@ -37,6 +45,100 @@ body {
   display: flex;
   flex-direction: column;
   background: var(--bg);
+  position: relative;
+  isolation: isolate;
+}
+
+/* ── Space field (krillion-style depth: soft orbs, stars, grain) ── */
+.space-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background: var(--space);
+}
+.space-bg__stars,
+.space-bg__nebula,
+.space-bg__grain {
+  position: absolute;
+  inset: 0;
+}
+.space-bg__stars {
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgba(254, 243, 199, 0.85) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 28% 62%, rgba(254, 243, 199, 0.55) 50%, transparent 51%),
+    radial-gradient(1px 1px at 44% 28%, rgba(245, 158, 11, 0.7) 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 61% 74%, rgba(254, 243, 199, 0.9) 50%, transparent 51%),
+    radial-gradient(1px 1px at 73% 22%, rgba(254, 243, 199, 0.5) 50%, transparent 51%),
+    radial-gradient(1px 1px at 86% 48%, rgba(234, 88, 12, 0.55) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 18% 88%, rgba(254, 243, 199, 0.65) 50%, transparent 51%),
+    radial-gradient(1px 1px at 52% 8%, rgba(254, 243, 199, 0.45) 50%, transparent 51%),
+    radial-gradient(1px 1px at 94% 82%, rgba(245, 158, 11, 0.5) 50%, transparent 51%),
+    radial-gradient(1.3px 1.3px at 6% 42%, rgba(254, 243, 199, 0.7) 50%, transparent 51%);
+  background-size: 100% 100%;
+  opacity: 0.7;
+  animation: spaceTwinkle 9s ease-in-out infinite alternate;
+}
+.space-bg__nebula {
+  filter: blur(48px);
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+.space-bg__nebula--a {
+  background:
+    radial-gradient(ellipse 42% 34% at 18% 28%, rgba(127, 29, 29, 0.75), transparent 70%),
+    radial-gradient(ellipse 30% 26% at 72% 18%, rgba(234, 88, 12, 0.45), transparent 68%);
+  animation: nebulaDriftA 28s ease-in-out infinite alternate;
+}
+.space-bg__nebula--b {
+  background:
+    radial-gradient(ellipse 38% 32% at 78% 68%, rgba(245, 158, 11, 0.4), transparent 70%),
+    radial-gradient(ellipse 28% 24% at 36% 76%, rgba(127, 29, 29, 0.55), transparent 68%);
+  animation: nebulaDriftB 34s ease-in-out infinite alternate;
+}
+.space-bg__nebula--c {
+  background:
+    radial-gradient(ellipse 48% 28% at 52% 48%, rgba(234, 88, 12, 0.22), transparent 72%),
+    radial-gradient(ellipse 22% 18% at 12% 58%, rgba(254, 243, 199, 0.12), transparent 70%);
+  animation: nebulaDriftC 22s ease-in-out infinite alternate;
+  opacity: 0.4;
+}
+.space-bg__grain {
+  opacity: 0.09;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.95 0 0 0 0 0.9 0 0 0 0 0.7 0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 160px 160px;
+  mix-blend-mode: overlay;
+}
+
+@keyframes spaceTwinkle {
+  from { opacity: 0.55; }
+  to { opacity: 0.85; }
+}
+@keyframes nebulaDriftA {
+  from { transform: translate3d(-2%, -1%, 0) scale(1); }
+  to { transform: translate3d(3%, 2%, 0) scale(1.08); }
+}
+@keyframes nebulaDriftB {
+  from { transform: translate3d(2%, 1%, 0) scale(1.05); }
+  to { transform: translate3d(-3%, -2%, 0) scale(1); }
+}
+@keyframes nebulaDriftC {
+  from { transform: translate3d(0, 2%, 0) scale(0.96); }
+  to { transform: translate3d(1%, -2%, 0) scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .space-bg__stars,
+  .space-bg__nebula { animation: none; }
+}
+
+.shell-banner,
+.topnav,
+.stage {
+  position: relative;
+  z-index: 1;
 }
 
 a { color: var(--accent); text-decoration: none; }
@@ -61,8 +163,8 @@ a:hover { text-decoration: underline; }
   gap: 0.75rem;
   flex-wrap: wrap;
   padding: 0.45rem 1rem;
-  background: rgba(255, 184, 77, 0.09);
-  border-bottom: 1px solid rgba(255, 184, 77, 0.42);
+  background: rgba(245, 158, 11, 0.09);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.42);
   color: var(--warn);
   font-size: 0.82rem;
 }
@@ -84,7 +186,9 @@ a:hover { text-decoration: underline; }
   gap: 0.75rem;
   padding: 0 0.75rem 0 1rem;
   border-bottom: 1px solid var(--border);
-  background: var(--panel);
+  background: rgba(26, 34, 52, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
   z-index: 20;
@@ -144,7 +248,7 @@ a:hover { text-decoration: underline; }
 }
 .tab[aria-selected="true"] {
   background: var(--accent);
-  color: #061327;
+  color: var(--accent-ink);
   border-color: var(--accent);
 }
 .tab .dot {
@@ -153,17 +257,17 @@ a:hover { text-decoration: underline; }
   height: 0.45rem;
   border-radius: 50%;
   margin-right: 0.35rem;
-  background: #475569;
+  background: #5c5340;
   vertical-align: middle;
 }
-.tab[aria-selected="true"] .dot { background: #061327; opacity: 0.55; }
+.tab[aria-selected="true"] .dot { background: var(--accent-ink); opacity: 0.55; }
 .tab .dot.ok { background: var(--good); }
 .tab .dot.warn { background: var(--warn); }
 .tab .dot.static { background: var(--accent); }
 .tab[aria-selected="true"] .dot.ok,
 .tab[aria-selected="true"] .dot.warn,
 .tab[aria-selected="true"] .dot.static {
-  background: #061327;
+  background: var(--accent-ink);
   opacity: 0.7;
 }
 
@@ -184,7 +288,7 @@ a:hover { text-decoration: underline; }
 }
 .nav-meta a:hover {
   color: var(--accent);
-  border-color: rgba(98, 176, 255, 0.45);
+  border-color: rgba(234, 88, 12, 0.5);
   text-decoration: none;
 }
 
@@ -194,7 +298,7 @@ a:hover { text-decoration: underline; }
   position: relative;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background: transparent;
 }
 
 .panel {
@@ -204,7 +308,7 @@ a:hover { text-decoration: underline; }
   flex-direction: column;
   position: absolute;
   inset: 0;
-  background: var(--bg);
+  background: transparent;
 }
 .panel.active { display: flex; }
 
@@ -212,7 +316,7 @@ a:hover { text-decoration: underline; }
   flex: 1;
   width: 100%;
   border: 0;
-  background: var(--bg);
+  background: transparent;
 }
 
 .panel-note {
@@ -221,8 +325,8 @@ a:hover { text-decoration: underline; }
   padding: 0.45rem 1rem;
   font-size: 0.8rem;
   color: var(--warn);
-  background: rgba(255, 184, 77, 0.09);
-  border-bottom: 1px solid rgba(255, 184, 77, 0.42);
+  background: rgba(245, 158, 11, 0.09);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.42);
 }
 .panel-note[data-show="1"] { display: block; }
 .panel-note code {
@@ -275,26 +379,20 @@ a:hover { text-decoration: underline; }
   margin: 0 auto;
 }
 
-/* Data / Missions backdrop + palette: the section's own tokens mapped to
-   the client palette (#0B1320 / #1F2937 / #64748B / #D1D5DB / #F97316),
-   over real lunar regolith from the LRO mosaic. The backdrop is one
-   continuous 1200px patch cut from inside the lunar disc (no tiling,
-   no seams), curve-mapped dark in the asset itself so no scrim layer
-   is needed; content scrolls over it while the surface stays put.
-   --muted is lifted one slate step (#94A3B8) from the palette's
-   #64748B, which fails 4.5:1 on every surface here; #64748B stays in
-   the family for borders and chips. */
+/* Data / Missions: space palette over lunar regolith (LRO mosaic patch). */
 .data-panel {
-  --bg: #0b1320;
-  --panel: #1f2937;
-  --panel-alt: #2a3441;
-  --border: #475569;
-  --text: #d1d5db;
-  --muted: #94a3b8;
-  --accent: #f97316;
-  --accent-dim: rgba(249, 115, 22, 0.14);
-  background-color: var(--bg);
-  background-image: url("assets/regolith-backdrop.jpg");
+  --bg: var(--space);
+  --panel: rgba(26, 34, 52, 0.9);
+  --panel-alt: rgba(34, 43, 64, 0.92);
+  --border: #3a4258;
+  --text: var(--cream);
+  --muted: #c4b896;
+  --accent: var(--orange);
+  --accent-dim: rgba(234, 88, 12, 0.16);
+  background-color: transparent;
+  background-image:
+    linear-gradient(180deg, rgba(17, 24, 39, 0.55), rgba(17, 24, 39, 0.72)),
+    url("assets/regolith-backdrop.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -345,7 +443,7 @@ a:hover { text-decoration: underline; }
   font-size: 0.84rem;
   line-height: 1.45;
 }
-.local-panel .hero-prop { color: #c7d2e8; font-size: 0.92rem; }
+.local-panel .hero-prop { color: #e8d9a8; font-size: 0.92rem; }
 .local-panel .judge-tip {
   background: var(--panel-alt);
   border: 0;
@@ -431,7 +529,7 @@ a:hover { text-decoration: underline; }
 }
 .tag.status-completed { color: var(--good); border-color: rgba(69, 212, 138, 0.4); background: rgba(69, 212, 138, 0.18); }
 .tag.status-failed { color: var(--bad); border-color: rgba(255, 107, 107, 0.4); background: rgba(255, 107, 107, 0.18); }
-.tag.status-planned { color: var(--accent); border-color: rgba(249, 115, 22, 0.4); background: rgba(249, 115, 22, 0.16); }
+.tag.status-planned { color: var(--accent); border-color: rgba(234, 88, 12, 0.45); background: rgba(234, 88, 12, 0.16); }
 .tag.status-cancelled { color: var(--muted); }
 
 /* ── Data / Missions: moon theme ──────────────────────────────────────
@@ -484,7 +582,7 @@ a:hover { text-decoration: underline; }
   height: 9px;
   border-radius: 50%;
   background: var(--accent);
-  border: 1.5px solid #0b1320;
+  border: 1.5px solid var(--space);
   transform: translate(-50%, -50%);
 }
 .data-moon figcaption {
@@ -541,7 +639,7 @@ a:hover { text-decoration: underline; }
   height: 7px;
   border-radius: 50%;
   background: var(--accent);
-  border: 1px solid #0b1320;
+  border: 1px solid var(--space);
   transform: translate(-50%, -50%);
 }
 .moon-glyph[data-region="polar"] i { left: 50%; top: 90%; }
@@ -582,9 +680,9 @@ a:hover { text-decoration: underline; }
   border: 1px solid var(--border);
   background: var(--panel-alt);
 }
-.care-power { color: var(--warn); border-color: rgba(255, 184, 77, 0.4); background: rgba(255, 184, 77, 0.12); }
+.care-power { color: var(--warn); border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.12); }
 .care-warmth { color: #ffa8a0; border-color: rgba(255, 140, 130, 0.35); background: rgba(255, 107, 107, 0.12); }
-.care-signal { color: var(--ice); border-color: rgba(68, 226, 255, 0.35); background: rgba(68, 226, 255, 0.1); }
+.care-signal { color: var(--ice); border-color: rgba(253, 230, 138, 0.4); background: rgba(253, 230, 138, 0.12); }
 
 .data-empty {
   padding: 1.5rem 0;
@@ -649,13 +747,13 @@ a:hover { text-decoration: underline; }
 @media (hover: hover) and (pointer: fine) {
   .card--reveal:hover {
     background: var(--panel-alt);
-    border-color: rgba(249, 115, 22, 0.45);
+    border-color: rgba(234, 88, 12, 0.5);
   }
 }
 .card--reveal:focus-visible,
 .card--reveal.card--pinned {
   background: var(--panel-alt);
-  border-color: rgba(249, 115, 22, 0.45);
+  border-color: rgba(234, 88, 12, 0.5);
 }
 
 .card--reveal .detail-head {
@@ -710,7 +808,7 @@ a:hover { text-decoration: underline; }
 }
 .source-chip:hover,
 .source-chip:focus-visible {
-  border-color: rgba(249, 115, 22, 0.5);
+  border-color: rgba(234, 88, 12, 0.55);
   color: var(--text);
 }
 
@@ -738,8 +836,8 @@ a:hover { text-decoration: underline; }
   margin-bottom: 0.75rem;
 }
 .about-block.callout-pole {
-  background: rgba(98, 176, 255, 0.09);
-  border-color: rgba(98, 176, 255, 0.38);
+  background: rgba(234, 88, 12, 0.1);
+  border-color: rgba(234, 88, 12, 0.4);
 }
 .about-block h2 {
   margin: 0 0 0.45rem;
@@ -776,7 +874,7 @@ a:hover { text-decoration: underline; }
 }
 .about-block thead th {
   color: var(--accent);
-  border-bottom-color: rgba(98, 176, 255, 0.35);
+  border-bottom-color: rgba(234, 88, 12, 0.4);
 }
 .provenance-list a { font-size: 0.84rem; }
 

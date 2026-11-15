@@ -1,25 +1,27 @@
-/* Engine / Care — team palette (#0B1320 / #1F2937 / #64748B / #D1D5DB / #F97316),
-   same token mapping as the Data / Missions tab on `data-missions`:
-   --muted is lifted one slate step (#94A3B8) because #64748B fails 4.5:1 for text on
-   these surfaces; #64748B stays in the family for borders, tracks and night chips.
-   Status colours stay distinct from the orange accent so "warning" never reads as "button". */
+/* Engine / Care — warm space palette (aligned with showcase / map tokens). */
 :root {
-  --bg: #0b1320;
-  --panel: #1f2937;
-  --panel-alt: #2a3441;
-  --border: #475569;
-  --slate: #64748b;
-  --text: #d1d5db;
-  --text-strong: #f3f4f6;
-  --muted: #94a3b8;
-  --accent: #f97316;
-  --accent-ink: #0b1320;
-  --accent-dim: rgba(249, 115, 22, 0.12);
+  --maroon: #7f1d1d;
+  --orange: #ea580c;
+  --amber: #f59e0b;
+  --cream: #fef3c7;
+  --space: #111827;
+
+  --bg: var(--space);
+  --panel: #1a2234;
+  --panel-alt: #222b40;
+  --border: #3a4258;
+  --slate: #5c5340;
+  --text: #e8d9a8;
+  --text-strong: var(--cream);
+  --muted: #c4b896;
+  --accent: var(--orange);
+  --accent-ink: var(--space);
+  --accent-dim: rgba(234, 88, 12, 0.14);
   --good: #4ade80;
-  --warn: #fbbf24;
+  --warn: var(--amber);
   --bad: #f87171;
-  --cold: #60a5fa;
-  --sun: #fbbf24;
+  --cold: #fde68a;
+  --sun: var(--amber);
   --dust: #c4a77d;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --card: var(--panel);
