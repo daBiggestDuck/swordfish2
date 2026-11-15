@@ -23,7 +23,7 @@ Then merged: `origin/story` (`89a398d`), `origin/data-missions` (`8d3c849`), plu
 | `deployer` | `fa1d89d020eb7f89e9f80a308d2d910f7a78547b` | `fa1d89d` | Deployer dashboard: branch table, merge-into-main checks… | ancestor of main/v0 |
 | `pranav/pets-triddy-nodey` | `4dd133d9168322b81b2482b12529812b74e7028a` | `4dd133d` | feat: add Triddy/Nodey pets on Data tip | ancestor of main/v0 |
 
-Assembled tip: `058d624379698b33ef0f2c2a339a97625d6a37f1` (`058d624`). Prefer: `git rev-parse origin/v1`
+Assembled tip: `57bed245d633fcb19215090e3a88eb115c07224d` (`57bed24`; content tip `058d624` + this ledger SHA line). Prefer: `git rev-parse origin/v1`
 
 Showcase ports: map :8080, story :8081, engine :8082 (shell :8765).
 
