@@ -475,6 +475,18 @@ test('Live Server static routes and Story client offline fallback work cleanly',
   assert.equal(catalogRes.status, 200);
   const catalog = JSON.parse(catalogRes.text);
   assert.ok(Array.isArray(catalog.missions) && catalog.missions.length >= 1);
+
+  for (const dirRoute of ['/story', '/web/story', '/demos/js-pets']) {
+    const redir = await invokeHandler(handler, dirRoute);
+    assert.equal(redir.status, 302, `Expected 302 trailing-slash redirect for ${dirRoute}`);
+    assert.equal(redir.headers.Location, `${dirRoute}/`);
+  }
+  const storySlash = await invokeHandler(handler, '/story/');
+  assert.equal(storySlash.status, 200);
+  assert.match(storySlash.text, /Payload Pets: Story/);
+
+  const storyClientSrc = fs.readFileSync(path.join(REPO_ROOT, 'web', 'story', 'story-client.js'), 'utf8');
+  assert.doesNotMatch(storyClientSrc, /^\s*import\s+[^;]*'\.\.\//m);
 });
 
 test('Markdown preview renderer formats user README.md GFM elements, excludes dev docs, and server serves /README.md and /readme.html', async () => {
@@ -521,4 +533,31 @@ test('Markdown preview renderer formats user README.md GFM elements, excludes de
     assert.equal(res.status, 200, `Expected 200 for ${route}`);
     assert.match(res.text, pattern);
   }
+});
+
+test('Live Server and showcase Engine regression checks', async () => {
+  const { readFile } = await import('node:fs/promises');
+
+  const engineServer = await readFile(path.join(REPO_ROOT, 'src', 'engine', 'EngineServer.java'), 'utf8');
+  assert.match(engineServer, /allowLocalPages\s*\(/);
+  assert.match(engineServer, /Access-Control-Allow-Origin/);
+  assert.match(engineServer, /Vary/);
+  assert.match(engineServer, /allowLocalPages\s*\(\s*ex\s*\)/);
+
+  const showcaseJs = await readFile(path.join(REPO_ROOT, 'web', 'showcase.js'), 'utf8');
+  assert.match(showcaseJs, /resolvedSrc/);
+  assert.match(showcaseJs, /127\.0\.0\.1/);
+  assert.match(showcaseJs, /probeUrl/);
+  assert.match(showcaseJs, /note\.className\s*=\s*["']panel-note["']/);
+
+  const showcaseCss = await readFile(path.join(REPO_ROOT, 'web', 'showcase.css'), 'utf8');
+  assert.match(showcaseCss, /\.topnav\s*\{[^}]*min-height:\s*var\(--nav-h\)/s);
+  assert.match(showcaseCss, /\.topnav\s*\{[^}]*flex-wrap:\s*wrap/s);
+  assert.match(showcaseCss, /\.tabs\s*\{[^}]*flex-wrap:\s*wrap/s);
+  assert.doesNotMatch(showcaseCss, /\.tabs\s*\{[^}]*overflow-x:\s*auto/s);
+
+  const engineCss = await readFile(path.join(REPO_ROOT, 'web', 'engine.css'), 'utf8');
+  assert.match(engineCss, /header h1\s*\{[^}]*margin:\s*\.?1rem auto 0/s);
+  assert.match(engineCss, /header p\s*\{[^}]*margin:\s*\.?15rem auto 0/s);
+  assert.match(engineCss, /max-width:\s*480px/);
 });

@@ -6,7 +6,45 @@
 //
 // Pop-up objects look like { id, mission, title, text, dayStart, sourceUrl }.
 
-import { handleClientApi, normalizeSiteId } from '../map_engine_client.js';
+// Lazy-loaded only during offline/static fallback so StoryServer (:8081), which serves only
+// web/story/, never fails module resolution on ../map_engine_client.js.
+let mapClientPromise = null;
+function loadMapClient() {
+  if (!mapClientPromise) {
+    mapClientPromise = import('../map_engine_client.js').catch(() => null);
+  }
+  return mapClientPromise;
+}
+
+const STORY_SITE_ALIASES = {
+  SHACKLETON_RIM: 'SHACKLETON_RIM',
+  SHACKLETON_RIDGE: 'SHACKLETON_RIM',
+  'SHACKLETON-RIM': 'SHACKLETON_RIM',
+  'SHACKLETON-RIDGE': 'SHACKLETON_RIM',
+  MARE_CRISIUM: 'MARE_CRISIUM',
+  'MARE-CRISIUM': 'MARE_CRISIUM',
+  MALAPERT_A: 'MALAPERT_A',
+  'MALAPERT-A': 'MALAPERT_A',
+  MONS_MOUTON: 'MONS_MOUTON',
+  'MONS-MOUTON': 'MONS_MOUTON',
+  NOBILE_RIM: 'MONS_MOUTON',
+  NOBILE_REGION: 'MONS_MOUTON',
+  'NOBILE-REGION': 'MONS_MOUTON',
+  NOBILE: 'MONS_MOUTON',
+  FAR_SIDE: 'FAR_SIDE',
+  SCHRODINGER_BASIN: 'FAR_SIDE',
+  'SCHRODINGER-BASIN': 'FAR_SIDE',
+  LUNAR_FARSIDE: 'FAR_SIDE',
+  'LUNAR-FARSIDE': 'FAR_SIDE',
+};
+
+function normalizeSiteId(id) {
+  if (!id) return '';
+  const upper = String(id).trim().toUpperCase();
+  if (STORY_SITE_ALIASES[upper]) return STORY_SITE_ALIASES[upper];
+  const underscored = upper.replace(/-/g, '_');
+  return STORY_SITE_ALIASES[underscored] || upper;
+}
 
 // Engine milestone ids (src/engine/Rules.java MILESTONES) -> Passport lines.
 const MILESTONES = {
@@ -221,7 +259,10 @@ function momentApplies(m, site, pet) {
 async function enrichedStorySites() {
   let mapSites = [];
   try {
-    mapSites = await handleClientApi('/api/sites');
+    const mapClient = await loadMapClient();
+    if (mapClient?.handleClientApi) {
+      mapSites = await mapClient.handleClientApi('/api/sites');
+    }
   } catch {
     mapSites = [];
   }
@@ -260,8 +301,10 @@ async function fallbackApi(path) {
     const siteId = q.get('site') || 'SHACKLETON_RIDGE';
     const date = q.get('date') || new Date().toISOString().slice(0, 10);
     const enc = encodeURIComponent;
+    const mapClient = await loadMapClient();
+    if (!mapClient?.handleClientApi) return null;
     const [sky, sites] = await Promise.all([
-      handleClientApi(`/api/sky?site=${enc(siteId)}&date=${enc(date)}`),
+      mapClient.handleClientApi(`/api/sky?site=${enc(siteId)}&date=${enc(date)}`),
       enrichedStorySites(),
     ]);
     const storySite = sites.find((s) => normalizeSiteId(s.id) === normalizeSiteId(sky.id));

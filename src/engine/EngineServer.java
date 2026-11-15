@@ -157,7 +157,17 @@ public class EngineServer {
         send(ex, 200, type, Files.readAllBytes(file));
     }
 
+    /** Lets the local showcase shell (Live Server / Map server) probe and embed localhost:8082. */
+    private static void allowLocalPages(HttpExchange ex) {
+        String origin = ex.getRequestHeaders().getFirst("Origin");
+        if (origin != null && origin.matches("http://(localhost|127\\.0\\.0\\.1)(:\\d{1,5})?")) {
+            ex.getResponseHeaders().set("Access-Control-Allow-Origin", origin);
+            ex.getResponseHeaders().set("Vary", "Origin");
+        }
+    }
+
     private static void send(HttpExchange ex, int code, String type, byte[] body) throws IOException {
+        allowLocalPages(ex);
         ex.getResponseHeaders().set("Content-Type", type);
         ex.getResponseHeaders().set("Cache-Control", "no-store");
         ex.sendResponseHeaders(code, body.length);

@@ -82,23 +82,41 @@
           : "Backend not running";
   }
 
+  async function probeUrl(url, timeoutMs = 1800) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { signal: ctrl.signal, mode: "cors" });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async function probe(tab) {
     if (tab.health === "static" || !tab.health) {
       setDot(tab.id, "static");
       return true;
     }
-    try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 1200);
-      const res = await fetch(tab.health, { signal: ctrl.signal, mode: "cors" });
-      clearTimeout(timer);
-      const ok = res.ok;
-      setDot(tab.id, ok ? "ok" : "warn");
-      return ok;
-    } catch {
-      setDot(tab.id, "warn");
-      return false;
+    if (await probeUrl(tab.health)) {
+      tab.resolvedSrc = tab.src;
+      setDot(tab.id, "ok");
+      return true;
     }
+    // Java's InetAddress.getLoopbackAddress() binds IPv4 127.0.0.1; retry directly if localhost stalls on IPv6 ::1.
+    if (tab.health.includes("://localhost:")) {
+      const altHealth = tab.health.replace("://localhost:", "://127.0.0.1:");
+      if (await probeUrl(altHealth)) {
+        tab.resolvedSrc = tab.src.replace("://localhost:", "://127.0.0.1:");
+        setDot(tab.id, "ok");
+        return true;
+      }
+    }
+    delete tab.resolvedSrc;
+    setDot(tab.id, "warn");
+    return false;
   }
 
   function updateBanner() {
@@ -329,13 +347,15 @@
     const note = panel.querySelector(".panel-note");
     if (!iframe) return;
 
-    let src = tab.src;
+    let src = tab.resolvedSrc || tab.src;
     if (!ok && tab.fallback) {
       src = tab.fallback;
       note.dataset.show = "1";
+      note.className = "panel-note";
       note.innerHTML = `${tab.label} server is not on <code>localhost:${tab.port}</code>. Showing the static demo fallback. Start <code>${tab.need}</code> for the full Java surface.`;
     } else if (!ok && tab.need) {
       note.dataset.show = "1";
+      note.className = "panel-note";
       note.innerHTML = `${tab.label} needs <code>${tab.need}</code> (port ${tab.port}). Start it in another terminal, then click this tab again.`;
       // Still point iframe at the backend URL so a refresh after start works via reload below
     } else if (tab.id === "map") {
@@ -634,8 +654,16 @@
     });
     // Re-probe backends periodically so Story/Engine light up without a full reload
     setInterval(async () => {
-      await Promise.all(TABS.filter((t) => t.need).map(probe));
+      const backendTabs = TABS.filter((t) => t.need);
+      const before = Object.fromEntries(backendTabs.map((t) => [t.id, status[t.id]]));
+      await Promise.all(backendTabs.map(probe));
       updateBanner();
+      const activeId = hashTab();
+      const activeTab = backendTabs.find((t) => t.id === activeId);
+      if (activeTab && before[activeTab.id] === "warn" && status[activeTab.id] === "ok") {
+        const panel = stageEl.querySelector(`[data-panel="${activeTab.id}"]`);
+        if (panel) await activateIframe(activeTab, panel, true);
+      }
     }, 8000);
   }
 

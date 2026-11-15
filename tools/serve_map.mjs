@@ -114,6 +114,12 @@ export function createMapRequestHandler(mapsRoot = DEFAULT_MAPS_ROOT, webRoot = 
       return;
     }
 
+    if (url.pathname === '/story' && !fs.existsSync(path.join(webRoot, 'story.html')) && fs.existsSync(path.join(webRoot, 'story', 'index.html'))) {
+      res.writeHead(302, { Location: `/story/${url.search}`, 'Cache-Control': 'no-store' });
+      res.end();
+      return;
+    }
+
     let relPath = url.pathname;
     if (relPath === '/') {
       relPath = fs.existsSync(path.join(webRoot, 'index.html')) ? '/index.html' : '/map.html';
@@ -136,22 +142,32 @@ export function createMapRequestHandler(mapsRoot = DEFAULT_MAPS_ROOT, webRoot = 
       if (candidate !== baseDir && !candidate.startsWith(baseDir + path.sep)) return null;
       if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
         const indexCandidate = path.join(candidate, 'index.html');
-        if (fs.existsSync(indexCandidate) && fs.statSync(indexCandidate).isFile()) return indexCandidate;
+        if (fs.existsSync(indexCandidate) && fs.statSync(indexCandidate).isFile()) {
+          return { file: indexCandidate, isDir: true };
+        }
         return null;
       }
-      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        return { file: candidate, isDir: false };
+      }
       return null;
     };
 
-    const resolved =
+    const match =
       relPath === '/readme.html'
         ? resolveSafeFile(REPO_ROOT, relPath) || resolveSafeFile(webRoot, relPath)
         : resolveSafeFile(webRoot, relPath) || resolveSafeFile(REPO_ROOT, url.pathname) || resolveSafeFile(REPO_ROOT, relPath);
-    if (!resolved) {
+    if (!match) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('Not found');
       return;
     }
+    if (match.isDir && !url.pathname.endsWith('/')) {
+      res.writeHead(302, { Location: `${url.pathname}/${url.search}`, 'Cache-Control': 'no-store' });
+      res.end();
+      return;
+    }
+    const resolved = match.file;
     const ext = path.extname(resolved).toLowerCase();
     res.writeHead(200, {
       'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',

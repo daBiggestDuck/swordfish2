@@ -166,36 +166,54 @@ public class MapServer {
 
     private static void serveStatic(HttpExchange ex) throws IOException {
         String rawPath = ex.getRequestURI().getPath();
+        String rawQuery = ex.getRequestURI().getRawQuery();
+        String suffix = (rawQuery != null && !rawQuery.isEmpty()) ? "?" + rawQuery : "";
+        if (rawPath.equals("/story") && !Files.isRegularFile(WEB_ROOT.resolve("story.html"))
+                && Files.isRegularFile(WEB_ROOT.resolve("story/index.html"))) {
+            redirect(ex, "/story/" + suffix);
+            return;
+        }
         String path = rawPath;
         if (path.equals("/")) {
             path = Files.isRegularFile(WEB_ROOT.resolve("index.html")) ? "/index.html" : "/map.html";
         } else if (path.equals("/map")) {
             path = "/map.html";
         } else if (path.equals("/story")) {
-            path = "/story.html";
+            path = Files.isRegularFile(WEB_ROOT.resolve("story.html")) ? "/story.html" : "/story/index.html";
         } else if (path.equals("/readme")) {
             path = "/readme.html";
         }
         String rel = path.startsWith("/") ? path.substring(1) : path;
         String rawRel = rawPath.startsWith("/") ? rawPath.substring(1) : rawPath;
         Path file = null;
+        boolean needsSlashRedirect = false;
         if (path.equals("/readme.html")) {
             Path repoReadme = REPO_ROOT.resolve("readme.html").normalize();
             if (repoReadme.startsWith(REPO_ROOT) && Files.isRegularFile(repoReadme)) {
                 file = repoReadme;
             }
         }
-        if (file == null) {
-            Path webCandidate = WEB_ROOT.resolve(rel).normalize();
-            if (webCandidate.startsWith(WEB_ROOT) && Files.isRegularFile(webCandidate)) {
-                file = webCandidate;
+        for (Path[] candidate : new Path[][] {
+            { WEB_ROOT, WEB_ROOT.resolve(rel).normalize() },
+            { REPO_ROOT, REPO_ROOT.resolve(rawRel).normalize() },
+        }) {
+            if (file != null || needsSlashRedirect) break;
+            Path root = candidate[0];
+            Path resolved = candidate[1];
+            if (!resolved.startsWith(root)) continue;
+            if (Files.isDirectory(resolved) && Files.isRegularFile(resolved.resolve("index.html"))) {
+                if (!rawPath.endsWith("/")) {
+                    needsSlashRedirect = true;
+                } else {
+                    file = resolved.resolve("index.html");
+                }
+            } else if (Files.isRegularFile(resolved)) {
+                file = resolved;
             }
         }
-        if (file == null) {
-            Path repoCandidate = REPO_ROOT.resolve(rawRel).normalize();
-            if (repoCandidate.startsWith(REPO_ROOT) && Files.isRegularFile(repoCandidate)) {
-                file = repoCandidate;
-            }
+        if (needsSlashRedirect) {
+            redirect(ex, rawPath + "/" + suffix);
+            return;
         }
         if (file == null) {
             send(ex, 404, "text/plain; charset=utf-8", "Not found".getBytes(StandardCharsets.UTF_8));
@@ -212,6 +230,13 @@ public class MapServer {
                 : (name.endsWith(".jpg") || name.endsWith(".jpeg")) ? "image/jpeg"
                 : "application/octet-stream";
         send(ex, 200, type, Files.readAllBytes(file));
+    }
+
+    private static void redirect(HttpExchange ex, String location) throws IOException {
+        ex.getResponseHeaders().set("Location", location);
+        ex.getResponseHeaders().set("Cache-Control", "no-store");
+        ex.sendResponseHeaders(302, -1);
+        ex.close();
     }
 
     private static void send(HttpExchange ex, int code, String type, byte[] body) throws IOException {
