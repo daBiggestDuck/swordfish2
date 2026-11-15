@@ -254,59 +254,197 @@ function applyHostReactionClass(host, reaction, visual) {
 }
 
 /**
+ * Dispose a PayloadPets3D handle stashed on a host element.
+ */
+export function disposePetVisual(host) {
+  if (!host) return;
+  const handle = host._pets3dHandle;
+  if (handle && typeof handle.dispose === 'function') {
+    try {
+      handle.dispose();
+    } catch {
+      /* ignore */
+    }
+  }
+  host._pets3dHandle = null;
+  host.replaceChildren();
+  host.classList.remove(
+    'pets3d-mount',
+    'pets3d-surface',
+    'pets3d-ok',
+    'pets3d-error',
+    'moon-pet-visual',
+    'power-glow',
+    'signal-stress',
+  );
+  for (const cls of [...host.classList]) {
+    if (cls.startsWith('anim-')) host.classList.remove(cls);
+  }
+  delete host.dataset.petVisual;
+  delete host.dataset.mood;
+}
+
+/**
  * Mount pet visual into host. Prefers sibling 3D API; else SVG from present().
  * Reuses an existing PayloadPets3D handle via update() when the pet id is unchanged.
+ * Options:
+ *   forceSvg — never mount WebGL (2D map / side card while globe owns the 3D context)
+ *   surface — transparent billboard for globe-surface anchoring
  * @returns {'3d'|'svg'|'empty'}
  */
 export async function mountPetVisual(host, petId, skyCurrent, options = {}) {
   if (!host) return 'empty';
   const resolved = resolveDropPetId(petId) || (ART_PETS.some((p) => p.id === petId) ? petId : null);
   if (!resolved) {
-    host.replaceChildren();
+    disposePetVisual(host);
     return 'empty';
   }
 
   const pose = poseForSite(resolved, skyCurrent, options);
   const reaction = pose.reaction;
+  const forceSvg = Boolean(options.forceSvg);
+  const surface = Boolean(options.surface);
   const opts3d = {
     signal: reaction.signal,
     powerGlow: reaction.powerGlow,
     signalStress: reaction.signalStress,
     phaseId: reaction.phaseId,
-    autoRotate: options.autoRotate !== false,
+    autoRotate: surface ? options.autoRotate === true : options.autoRotate !== false,
     interactive: Boolean(options.interactive),
+    surface,
+    transparent: surface || Boolean(options.transparent),
   };
 
-  const three = globalThis.PayloadPets3D;
-  if (typeof three?.renderPet3D === 'function') {
-    try {
-      const existing = host._pets3dHandle;
-      if (existing && typeof existing.update === 'function' && existing.petId === resolved) {
-        existing.update(reaction.moodId, opts3d);
-        if (typeof existing.setSignal === 'function') existing.setSignal(reaction.signal);
+  if (!forceSvg) {
+    const three = await waitForPayloadPets3D(options.readyTimeoutMs ?? 8000);
+    if (typeof three?.renderPet3D === 'function') {
+      try {
+        const existing = host._pets3dHandle;
+        if (existing && typeof existing.update === 'function' && existing.petId === resolved) {
+          existing.update(reaction.moodId, opts3d);
+          if (typeof existing.setSignal === 'function') existing.setSignal(reaction.signal);
+          applyHostReactionClass(host, reaction, '3d');
+          return '3d';
+        }
         applyHostReactionClass(host, reaction, '3d');
+        await three.renderPet3D(resolved, reaction.moodId, host, {
+          ...opts3d,
+          showError: true,
+        });
         return '3d';
+      } catch (err) {
+        console.warn('[pet_moon] PayloadPets3D.renderPet3D failed', err);
+        // Surface billboards must not silently swap to SVG (wrong layer).
+        if (surface) {
+          if (typeof three.showPets3DError === 'function') {
+            three.showPets3DError(
+              host,
+              err instanceof Error ? err.message : '3D pet failed to load',
+              {
+                onRetry: () => {
+                  void mountPetVisual(host, petId, skyCurrent, options);
+                },
+              },
+            );
+          }
+          applyHostReactionClass(host, reaction, '3d');
+          return 'empty';
+        }
       }
-      applyHostReactionClass(host, reaction, '3d');
-      await three.renderPet3D(resolved, reaction.moodId, host, opts3d);
-      return '3d';
-    } catch (err) {
-      console.warn('[pet_moon] PayloadPets3D.renderPet3D failed; using SVG', err);
+    } else if (surface) {
+      const msg = three?.loadError?.message || '3D library not ready — check network for Three.js.';
+      console.warn('[pet_moon] PayloadPets3D missing for surface mount', msg);
+      host.replaceChildren();
+      const wrap = document.createElement('div');
+      wrap.className = 'pets3d-error-box';
+      const p = document.createElement('p');
+      p.className = 'mount-fallback';
+      p.textContent = msg;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pets3d-retry';
+      btn.textContent = 'Retry 3D';
+      btn.addEventListener('click', () => {
+        void mountPetVisual(host, petId, skyCurrent, options);
+      });
+      wrap.append(p, btn);
+      host.append(wrap);
+      host.classList.add('pets3d-mount', 'pets3d-error');
+      return 'empty';
     }
   }
 
+  if (host._pets3dHandle) disposePetVisual(host);
   host.replaceChildren();
   applyHostReactionClass(host, reaction, 'svg');
   host.append(drawPoseSvg(pose, options.idPrefix || 'moon-pet'));
   return 'svg';
 }
 
-/** Compact marker fragment for globe/map overlays (foreignObject-friendly HTML string avoided — returns SVG group). */
-export function buildOverlayMarkerGroup(pose, x, y, scale = 0.22) {
+/**
+ * Resolve PayloadPets3D after install.js finishes loading Three (or null on timeout).
+ * @param {number} timeoutMs
+ */
+async function waitForPayloadPets3D(timeoutMs) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const api = globalThis.PayloadPets3D;
+    if (api?.ready) {
+      try {
+        await Promise.race([
+          api.ready,
+          new Promise((_, rej) =>
+            setTimeout(
+              () => rej(new Error('timeout')),
+              Math.max(0, timeoutMs - (Date.now() - start)),
+            ),
+          ),
+        ]);
+        return api;
+      } catch {
+        return api; // may still have renderPet3D after a partial load
+      }
+    }
+    if (typeof api?.renderPet3D === 'function') return api;
+    await new Promise((r) => setTimeout(r, 40));
+  }
+  return globalThis.PayloadPets3D || null;
+}
+
+/**
+ * Compact 2D marker for flat/south-pole map overlays (pure SVG — never WebGL).
+ * @param {object} pose present()-compatible pose from poseForSite
+ * @param {number} x
+ * @param {number} y
+ * @param {number} [scale]
+ * @param {{ label?: boolean, pin?: boolean }} [opts]
+ */
+export function buildOverlayMarkerGroup(pose, x, y, scale = 0.28, opts = {}) {
   const g = document.createElementNS(SVG_NS, 'g');
-  g.setAttribute('class', `moon-pet-marker anim-${pose.reaction?.animation || pose.mood.animation}`);
-  g.setAttribute('transform', `translate(${x} ${y}) scale(${scale}) translate(-100 -110)`);
+  const anim = pose.reaction?.animation || pose.mood.animation;
+  g.setAttribute('class', `moon-pet-marker moon-pet-sprite anim-${anim}`);
+  g.setAttribute('transform', `translate(${x} ${y})`);
   g.setAttribute('data-pet-id', pose.pet.id);
+  g.setAttribute('data-mood', pose.reaction?.moodId || pose.mood.id);
+  g.setAttribute('role', 'img');
+  g.setAttribute('aria-label', `${pose.pet.name} · ${pose.mood.label}`);
+
+  if (opts.pin !== false) {
+    const pin = document.createElementNS(SVG_NS, 'circle');
+    pin.setAttribute('cx', '0');
+    pin.setAttribute('cy', '0');
+    pin.setAttribute('r', '5');
+    pin.setAttribute('fill', '#ffe7ad');
+    pin.setAttribute('stroke', '#ffb84d');
+    pin.setAttribute('stroke-width', '2');
+    pin.setAttribute('class', 'moon-pet-pin');
+    g.append(pin);
+  }
+
+  const art = document.createElementNS(SVG_NS, 'g');
+  art.setAttribute('class', 'moon-pet-sprite-art');
+  art.setAttribute('transform', `scale(${scale}) translate(-100 -118)`);
+
   const reaction = pose.reaction;
   if (reaction?.powerGlow) {
     const glow = document.createElementNS(SVG_NS, 'circle');
@@ -316,7 +454,7 @@ export function buildOverlayMarkerGroup(pose, x, y, scale = 0.22) {
     glow.setAttribute('fill', '#ffe7ad');
     glow.setAttribute('opacity', '0.35');
     glow.setAttribute('class', 'pet-power-glow');
-    g.append(glow);
+    art.append(glow);
   }
   if (reaction?.signalStress) {
     const ring = document.createElementNS(SVG_NS, 'circle');
@@ -329,10 +467,24 @@ export function buildOverlayMarkerGroup(pose, x, y, scale = 0.22) {
     ring.setAttribute('stroke-dasharray', '10 8');
     ring.setAttribute('opacity', '0.85');
     ring.setAttribute('class', 'pet-signal-stress');
-    g.append(ring);
+    art.append(ring);
   }
   for (const node of pose.scene.parts) {
-    g.append(drawNode(node));
+    art.append(drawNode(node));
+  }
+  g.append(art);
+
+  if (opts.label !== false) {
+    const label = document.createElementNS(SVG_NS, 'text');
+    label.setAttribute('x', '0');
+    label.setAttribute('y', String(-Math.round(118 * scale) - 6));
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('fill', '#ffe7ad');
+    label.setAttribute('font-size', '11');
+    label.setAttribute('font-weight', '700');
+    label.setAttribute('class', 'moon-pet-sprite-label');
+    label.textContent = `${pose.pet.name} · ${pose.mood.label}`;
+    g.append(label);
   }
   return g;
 }
@@ -422,6 +574,11 @@ function freeze(value) {
 export const PET_3D_HOOK = Object.freeze({
   global: 'PayloadPets3D',
   method: 'renderPet3D',
-  signature: 'renderPet3D(petId, moodId, hostElement, { signal, powerGlow, signalStress, phaseId })',
+  signature:
+    'renderPet3D(petId, moodId, hostElement, { signal, powerGlow, signalStress, phaseId, surface, transparent })',
   dropPetIds: DROP_PETS.map((p) => p.id),
+  mapModes: Object.freeze({
+    globe3d: 'surface mount via #surface-pet-layer',
+    flatOrPole: 'SVG sprite via buildOverlayMarkerGroup (forceSvg)',
+  }),
 });

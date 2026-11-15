@@ -12,7 +12,7 @@
       <div class="brand">
         <div class="brand-badge">NASA MOON EXPLORER</div>
         <h1>Interactive Moon Map</h1>
-        <p id="program-stats">Loading NASA Moon maps &amp; sunlight data...</p>
+        <p id="program-stats">Loading NASA Moon maps…</p>
       </div>
 
       <div class="sim-clock">
@@ -38,7 +38,7 @@
   </header>
 
   <main class="workspace">
-    <!-- LEFT COLUMN: LANDING SPOTS + SPOT OVERVIEW -->
+    <!-- LEFT: sites + compact selection; extras in drawers -->
     <aside class="panel dossier-panel">
       <div class="site-list-header top-list-header">
         <span>LANDING SPOTS (<span id="site-count">0</span>)</span>
@@ -54,38 +54,43 @@
       </div>
       <h2 id="dossier-title">Shackleton Crater Rim</h2>
       <div class="coords" id="dossier-coords">89.63°S / 132.32°E</div>
-      <p class="summary" id="dossier-terrain"></p>
-
-      <div id="dossier-nasa-box" class="nasa-schedule-box">
-        <div class="nasa-schedule-kicker" id="dossier-nasa-kicker">OFFICIAL NASA LANDING SITE</div>
-        <div class="nasa-schedule-text" id="dossier-nasa-schedule">Loading NASA mission schedule...</div>
-      </div>
-
-      <div class="pet-drop-panel" aria-label="Payload pet drop">
-        <div class="pet-drop-head">
-          <span class="kicker">PAYLOAD PET</span>
-          <span class="muted">Pick → drop on Moon</span>
-        </div>
-        <div id="pet-picker" class="pet-picker" role="group" aria-label="Choose payload pet"></div>
-        <p id="pet-drop-hint" class="pet-drop-hint">Select a pet, then click a landing spot (or Inspect &amp; Pick) and confirm the drop.</p>
-      </div>
 
       <div class="picker-bar">
-        <button id="btn-pick-pet-site" class="btn-accent" type="button">Inspect &amp; Pick Spot</button>
+        <button id="btn-pick-pet-site" class="btn-accent" type="button">Inspect &amp; Pick</button>
         <button id="btn-pin-compare" class="btn-ghost" type="button">+ Compare</button>
       </div>
       <div id="picked-banner" class="picked-banner" hidden></div>
       <div id="placed-pet-banner" class="placed-pet-banner" hidden></div>
 
-      <dl class="dossier-grid">
-        <dt>Missions</dt><dd id="dossier-missions">—</dd>
-        <dt>Sunlight</dt><dd id="dossier-lighting">—</dd>
-        <dt>Ground</dt><dd id="dossier-elev">—</dd>
-        <dt>Temperature</dt><dd id="dossier-temp">—</dd>
-      </dl>
+      <details class="sidebar-drawer" id="drawer-pet">
+        <summary>Payload pet</summary>
+        <div class="pet-drop-panel" aria-label="Payload pet drop">
+          <div class="pet-drop-head">
+            <span class="kicker">PICK → DROP</span>
+            <span class="muted">Then confirm on map</span>
+          </div>
+          <div id="pet-picker" class="pet-picker" role="group" aria-label="Choose payload pet"></div>
+          <p id="pet-drop-hint" class="pet-drop-hint">Select a pet, then click a landing spot and confirm the drop.</p>
+        </div>
+      </details>
 
-      <details class="sidebar-more">
-        <summary>More details &amp; NASA links</summary>
+      <details class="sidebar-drawer" id="drawer-stats">
+        <summary>Spot stats</summary>
+        <p class="summary" id="dossier-terrain"></p>
+        <dl class="dossier-grid">
+          <dt>Missions</dt><dd id="dossier-missions">—</dd>
+          <dt>Sunlight</dt><dd id="dossier-lighting">—</dd>
+          <dt>Ground</dt><dd id="dossier-elev">—</dd>
+          <dt>Temperature</dt><dd id="dossier-temp">—</dd>
+        </dl>
+      </details>
+
+      <details class="sidebar-drawer" id="drawer-more">
+        <summary>More · NASA &amp; links</summary>
+        <div id="dossier-nasa-box" class="nasa-schedule-box">
+          <div class="nasa-schedule-kicker" id="dossier-nasa-kicker">OFFICIAL NASA LANDING SITE</div>
+          <div class="nasa-schedule-text" id="dossier-nasa-schedule">Loading NASA mission schedule...</div>
+        </div>
         <dl class="dossier-grid dossier-grid-more">
           <dt>Ice Shadow</dt><dd id="dossier-psr">—</dd>
           <dt>Mission Goal</dt><dd id="dossier-science">—</dd>
@@ -98,7 +103,7 @@
       </details>
     </aside>
 
-    <!-- RIGHT AREA: INTERACTIVE MOON + SIMPLE READOUTS + COLLAPSED ADVANCED TOOLS -->
+    <!-- RIGHT: globe + essential controls; secondary tools collapsed -->
     <section class="center-stack">
       <div class="panel map-panel">
         <div class="map-toolbar">
@@ -109,24 +114,35 @@
           </div>
           <div class="layer-toggles">
             <label class="chk"><input type="checkbox" id="lyr-terminator" checked> Day &amp; Night</label>
-            <label class="chk"><input type="checkbox" id="lyr-graticule" checked> Grid Lines</label>
-            <label class="chk"><input type="checkbox" id="lyr-psr"> Ice Craters</label>
-            <label class="chk"><input type="checkbox" id="lyr-links"> Mission Links</label>
+            <label class="chk"><input type="checkbox" id="lyr-graticule" checked> Grid</label>
+            <details class="layers-more">
+              <summary>More layers</summary>
+              <label class="chk"><input type="checkbox" id="lyr-psr"> Ice Craters</label>
+              <label class="chk"><input type="checkbox" id="lyr-links"> Mission Links</label>
+            </details>
             <button id="btn-reset-globe" class="btn-ghost" type="button">Reset View</button>
           </div>
         </div>
 
         <div class="map-stage" id="map-stage">
-          <div class="map-viewport" id="map-viewport">
+          <div class="map-viewport" id="map-viewport" data-active-popup="none">
             <canvas id="lunar-globe-gl" width="960" height="480" aria-label="Interactive 3D Moon Globe"></canvas>
             <svg id="globe-overlay" viewBox="0 0 960 480" aria-hidden="true"></svg>
             <svg id="lunar-map" viewBox="0 0 960 480" hidden role="img" aria-label="2D Interactive Moon Map"></svg>
 
-            <div id="cursor-hud" class="cursor-hud">
+            <!-- On-globe pet (3D mode). Flat / south-pole use SVG sprites on #lunar-map instead. -->
+            <div id="surface-pet-layer" class="surface-pet-layer" hidden aria-hidden="true">
+              <div id="surface-pet-art" class="surface-pet-art" role="img" aria-label="Payload pet on the Moon"></div>
+              <div class="surface-pet-halo" aria-hidden="true"></div>
+            </div>
+
+            <!-- Soft tip HUD — suppressed while a detail popup is active -->
+            <div id="cursor-hud" class="cursor-hud map-popup" data-popup="hud">
               Drag to spin · Scroll to zoom · Click anywhere on the Moon to inspect a spot
             </div>
 
-            <div id="predrop-card" class="predrop-card" hidden role="dialog" aria-label="Landing Spot Check">
+            <!-- Exclusive detail sheet: landing check (dismisses pet stage) -->
+            <div id="predrop-card" class="predrop-card map-popup" data-popup="predrop" hidden role="dialog" aria-label="Landing Spot Check">
               <div class="predrop-head" data-story-row style="--row-idx: 0">
                 <div>
                   <span class="kicker">LANDING SPOT CHECK</span>
@@ -180,7 +196,8 @@
               </div>
             </div>
 
-            <div id="moon-pet-stage" class="moon-pet-stage" hidden>
+            <!-- Exclusive detail sheet: placed pet mood (hidden while predrop is open) -->
+            <div id="moon-pet-stage" class="moon-pet-stage map-popup" data-popup="pet" hidden>
               <div class="moon-pet-stage-head">
                 <span class="kicker">ON THE MOON</span>
                 <strong id="moon-pet-name">—</strong>
@@ -188,58 +205,65 @@
               <div id="moon-pet-art" class="moon-pet-art" aria-live="polite"></div>
               <p id="moon-pet-mood" class="moon-pet-mood">—</p>
               <p id="moon-pet-reason" class="moon-pet-reason">—</p>
-              <p class="moon-pet-tip muted">Scrub the sun clock above — the pet reacts to day, night, and Earth signal.</p>
+              <details class="moon-pet-more">
+                <summary>Tip</summary>
+                <p class="moon-pet-tip muted">Scrub the sun clock above — the pet reacts to day, night, and Earth signal.</p>
+              </details>
             </div>
           </div>
 
           <div class="map-legend">
-            <span><i class="dot LANDED"></i> Landed Mission</span>
-            <span><i class="dot PLANNED"></i> Planned Mission</span>
-            <span><i class="dot NO_LANDING"></i> Too Risky</span>
-            <span><i class="dot DROP"></i> Selected Spot</span>
-            <span><i class="dot PET"></i> Dropped Pet</span>
+            <span><i class="dot LANDED"></i> Landed</span>
+            <span><i class="dot PLANNED"></i> Planned</span>
+            <span><i class="dot NO_LANDING"></i> Risky</span>
+            <span><i class="dot DROP"></i> Selected</span>
+            <span><i class="dot PET"></i> Pet</span>
           </div>
         </div>
       </div>
 
-      <!-- SIMPLE READOUT CARDS -->
-      <div class="telemetry-strip">
-        <div class="tele-card">
-          <div class="tele-head">
-            <span>SUNLIGHT</span>
-            <span id="tele-sun-badge" class="badge good">DAYTIME</span>
+      <details class="live-drawer panel">
+        <summary class="live-summary">
+          <span>Live conditions</span>
+          <span class="muted" id="live-summary-meta">Sun · Earth · Ops</span>
+        </summary>
+        <div class="telemetry-strip">
+          <div class="tele-card">
+            <div class="tele-head">
+              <span>SUNLIGHT</span>
+              <span id="tele-sun-badge" class="badge good">DAYTIME</span>
+            </div>
+            <div class="tele-value" id="tele-sun-elev">Daytime</div>
+            <div class="tele-sub" id="tele-sun-sub">Solar power active</div>
+            <div class="tele-foot"><span>NEXT SUNSET</span><strong id="tele-next-sunset">—</strong></div>
           </div>
-          <div class="tele-value" id="tele-sun-elev">Daytime</div>
-          <div class="tele-sub" id="tele-sun-sub">Solar power active</div>
-          <div class="tele-foot"><span>NEXT SUNSET</span><strong id="tele-next-sunset">—</strong></div>
-        </div>
 
-        <div class="tele-card">
-          <div class="tele-head">
-            <span>EARTH SIGNAL</span>
-            <span id="tele-dte-badge" class="badge info">DIRECT SIGNAL</span>
+          <div class="tele-card">
+            <div class="tele-head">
+              <span>EARTH SIGNAL</span>
+              <span id="tele-dte-badge" class="badge info">DIRECT SIGNAL</span>
+            </div>
+            <div class="tele-value" id="tele-dte-status">Clear View</div>
+            <div class="tele-sub" id="tele-dte-sub">Reachable most of the month</div>
+            <div class="tele-foot"><span>NEXT SIGNAL LOSS</span><strong id="tele-next-earthset">—</strong></div>
           </div>
-          <div class="tele-value" id="tele-dte-status">Clear View</div>
-          <div class="tele-sub" id="tele-dte-sub">Reachable most of the month</div>
-          <div class="tele-foot"><span>NEXT SIGNAL LOSS</span><strong id="tele-next-earthset">—</strong></div>
-        </div>
 
-        <div class="tele-card">
-          <div class="tele-head">
-            <span>CONDITIONS</span>
-            <span id="tele-op-badge" class="badge good">GREAT</span>
+          <div class="tele-card">
+            <div class="tele-head">
+              <span>CONDITIONS</span>
+              <span id="tele-op-badge" class="badge good">GREAT</span>
+            </div>
+            <div class="tele-value" id="tele-op-state">Good to Operate</div>
+            <div class="tele-sub" id="tele-op-sub">Temperature —</div>
+            <div class="tele-foot"><span>MONTHLY SUNLIGHT</span><strong id="tele-illum-cmp">—</strong></div>
           </div>
-          <div class="tele-value" id="tele-op-state">Good to Operate</div>
-          <div class="tele-sub" id="tele-op-sub">Temperature —</div>
-          <div class="tele-foot"><span>MONTHLY SUNLIGHT</span><strong id="tele-illum-cmp">—</strong></div>
         </div>
-      </div>
+      </details>
 
-      <!-- COLLAPSED BY DEFAULT: ADVANCED FILTERS, CHARTS & DATA TOOLS -->
       <details class="advanced-section panel">
         <summary class="advanced-summary">
-          <span>Advanced Filters, Charts &amp; Mission Data</span>
-          <span class="muted">Filter spots · 30-day sun charts · Compare · NASA data sources</span>
+          <span>Advanced · filters, charts &amp; mission data</span>
+          <span class="muted">Filter · sun charts · compare · sources</span>
         </summary>
 
         <div class="advanced-body">
@@ -375,6 +399,7 @@
     </section>
   </main>
 
+  <!-- Optional hint; pets-3d/three-loader.js loads Three via CDN mirrors + retry. -->
   <script type="importmap">
   {
     "imports": {
@@ -382,9 +407,8 @@
     }
   }
   </script>
-  <!-- Installs window.PayloadPets3D before map/pet_moon mount (module order). -->
+  <!-- Installs window.PayloadPets3D (await PayloadPets3D.ready) before map mount. -->
   <script type="module" src="pets-3d/install.js"></script>
   <script type="module" src="map.js"></script>
 </body>
 </html>
-

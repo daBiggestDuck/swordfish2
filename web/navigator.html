@@ -13,10 +13,6 @@
       <div class="brand">
         <div class="brand-badge eyebrow">NASA SPACE APPS · LUNAR LANDING SITE NAVIGATOR</div>
         <h1>South Pole site &amp; date compare</h1>
-        <p class="lede">
-          Pick candidate south-pole sites and a UTC epoch. See Sun elevation → solar power
-          and Earth elevation → direct-to-Earth (DTE) comms — with local LOLA horizon masking.
-        </p>
       </div>
       <p id="load-status" class="status-line" role="status">Loading Horizons + LOLA…</p>
     </div>
@@ -52,19 +48,21 @@
       <div class="site-picks" id="site-picks" aria-label="South pole sites to compare"></div>
     </section>
 
-    <aside class="honest" id="honest-note" data-panel="limits">
-      <strong>How to read this:</strong>
-      Sun above the local horizon → panels can generate power (sine of elevation, slope-aware — <em>approx</em>, not array I–V curves).
-      Earth above the local horizon → Direct-to-Earth radio is geometrically possible
-      (not a full link budget / SNR). Horizons gives body direction; LOLA 36-bin horizons mask terrain.
-      Labels stay honest when a site uses a flat-horizon fallback.
-    </aside>
+    <details class="nav-drawer" data-panel="limits">
+      <summary>How to read this</summary>
+      <aside class="honest" id="honest-note">
+        Sun above the local horizon → panels can generate power (sine of elevation, slope-aware — <em>approx</em>, not array I–V curves).
+        Earth above the local horizon → Direct-to-Earth radio is geometrically possible
+        (not a full link budget / SNR). Horizons gives body direction; LOLA 36-bin horizons mask terrain.
+        Labels stay honest when a site uses a flat-horizon fallback.
+      </aside>
+    </details>
 
     <section class="compare-grid" id="compare-cards" data-panel="cards" aria-live="polite"></section>
 
     <section class="panel chart-panel" data-panel="chart">
       <div class="panel-head">
-        <span class="kicker">SUN &amp; EARTH VS HORIZON · SELECTED WINDOW</span>
+        <span class="kicker">SUN &amp; EARTH VS HORIZON</span>
         <span class="muted" id="chart-meta">—</span>
       </div>
       <svg id="elev-chart" viewBox="0 0 720 220" role="img" aria-label="Sun and Earth elevation over the mission window"></svg>
@@ -72,22 +70,21 @@
         <span class="leg-sun">— Sun elevation</span>
         <span class="leg-earth">— Earth elevation</span>
         <span class="leg-dual">■ Dual viable (power + DTE)</span>
-        <span class="muted">Primary site series · dashed = local horizon at Sun azimuth</span>
       </div>
     </section>
 
-    <section class="panel" data-panel="scorecard">
-      <div class="kicker">SIDE-BY-SIDE SCORECARD</div>
+    <details class="nav-drawer panel" data-panel="scorecard">
+      <summary>Side-by-side scorecard</summary>
       <div class="table-wrap">
         <table id="score-table">
           <thead></thead>
           <tbody></tbody>
         </table>
       </div>
-    </section>
+    </details>
 
-    <section class="panel" data-panel="provenance">
-      <div class="kicker">DATA PROVENANCE</div>
+    <details class="nav-drawer panel" data-panel="provenance">
+      <summary>Data provenance</summary>
       <div class="sources">
         <div class="source-card">
           <h4>JPL Horizons</h4>
@@ -110,7 +107,7 @@
           <p><a href="https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/" target="_blank" rel="noopener">Space Apps challenge</a></p>
         </div>
       </div>
-    </section>
+    </details>
   </main>
 
   <script type="module" src="navigator.js"></script>

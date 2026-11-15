@@ -14,7 +14,7 @@ Procedural Three.js models for the CLPS instrument pets. No GLB downloads — ge
 
 ## How to view
 
-From the repo root (needs network once for the Three.js CDN import map):
+From the repo root (needs network for Three.js — `three-loader.js` retries jsDelivr → unpkg → esm.sh):
 
 ```bash
 python3 -m http.server 8788
@@ -27,6 +27,14 @@ Open:
 - On the Map tab after `./run_map.sh`: drop a pet — `pet_moon` prefers `window.PayloadPets3D` when installed (map.html loads `pets-3d/install.js`).
 
 Click an instrument, scrub moods, drag the main viewport to orbit.
+
+### Loading robustness
+
+- `three-loader.js` — single shared Three module promise, multi-CDN retry.
+- `renderPet3D(..., { mode: "shared" })` — gallery/adopt thumbs blit from **one** WebGL farm (Pets page).
+- `mode: "live"` (default) — dedicated context, queued (`MAX_LIVE_CONTEXTS = 3`), `forceContextLoss` on dispose.
+- Failures show a **Retry 3D** control (no silent blank canvases).
+- Showcase parks Map/Pets iframes when switching away so WebGL contexts free up.
 
 ## API for moon-drop sibling
 
@@ -58,6 +66,13 @@ const handle = await renderPet3D("lister", "happy", mountEl, {
   autoRotate: true,
   interactive: true,
   signal: 40,
+});
+
+// Transparent billboard for Map globe-surface anchoring:
+await renderPet3D("eds", "happy", surfaceHost, {
+  surface: true,       // no ground/ring, alpha canvas
+  autoRotate: false,
+  interactive: false,
 });
 
 handle.update("sunset");

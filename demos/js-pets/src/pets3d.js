@@ -10,7 +10,10 @@ export {
   MOODS,
   PHASES,
   installPayloadPets3D,
+  preloadPets3D,
   renderPet3D,
   resolveMood,
   resolvePetId,
+  showPets3DError,
+  whenPayloadPets3DReady,
 } from "../../../web/pets-3d/pets3d.js";

@@ -4,7 +4,11 @@ import {
   readPlacedPet,
   subscribePlacedPet,
 } from "../../../web/pet_moon.js";
-import { renderPet3D } from "../../../web/pets-3d/pets3d.js";
+import {
+  preloadPets3D,
+  renderPet3D,
+  showPets3DError,
+} from "../../../web/pets-3d/pets3d.js";
 
 const DAY_MS = 2800;
 const PAUSE_TEXT = "Playback paused.";
@@ -29,8 +33,10 @@ const adoptHandles = new Map();
 let mountGeneration = 0;
 /** @type {IntersectionObserver | null} */
 let galleryObserver = null;
-/** Keep gallery WebGL count low (stage + adopt strip already use 5 contexts). */
-const GALLERY_MAX_LIVE = 6;
+/** Shared-farm blit views — keep visible gallery cells modest. */
+const GALLERY_MAX_LIVE = 8;
+/** Only the stage uses a dedicated WebGL context; thumbs share one farm. */
+const SHARED_THUMB = { mode: "shared" };
 
 boot();
 
@@ -42,12 +48,44 @@ function boot() {
     void syncView({ remountStage: true });
   });
   renderSources();
-  void syncView({ rebuild: true });
+  void boot3D();
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || !playing) return;
     pause();
     void syncView({ pauseNotice: true });
   });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      disposeGalleryHandles();
+      for (const handle of adoptHandles.values()) {
+        try {
+          handle.dispose();
+        } catch {
+          /* ignore */
+        }
+      }
+      adoptHandles.clear();
+    } else {
+      void syncView({ remountStage: false });
+    }
+  });
+}
+
+async function boot3D() {
+  try {
+    await preloadPets3D(PETS.map((p) => p.id));
+  } catch (err) {
+    console.warn("[js-pets] Three.js preload failed", err);
+    const art = document.querySelector("#art") || app;
+    if (art) {
+      showPets3DError(
+        art,
+        err instanceof Error ? err.message : "Three.js failed to load",
+        { onRetry: () => void boot3D().then(() => syncView({ rebuild: true })) },
+      );
+    }
+  }
+  await syncView({ rebuild: true });
 }
 
 function syncFromMapPlacement(placed) {
@@ -362,13 +400,15 @@ async function mountStage(pose) {
   const art = app.querySelector("#art");
   if (!art) return;
   try {
-    stageHandle = await renderPet3D(pose.pet.id, pose.mood.id, art, stageOpts(pose));
+    stageHandle = await renderPet3D(pose.pet.id, pose.mood.id, art, {
+      ...stageOpts(pose),
+      mode: "live",
+      showError: true,
+    });
   } catch (err) {
     console.warn("[js-pets] stage renderPet3D failed", err);
-    art.replaceChildren(
-      el("p", { class: "mount-fallback" }, ["3D model unavailable — check network for Three.js."]),
-    );
     stageHandle = null;
+    // renderPet3D already painted Retry UI when showError is true
   }
 }
 
@@ -413,12 +453,13 @@ async function mountAdoptStrip() {
     try {
       const handle = await renderPet3D(pet.id, pose.mood.id, host, {
         ...thumbOpts(pose),
+        ...SHARED_THUMB,
         autoRotate: true,
+        showError: true,
       });
       adoptHandles.set(pet.id, handle);
     } catch (err) {
       console.warn(`[js-pets] adopt thumb ${pet.id} failed`, err);
-      host.replaceChildren(el("span", { class: "mount-fallback" }, [pet.name]));
     }
   }
 }
@@ -465,7 +506,11 @@ async function ensureGalleryMount(host) {
   const pose = present(petKey, phaseKey);
   const gen = mountGeneration;
   try {
-    const handle = await renderPet3D(petKey, pose.mood.id, host, thumbOpts(pose));
+    const handle = await renderPet3D(petKey, pose.mood.id, host, {
+      ...thumbOpts(pose),
+      ...SHARED_THUMB,
+      showError: true,
+    });
     if (gen !== mountGeneration) {
       handle.dispose();
       return;
@@ -473,7 +518,6 @@ async function ensureGalleryMount(host) {
     galleryHandles.set(key, handle);
   } catch (err) {
     console.warn(`[js-pets] gallery ${key} failed`, err);
-    host.replaceChildren(el("span", { class: "mount-fallback" }, [pose.mood.label]));
   }
 }
 

@@ -174,10 +174,30 @@ td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .source-card p { margin: 0; color: var(--muted); font-size: .78rem; }
 
 .honest {
-  background: rgba(98, 176, 255, .09); border: 1px solid rgba(98, 176, 255, .38);
-  border-radius: 8px; padding: .55rem .65rem; font-size: .8rem; color: var(--text); line-height: 1.42;
+  background: transparent; border: 0; border-radius: 0; padding: .15rem 0 0;
+  font-size: .8rem; color: var(--text); line-height: 1.42;
 }
 .honest strong { color: var(--accent); }
+
+.nav-drawer {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: .55rem .9rem .7rem;
+}
+.nav-drawer > summary {
+  cursor: pointer; font-weight: 600; font-size: .86rem; color: var(--muted);
+  user-select: none; list-style: none; padding: .2rem 0;
+}
+.nav-drawer > summary::-webkit-details-marker { display: none; }
+.nav-drawer > summary::before {
+  content: '▸'; display: inline-block; margin-right: .4rem; color: var(--accent);
+  transition: transform .15s;
+}
+.nav-drawer[open] > summary { color: var(--text); margin-bottom: .45rem; }
+.nav-drawer[open] > summary::before { transform: rotate(90deg); }
+.nav-drawer .sources { margin-top: .25rem; }
+.nav-drawer .table-wrap { margin-top: .25rem; }
 
 .status-line { font-family: var(--mono); font-size: .74rem; color: var(--muted); }
 .status-line.error { color: var(--bad); }

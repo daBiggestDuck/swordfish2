@@ -2,7 +2,9 @@ import {
   ALL_PETS,
   CANONICAL_PETS,
   EXTRA_PETS,
+  preloadPets3D,
   renderPet3D,
+  showPets3DError,
 } from "./pets3d.js";
 
 const app = document.querySelector("#app");
@@ -10,15 +12,29 @@ const PETS = [...CANONICAL_PETS, ...EXTRA_PETS];
 
 let petId = CANONICAL_PETS[0].id;
 let mood = "happy";
-/** @type {ReturnType<typeof renderPet3D> | null} */
+/** @type {Awaited<ReturnType<typeof renderPet3D>> | null} */
 let main = null;
-/** @type {Map<string, ReturnType<typeof renderPet3D>>} */
+/** @type {Map<string, Awaited<ReturnType<typeof renderPet3D>>>} */
 const thumbs = new Map();
 
 boot();
 
 async function boot() {
   renderShell();
+  try {
+    await preloadPets3D(PETS.map((p) => p.id));
+  } catch (err) {
+    console.warn("[pets-3d/viewer] preload failed", err);
+    const viewport = document.querySelector("#viewport");
+    if (viewport) {
+      showPets3DError(
+        viewport,
+        err instanceof Error ? err.message : "Three.js failed to load",
+        { onRetry: () => void boot() },
+      );
+    }
+    return;
+  }
   await mountMain();
   await mountThumbs();
 }
@@ -109,27 +125,50 @@ function renderShell() {
 }
 
 async function mountMain() {
-  main?.dispose();
+  try {
+    main?.dispose();
+  } catch {
+    /* ignore */
+  }
   const viewport = document.querySelector("#viewport");
-  main = await renderPet3D(petId, mood, viewport, {
-    autoRotate: true,
-    interactive: true,
-    signal: petId === "ln-1" ? 90 : 40,
-  });
+  try {
+    main = await renderPet3D(petId, mood, viewport, {
+      autoRotate: true,
+      interactive: true,
+      mode: "live",
+      showError: true,
+      signal: petId === "ln-1" ? 90 : 40,
+    });
+  } catch (err) {
+    console.warn("[pets-3d/viewer] main mount failed", err);
+    main = null;
+  }
 }
 
 async function mountThumbs() {
-  for (const handle of thumbs.values()) handle.dispose();
+  for (const handle of thumbs.values()) {
+    try {
+      handle.dispose();
+    } catch {
+      /* ignore */
+    }
+  }
   thumbs.clear();
   for (const pet of PETS) {
     const elNode = document.querySelector(`#thumb-${pet.id}`);
     if (!elNode) continue;
-    const handle = await renderPet3D(pet.id, "happy", elNode, {
-      autoRotate: true,
-      interactive: false,
-      signal: pet.id === "ln-1" ? 90 : 40,
-    });
-    thumbs.set(pet.id, handle);
+    try {
+      const handle = await renderPet3D(pet.id, "happy", elNode, {
+        autoRotate: true,
+        interactive: false,
+        mode: "shared",
+        showError: true,
+        signal: pet.id === "ln-1" ? 90 : 40,
+      });
+      thumbs.set(pet.id, handle);
+    } catch (err) {
+      console.warn(`[pets-3d/viewer] thumb ${pet.id} failed`, err);
+    }
   }
 }
 

@@ -76,6 +76,34 @@ h1 {
   touch-action: none;
 }
 
+.pets3d-error-box {
+  display: grid;
+  place-content: center;
+  gap: 0.45rem;
+  min-height: 100%;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.mount-fallback {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.pets3d-retry {
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #051024;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  justify-self: center;
+}
+
 .copy h2 { margin: 0.1rem 0; font-size: 1.5rem; }
 .kind {
   margin: 0;
