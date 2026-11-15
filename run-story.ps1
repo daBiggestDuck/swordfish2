@@ -1,10 +1,10 @@
 param(
-    [int]$Port = 8082,
+    [int]$Port = 8081,
     [string]$Data = "data"
 )
 
 # Compile src/story/*.java and start the story's Java web server (JDK 17+), on Windows.
-#   .\run-story.ps1                  -> http://localhost:8082
+#   .\run-story.ps1                  -> http://localhost:8081
 #   .\run-story.ps1 -Port 9000       -> http://localhost:9000
 #   .\run-story.ps1 -Data some\dir   -> read the data branch's JSON from another folder
 

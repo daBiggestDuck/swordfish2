@@ -33,7 +33,7 @@ public class StoryServer {
     private static List<MissionMoment> moments = MissionMoments.ALL;
 
     public static void main(String[] args) throws IOException {
-        int port = 8082; // map uses 8080, engine uses 8081
+        int port = 8081; // map uses 8080, engine uses 8082 (v0 showcase)
         Path dataDir = Path.of("data");
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("--data") && i + 1 < args.length) dataDir = Path.of(args[++i]);
@@ -173,7 +173,7 @@ public class StoryServer {
     }
 
     /**
-     * Lets a page served by another server on this computer (the engine on 8081, the map on 8080)
+     * Lets a page served by another server on this computer (the engine on 8082, the map on 8080)
      * call the story API. Only localhost origins are allowed, never other websites.
      */
     private static void allowLocalPages(HttpExchange ex) {

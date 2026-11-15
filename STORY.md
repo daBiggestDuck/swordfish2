@@ -44,7 +44,7 @@ time, and remembers what was shown so the Passport can list it.
 
 ```
 browser (web/story/story.js -> story-client.js)
-   GET /api/pets, /api/missions, /api/sites  -> StoryServer (Java, port 8082)
+   GET /api/pets, /api/missions, /api/sites  -> StoryServer (Java, port 8081)
    GET /api/moments?site&pet&progress        -> StoryEngine + MissionMoments (+ data branch stories)
    GET /api/sky?site&date                    -> SkyModel (real ephemeris from data/, else simplified)
    GET /api/passport?site&pet&name&progress&science -> PetPassport
@@ -66,8 +66,8 @@ All story content and logic live in Java; the page only draws it.
 | Branch | What it has | How story fits |
 |---|---|---|
 | data (Wonil) | Java pipeline + JSON in `data/` (13 sites, 15 missions, 12 pop-up stories, JPL ephemeris, horizon profiles) | Story reads it automatically when `data/` exists; same site and mission ids |
-| engine (Aku) | Java game rules on its own server (port 8081): power, temperature, dust, data, health; events like `fainted`, `won`, `milestone` | `story-client.js` takes the engine's events (`fainted`/`won` end the story; `milestone`, `drilled`, `ping`, `dataSent` become Passport science) and its `earthDays` for days survived. Story allows calls from localhost pages, so the engine's page can use it |
-| map (Akshay) | Java `MapServer` on port 8080, globe in `web/` | Story moved to `web/story/` and port 8082 so the two never collide |
+| engine (Aku) | Java game rules on its own server (port 8082): power, temperature, dust, data, health; events like `fainted`, `won`, `milestone` | `story-client.js` takes the engine's events (`fainted`/`won` end the story; `milestone`, `drilled`, `ping`, `dataSent` become Passport science) and its `earthDays` for days survived. Story allows calls from localhost pages, so the engine's page can use it |
+| map (Akshay) | Java `MapServer` on port 8080, globe in `web/` | Story lives under `web/story/` on port 8081; map stays on 8080; engine on 8082 (v0 showcase) |
 | pets, ui | empty so far | ui drives the game loop and calls `story-client.js`; pets can replace the emoji faces |
 
 Open questions for the team (not changed by story):
