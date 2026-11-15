@@ -28,9 +28,8 @@ const wordVariants = {
 };
 
 const HERO_WORDS = [
-  { text: "CLPS", accent: false },
-  { text: "PET", accent: true },
-  { text: "GAME", accent: false },
+  { text: "PAYLOAD", accent: false },
+  { text: "PETS", accent: true },
 ];
 
 export function LandingSlide({ onStart }) {
