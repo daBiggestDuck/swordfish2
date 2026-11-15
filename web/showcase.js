@@ -241,8 +241,8 @@
             <h2>90-second path</h2>
             <ol>
               <li><strong style="color:var(--text)">Navigator</strong> — compare two south-pole sites / dates; call out Sun→power and Earth→DTE.</li>
-              <li><strong style="color:var(--text)">Map / Sites</strong> — show terrain / PSR context for the same sites.</li>
-              <li><strong style="color:var(--text)">Pets</strong> — scrub full sun → night; Power (LISTER / EDS) vs Signal (Nodey) vs passive Retro.</li>
+              <li><strong style="color:var(--text)">Map / Sites</strong> — pick a pet, drop it on a south-pole site, scrub the sun clock to watch 3D moods (power glow / night / signal stress).</li>
+              <li><strong style="color:var(--text)">Pets</strong> — same live drop mirrors here; scrub full sun → night for Power vs Signal vs passive Retro.</li>
               <li><strong style="color:var(--text)">Data</strong> — flash as-of + NASA naming · optional Engine with <code>./run-engine.sh</code>.</li>
             </ol>
             <p>Plan &amp; awards: <a href="./PLAN.md">PLAN.md</a> · Story: <a href="./STORY.md">STORY.md</a></p>
