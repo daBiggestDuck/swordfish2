@@ -128,6 +128,41 @@ final class Git {
         return out;
     }
 
+    /**
+     * Result of trying to merge one commit into another, computed entirely inside git's object store
+     * ({@code git merge-tree}): no checkout, no branch is changed. {@code tree} is the merged tree
+     * when clean; {@code conflicts} lists the files that would conflict; {@code error} is set when git
+     * could not answer (e.g. git older than 2.38).
+     */
+    record Merge(boolean clean, String tree, List<String> conflicts, String error) {}
+
+    Merge tryMerge(String into, String from) {
+        Out o = run("merge-tree", "--write-tree", "--name-only", "--no-messages", into, from);
+        String[] lines = o.text().split("\n");
+        if (o.code() == 0) return new Merge(true, lines[0].strip(), List.of(), null);
+        if (o.code() == 1) {
+            List<String> files = new ArrayList<>();
+            for (int i = 1; i < lines.length && !lines[i].isBlank(); i++) files.add(lines[i].strip());
+            return new Merge(false, null, files, null);
+        }
+        return new Merge(false, null, List.of(), o.stderr().isBlank() ? "git merge-tree failed" : o.stderr().strip());
+    }
+
+    /** Commits {@code sha} has that {@code base} doesn't, and the other way round: {ahead, behind}. */
+    int[] aheadBehind(String base, String sha) {
+        Out o = run("rev-list", "--left-right", "--count", base + "..." + sha);
+        if (!o.ok()) return null;
+        String[] p = o.text().strip().split("\\s+");
+        if (p.length != 2) return null;
+        return new int[] {Integer.parseInt(p[1]), Integer.parseInt(p[0])};
+    }
+
+    /** A throwaway merge commit object (never attached to a branch) so later merges can build on it. */
+    String mergeCommit(String tree, String parent1, String parent2) {
+        Out o = run("commit-tree", tree, "-p", parent1, "-p", parent2, "-m", "deployer: simulated merge");
+        return o.ok() ? o.text().strip() : null;
+    }
+
     byte[] show(String sha, String path) {
         Out o = run("show", sha + ":" + path);
         return o.ok() ? o.stdout() : null;

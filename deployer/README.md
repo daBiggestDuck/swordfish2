@@ -25,7 +25,7 @@ Options: `--port 9000` (dashboard port), `--interval 10` (check GitHub every 10 
 
 ## What you see
 
-- **Dashboard (`/`):** one card per branch, showing owner, what goes on it, latest commit, status, and an **Open** button for each running site.
+- **Dashboard (`/`):** a table of every branch: owner, what goes on it, latest commit, whether it's **in main / merges cleanly / conflicts with main** (and which files), its site status and an **Open** button for each running site. Below it, the flow every branch takes into main (branch → pull request → `main` → live demo), and a dry run of merging **all** team branches into main in order, which names the first branch and files that would clash. The dry run happens inside git only: no branch is changed and nothing is pushed.
 - **Branch page:** a live preview of the branch's site (one tab per site if it has several), every HTML page on the branch, recent commits, the full file tree, the build log and the server output.
 - **Code viewer:** any file on any branch, with line numbers. Line links like `#L42` work.
 
