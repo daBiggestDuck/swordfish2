@@ -54,3 +54,12 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* One-time scene entrance: the moon + stars fade up from the void. */
+@keyframes scene-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.scene-in {
+  animation: scene-in 0.9s ease-out both;
+}
