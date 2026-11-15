@@ -3,7 +3,7 @@
 Game rules and meter balance for Payload Pets. It's Java with no libraries, like the story branch. It runs entirely on your computer: the server only listens on `localhost` and never contacts any website.
 
 ```bash
-./run-engine.sh      # play it: http://localhost:8081
+./run-engine.sh      # play it: http://localhost:8082
 ./test-engine.sh     # 15 tests + balance report
 ```
 

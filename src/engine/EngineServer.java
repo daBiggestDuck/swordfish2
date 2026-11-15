@@ -45,7 +45,7 @@ public class EngineServer {
     };
 
     public static void main(String[] args) throws IOException {
-        int port = args.length > 0 ? Integer.parseInt(args[0]) : 8081;
+        int port = args.length > 0 ? Integer.parseInt(args[0]) : 8082;
         HttpServer server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 0);
 
         server.createContext("/api/engine/sites", ex -> json(ex, 200, Json.array(Sites.ALL, Site::toJson)));

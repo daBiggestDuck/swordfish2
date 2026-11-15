@@ -108,17 +108,17 @@ public class MissionEvent {
 
             new MissionEvent("im2-launch", "im-2",
                 "Athena Launches for the South Pole",
-                "IM-2 lifted off carrying MSolo and a Micro-Nova hopper to "
-                + "the Shackleton Connecting Ridge — one of the most extreme "
-                + "landing sites ever attempted.",
+                "IM-2 lifted off carrying TRIDENT (Triddy), MSolo, and a "
+                + "Micro-Nova hopper toward Mons Mouton — one of the most "
+                + "extreme south-polar landing regions ever attempted.",
                 "any",
                 "https://blogs.nasa.gov/clps/2025/02/26/liftoff-intuitive-machines-lunar-lander-begins-journey-to-the-moon/",
                 true),
 
             new MissionEvent("im2-landing", "im-2",
-                "Athena Lands Near Shackleton",
-                "IM-2 touched down at the lunar south pole. MSolo will search "
-                + "for volatile compounds — water and CO₂ — in one of the "
+                "Athena Lands at Mons Mouton",
+                "IM-2 touched down near Mons Mouton. TRIDENT and MSolo will "
+                + "search for volatiles — water and CO₂ — in one of the "
                 + "coldest places in the solar system.",
                 "day",
                 "https://blogs.nasa.gov/clps/2025/02/",

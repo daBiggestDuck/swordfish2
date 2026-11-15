@@ -1,6 +1,6 @@
 #!/bin/sh
 # Compile the engine and start its local web server. Needs only a JDK (Java 17+). Offline.
-#   ./run-engine.sh          -> http://localhost:8081
+#   ./run-engine.sh          -> http://localhost:8082
 #   ./run-engine.sh 9000     -> http://localhost:9000
 set -e
 cd "$(dirname "$0")"

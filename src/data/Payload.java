@@ -23,7 +23,7 @@ public class Payload {
     public final boolean passive;       // true = needs no power (LRA)
     public final double powerW;         // watts, NaN if unpublished
     public final double massKg;         // kg, NaN if unpublished
-    public final String petArchetype;   // maps to pet identity: lister, lra, rac, msolo, scalpss, planetvac
+    public final String petArchetype;   // maps to pet identity: lister, lra, rac, msolo, scalpss, planetvac, trident, ln-1
     public final String missionId;      // FK → Mission.id
     public final String sourceUrl;
 
@@ -114,7 +114,7 @@ public class Payload {
             // ════ TO2-IM (IM-1 Odysseus) ════
             p("ln-1", "Lunar Node 1 Navigation Demonstrator", "LN-1", "nav",
               "Distance via pseudonoise ranging codes",
-              "Dr. Evan Anzalone", "NASA MSFC", false, U, U, "scalpss", "im-1", SRC_TO2IM),
+              "Dr. Evan Anzalone", "NASA MSFC", false, U, U, "ln-1", "im-1", SRC_TO2IM),
 
             p("scalpss-im1", "Stereo Cameras for Lunar Plume-Surface Studies", "SCALPSS", "camera",
               "Video/still images of plume crater formation",
@@ -179,7 +179,12 @@ public class Payload {
               "Surface context imagery",
               null, "NASA GSFC", false, U, U, "scalpss", "blue-ghost-1", SRC_TO19D),
 
-            // ════ TO-PRIME1 (IM-2 Athena) ════
+            // ════ TO-PRIME1 (IM-2 Athena) — includes Triddy (`trident`) ════
+            // Game catalog home is Mons Mouton; do not reuse id `trident` on Griffin.
+            p("trident", "The Regolith and Ice Drill for Exploring New Terrain", "TRIDENT", "drill",
+              "Subsurface ice sampling",
+              null, "Honeybee Robotics", false, U, U, "trident", "im-2", SRC_PRIME1),
+
             p("msolo", "Mass Spectrometer Observing Lunar Operations", "MSolo", "spectrometer",
               "Volatile species at the surface (water, CO2)",
               null, "NASA KSC", false, U, U, "msolo", "im-2", SRC_PRIME1),
@@ -218,10 +223,6 @@ public class Payload {
               "Dr. Stuart Bale", "Brookhaven / Lawrence Berkeley (DOE)", false, U, U, "msolo", "blue-ghost-2", SRC_CS3),
 
             // ════ TO20A (Griffin 1) — placeholder payloads ════
-            p("trident", "The Regolith and Ice Drill for Exploring New Terrain", "TRIDENT", "drill",
-              "Subsurface ice sampling",
-              null, "Honeybee Robotics", false, U, U, "lister", "griffin-1", SRC_TO20A),
-
             p("msolo-griffin", "MSolo (Griffin)", "MSolo", "spectrometer",
               "Volatile species near south pole",
               null, "NASA KSC", false, U, U, "msolo", "griffin-1", SRC_TO20A),

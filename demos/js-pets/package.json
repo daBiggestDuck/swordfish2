@@ -1,0 +1,8 @@
+{
+  "name": "payload-pets-art",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test src/pets.test.js"
+  }
+}

@@ -1,0 +1,850 @@
+{
+  "asOf": "2026-11-14",
+  "program": {
+    "name": "Commercial Lunar Payload Services",
+    "contractCeilingUsd": 2600000000,
+    "contractCeilingThrough": "2028",
+    "contractCeilingNote": "The October 2026 encyclopedia says through 2028. The February 2025 IM-2 press kit says through November 2028.",
+    "eligibleVendorCounts": [
+      {
+        "count": 14,
+        "statement": "NASA's CLPS encyclopedia, updated October 21, 2026, says nine U.S. companies joined in November 2018 and five more joined a year later.",
+        "sourceId": "nasa-clps-encyclopedia"
+      },
+      {
+        "count": 13,
+        "statement": "NASA's February 2025 IM-2 press kit calls Intuitive Machines one of 13 eligible American companies. That is an older figure than the October 2026 encyclopedia.",
+        "sourceId": "nasa-im2-press-kit"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "id": "nasa-clps-encyclopedia",
+      "title": "Commercial Lunar Payload Services",
+      "publisher": "NASA",
+      "published": "2026-10-21",
+      "url": "https://www.nasa.gov/reference/commercial-lunar-payload-services/"
+    },
+    {
+      "id": "nasa-clps-deliveries",
+      "title": "Commercial Lunar Payload Services (CLPS) Deliveries",
+      "publisher": "NASA Science",
+      "url": "https://science.nasa.gov/lunar-science/clps-deliveries/"
+    },
+    {
+      "id": "nasa-timeline-graphic",
+      "title": "Timeline of Past and Future CLPS Deliveries",
+      "publisher": "NASA",
+      "published": "2025-07",
+      "url": "https://www.nasa.gov/wp-content/uploads/2025/07/clps-timeline-graphic-1.pdf"
+    },
+    {
+      "id": "nasa-lro-im1",
+      "title": "NASA's LRO Images Intuitive Machines' Odysseus Lander",
+      "publisher": "NASA",
+      "url": "https://www.nasa.gov/missions/lro/nasas-lro-images-intuitive-machines-odysseus-lander/"
+    },
+    {
+      "id": "nasa-to2-im",
+      "title": "TO2-IM Science Payloads",
+      "publisher": "NASA Science",
+      "url": "https://science.nasa.gov/lunar-science/clps-deliveries/to2-im/"
+    },
+    {
+      "id": "nasa-to19d",
+      "title": "TO19D Science Payloads",
+      "publisher": "NASA Science",
+      "url": "https://science.nasa.gov/lunar-science/clps-deliveries/to19d-firefly/"
+    },
+    {
+      "id": "nasa-prime1",
+      "title": "PRIME-1 Science",
+      "publisher": "NASA Science",
+      "url": "https://science.nasa.gov/lunar-science/clps-deliveries/prime-1-im/"
+    },
+    {
+      "id": "nasa-im2-press-kit",
+      "title": "Intuitive Machines-2 Lunar Mission Press Kit",
+      "publisher": "NASA",
+      "published": "2025-02",
+      "url": "https://www.nasa.gov/wp-content/uploads/2025/02/np-2025-02-005-jsc-clps-intuitive-machines-press-kit-508-2-25-25.pdf"
+    },
+    {
+      "id": "nasa-prism",
+      "title": "Lunar Instrument Development",
+      "publisher": "NASA Science",
+      "url": "https://science.nasa.gov/lunar-science/programs/lunar-instrument-development/"
+    },
+    {
+      "id": "leag-bg1-2025",
+      "title": "Blue Ghost Mission 1 Science Highlights",
+      "publisher": "NASA / LEAG",
+      "published": "2025",
+      "url": "https://www.hou.usra.edu/meetings/leag2025/presentations/Wednesday/1030_Banks.pdf"
+    },
+    {
+      "id": "leag-clps-2024",
+      "title": "Summary of NASA's CLPS Program",
+      "publisher": "NASA / LEAG",
+      "published": "2024",
+      "url": "https://www.hou.usra.edu/meetings/leag2024/presentations/Tuesday/1445_Gruener.pdf"
+    },
+    {
+      "id": "firefly-bg1",
+      "title": "Blue Ghost Mission 1",
+      "publisher": "Firefly Aerospace",
+      "url": "https://fireflyspace.com/missions/blue-ghost-mission-1/"
+    },
+    {
+      "id": "jgr-wueller-2026",
+      "title": "Assessing Potential Landing Sites With Favorable Illumination and Accessible, Potentially Volatile-Rich Permanently Shadowed Regions",
+      "publisher": "Journal of Geophysical Research: Planets",
+      "published": "2026",
+      "url": "https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2025JE009434"
+    },
+    {
+      "id": "psj-lunar-vise",
+      "title": "Lunar-VISE Landing Site Selection and Characterization at Mons Gruithuisen Gamma",
+      "publisher": "The Planetary Science Journal",
+      "url": "https://iopscience.iop.org/article/10.3847/PSJ/ae7d2c"
+    },
+    {
+      "id": "nasa-lunar-data",
+      "title": "Lunar Science Data",
+      "publisher": "NASA Science",
+      "url": "https://science.nasa.gov/lunar-science/data/"
+    }
+  ],
+  "sites": [
+    {
+      "id": "sinus-viscositatis",
+      "name": "Sinus Viscositatis",
+      "region": "near-side",
+      "terrain": "Planned Peregrine destination on the near side. NASA's deliveries page names Sinus Viscositatis and does not give a landing fix, because Peregrine did not land.",
+      "illumination": {
+        "regime": "near-side",
+        "annualSunlightPercent": null,
+        "summary": "Not a polar lighting site. No annual sunlight percent is stored."
+      },
+      "resources": {
+        "waterIce": "not-a-target",
+        "summary": "Not a south-pole water-ice destination in the NASA delivery description."
+      },
+      "comms": "direct-earth",
+      "sourceIds": ["nasa-clps-deliveries"]
+    },
+    {
+      "id": "malapert-a",
+      "name": "Malapert A",
+      "region": "polar",
+      "latitude": -80.13,
+      "longitude": 1.44,
+      "longitudeConvention": "signed",
+      "coordinateKind": "landing-fix",
+      "elevationM": 2579,
+      "terrain": "South-polar crater region. NASA's LRO page places the IM-1 landing at 80.13 degrees south, 1.44 degrees east, elevation 2,579 meters.",
+      "illumination": {
+        "regime": "polar",
+        "annualSunlightPercent": null,
+        "summary": "High-latitude south polar site. This catalog does not store an annual sunlight percent for the landing fix."
+      },
+      "resources": {
+        "waterIce": "regional",
+        "summary": "The landing is in the South Pole region. This record does not treat the Malapert A fix as a permanently shadowed crater floor."
+      },
+      "comms": "polar-variable",
+      "sourceIds": ["nasa-lro-im1", "nasa-clps-encyclopedia"]
+    },
+    {
+      "id": "mare-crisium",
+      "name": "Mare Crisium",
+      "region": "near-side",
+      "latitude": 18.5623,
+      "longitude": 61.8103,
+      "longitudeConvention": "signed",
+      "coordinateKind": "landing-fix",
+      "terrain": "Basaltic mare on the near side, beside the volcanic cone Mons Latreille. The LEAG 2025 science highlights give the landing as 18.5623 N, 61.8103 E.",
+      "illumination": {
+        "regime": "mid-latitude",
+        "annualSunlightPercent": null,
+        "summary": "Mid-latitude near-side site. No annual sunlight percent is stored. Blue Ghost 1's surface mission was a lunar-day delivery, not a polar-night design."
+      },
+      "resources": {
+        "waterIce": "not-a-target",
+        "summary": "A mare site chosen for geophysics, dust, heat flow, and Earth observations, not for polar water ice."
+      },
+      "comms": "direct-earth",
+      "sourceIds": ["leag-bg1-2025", "firefly-bg1", "nasa-clps-encyclopedia"]
+    },
+    {
+      "id": "mons-mouton",
+      "name": "Mons Mouton",
+      "region": "polar",
+      "terrain": "South-polar massif used for IM-2, the Griffin delivery test, and IM-4. No touchdown coordinate is stored, because the NASA pages used here do not publish one.",
+      "illumination": {
+        "regime": "polar",
+        "annualSunlightPercent": null,
+        "summary": "Illumination at Mons Mouton changes with the exact spot and the year. A 2026 study found some candidate sites sunlit in certain midsummers and poorly lit in others. No single annual percent is stored."
+      },
+      "resources": {
+        "waterIce": "target",
+        "summary": "PRIME-1 flew here to drill and look for volatiles. The same 2026 study says some nearby permanently shadowed regions stay below 110 K. That temperature belongs to those nearby sites, not to an unstated IM-2 coordinate."
+      },
+      "comms": "polar-variable",
+      "sourceIds": ["nasa-prime1", "nasa-clps-deliveries", "jgr-wueller-2026", "leag-clps-2024"]
+    },
+    {
+      "id": "reiner-gamma",
+      "name": "Reiner Gamma",
+      "region": "near-side",
+      "terrain": "Lunar swirl on the western near side, tied to a crustal magnetic anomaly. NASA calls it the IM-3 destination. No landing coordinate is stored.",
+      "illumination": {
+        "regime": "near-side",
+        "annualSunlightPercent": null,
+        "summary": "Near-side swirl, not a polar lighting site. No annual sunlight percent is stored."
+      },
+      "resources": {
+        "waterIce": "not-a-target",
+        "summary": "The science target is the swirl and its magnetic field, not polar water ice."
+      },
+      "comms": "direct-earth",
+      "sourceIds": ["nasa-clps-encyclopedia", "nasa-im2-press-kit", "nasa-prism"]
+    },
+    {
+      "id": "gruithuisen-domes",
+      "name": "Gruithuisen Domes",
+      "region": "near-side",
+      "latitude": 36.45715,
+      "longitude": 319.20398,
+      "longitudeConvention": "east-positive-0-360",
+      "coordinateKind": "published-ellipse",
+      "terrain": "Silicic volcanic domes on the near side. The Lunar-VISE site paper selects a 100-meter ellipse at 36.45715 N, 319.20398 E on Mons Gruithuisen Gamma. That is a published science ellipse, not a landed fix.",
+      "illumination": {
+        "regime": "mid-latitude",
+        "annualSunlightPercent": null,
+        "summary": "The Lunar-VISE paper's modeled lunation keeps the Sun visible for more than 14 Earth days at that ellipse. This catalog still does not store an annual sunlight percent."
+      },
+      "resources": {
+        "waterIce": "not-a-target",
+        "summary": "The science target is how these silica-rich domes formed, not polar ice."
+      },
+      "comms": "direct-earth",
+      "sourceIds": ["nasa-prism", "psj-lunar-vise", "nasa-clps-encyclopedia"]
+    },
+    {
+      "id": "far-side",
+      "name": "Lunar far side",
+      "region": "far-side",
+      "terrain": "NASA's October 2026 encyclopedia says Blue Ghost Mission 2 delivers to the far side and puts a relay satellite in lunar orbit. It does not name the crater, so no coordinate is stored.",
+      "illumination": {
+        "regime": "far-side",
+        "annualSunlightPercent": null,
+        "summary": "The surface site is not specific enough for an illumination percent."
+      },
+      "resources": {
+        "waterIce": "not-a-target",
+        "summary": "The encyclopedia destination is the far side plus an orbital relay, not a named polar ice target."
+      },
+      "comms": "far-side-needs-relay",
+      "sourceIds": ["nasa-clps-encyclopedia"]
+    },
+    {
+      "id": "schrodinger-basin",
+      "name": "Schrödinger Basin",
+      "region": "far-side",
+      "terrain": "Far-side basin named for NASA's CP-12 / CS-11 science deliveries. No landing coordinate is stored.",
+      "illumination": {
+        "regime": "far-side",
+        "annualSunlightPercent": null,
+        "summary": "Far-side basin. No annual sunlight percent is stored."
+      },
+      "resources": {
+        "waterIce": "not-a-target",
+        "summary": "PRISM selected Schrödinger for interior and basin science. This record does not turn it into a water-ice site."
+      },
+      "comms": "far-side-needs-relay",
+      "sourceIds": ["nasa-prism", "leag-clps-2024", "nasa-clps-deliveries"]
+    },
+    {
+      "id": "south-pole-region",
+      "name": "Lunar south pole region",
+      "region": "polar",
+      "terrain": "Regional destination used when NASA names the South Pole but not a crater or massif. It is not a substitute for Malapert A or Mons Mouton.",
+      "illumination": {
+        "regime": "polar",
+        "annualSunlightPercent": null,
+        "summary": "South-polar illumination depends on the exact ridge or crater. No annual percent is stored for the whole region."
+      },
+      "resources": {
+        "waterIce": "regional",
+        "summary": "The south pole is the region where permanently shadowed cold traps are the water-ice question. A delivery tagged only as South Pole is not given a distance to a named crater."
+      },
+      "comms": "polar-variable",
+      "sourceIds": ["nasa-clps-encyclopedia", "nasa-lunar-data"]
+    }
+  ],
+  "payloads": [
+    {
+      "id": "lra",
+      "name": "Laser Retroreflector Array",
+      "shortName": "LRA",
+      "type": "retroreflector",
+      "kind": "retroreflector",
+      "power": "none",
+      "summary": "Passive optical retroreflector for ranging by orbiting or landing spacecraft. NASA says this small design is not for lasers on Earth, and it keeps working for decades without power.",
+      "sourceIds": ["nasa-to2-im"]
+    },
+    {
+      "id": "nglr",
+      "name": "Next Generation Lunar Retroreflector",
+      "shortName": "NGLR",
+      "type": "retroreflector",
+      "kind": "retroreflector",
+      "power": "none",
+      "summary": "Passive retroreflector flown so Earth lasers can measure the Earth-Moon distance. It needs no power.",
+      "sourceIds": ["nasa-to19d", "leag-bg1-2025"]
+    },
+    {
+      "id": "lister",
+      "name": "Lunar Instrumentation for Subsurface Thermal Exploration with Rapidity",
+      "shortName": "LISTER",
+      "type": "heat-flow",
+      "kind": "heat-flow",
+      "power": "required",
+      "summary": "Pneumatic heat-flow probe built to drill about 2 to 3 meters into the regolith and measure the thermal gradient and conductivity.",
+      "sourceIds": ["nasa-to19d"]
+    },
+    {
+      "id": "eds",
+      "name": "Electrodynamic Dust Shield",
+      "shortName": "EDS",
+      "type": "dust-shield",
+      "kind": "dust-shield",
+      "power": "required",
+      "summary": "Uses electric fields to lift and move dust, with no moving parts. Blue Ghost 1 demonstrated it on a camera and a radiator panel.",
+      "sourceIds": ["nasa-to19d", "leag-bg1-2025"]
+    },
+    {
+      "id": "ln-1",
+      "name": "Lunar Node 1 Navigation Demonstrator",
+      "shortName": "LN-1",
+      "type": "navigation",
+      "kind": "navigation",
+      "power": "required",
+      "summary": "Navigation beacon that sends radio ranging signals so later vehicles can find a landed asset.",
+      "sourceIds": ["nasa-to2-im"]
+    },
+    {
+      "id": "scalpss",
+      "name": "Stereo Cameras for Lunar Plume-Surface Studies",
+      "shortName": "SCALPSS",
+      "type": "camera",
+      "kind": "plume",
+      "power": "required",
+      "summary": "Stereo cameras aimed at the engine plume and the ground it disturbs during landing.",
+      "sourceIds": ["nasa-to2-im", "leag-bg1-2025", "nasa-clps-encyclopedia"]
+    },
+    {
+      "id": "rolses",
+      "name": "Radio-wave Observations at the Lunar Surface of the photoElectron Sheath",
+      "shortName": "ROLSES",
+      "type": "radio",
+      "kind": "plasma",
+      "power": "required",
+      "summary": "Low-frequency radio receiver for the electron sheath just above the surface, plus solar and planetary radio bursts.",
+      "sourceIds": ["nasa-to2-im"]
+    },
+    {
+      "id": "ndl",
+      "name": "Navigation Doppler Lidar",
+      "shortName": "NDL",
+      "type": "navigation",
+      "kind": "navigation",
+      "power": "required",
+      "summary": "Lidar that measures velocity and altitude from about 5 kilometers down to touchdown.",
+      "sourceIds": ["nasa-to2-im"]
+    },
+    {
+      "id": "rfmg",
+      "name": "Radio Frequency Mass Gauge",
+      "shortName": "RFMG",
+      "type": "other",
+      "kind": "propellant",
+      "power": "required",
+      "summary": "Gauges cryogenic propellant mass inside the lander's tanks.",
+      "sourceIds": ["nasa-to2-im"]
+    },
+    {
+      "id": "lexi",
+      "name": "Lunar Environment Heliospheric X-ray Imager",
+      "shortName": "LEXI",
+      "type": "other",
+      "kind": "heliophysics",
+      "power": "required",
+      "summary": "Soft X-ray imager that looks back at Earth's magnetosheath from the Moon.",
+      "sourceIds": ["nasa-to19d", "leag-bg1-2025"]
+    },
+    {
+      "id": "lms",
+      "name": "Lunar Magnetotelluric Sounder",
+      "shortName": "LMS",
+      "type": "other",
+      "kind": "geophysics",
+      "power": "required",
+      "summary": "Measures electric and magnetic fields to study the lunar interior.",
+      "sourceIds": ["leag-bg1-2025"]
+    },
+    {
+      "id": "rac",
+      "name": "Regolith Adherence Characterization",
+      "shortName": "RAC",
+      "type": "other",
+      "kind": "dust",
+      "power": "required",
+      "summary": "Compares how lunar dust sticks to different materials.",
+      "sourceIds": ["leag-bg1-2025"]
+    },
+    {
+      "id": "radpc",
+      "name": "Radiation Tolerant Computer",
+      "shortName": "RadPC",
+      "type": "computer",
+      "kind": "avionics",
+      "power": "required",
+      "summary": "Radiation-tolerant computer demonstration.",
+      "sourceIds": ["leag-bg1-2025"]
+    },
+    {
+      "id": "lpv",
+      "name": "Lunar PlanetVac",
+      "shortName": "LPV",
+      "type": "sampler",
+      "kind": "sampler",
+      "power": "required",
+      "summary": "Regolith sampling demonstration on a lander leg.",
+      "sourceIds": ["leag-bg1-2025"]
+    },
+    {
+      "id": "lugre",
+      "name": "Lunar GNSS Receiver Experiment",
+      "shortName": "LuGRE",
+      "type": "gnss",
+      "kind": "navigation",
+      "power": "required",
+      "summary": "Tests use of GNSS signals on the way to the Moon and on the surface.",
+      "sourceIds": ["leag-bg1-2025"]
+    },
+    {
+      "id": "trident",
+      "name": "The Regolith and Ice Drill for Exploring New Terrain",
+      "shortName": "TRIDENT",
+      "type": "drill",
+      "kind": "volatiles",
+      "power": "required",
+      "summary": "Rotary-percussive drill for PRIME-1, built to bring material up from about 3 feet and to record temperature and soil strength. It needs power.",
+      "sourceIds": ["nasa-prime1", "nasa-im2-press-kit"]
+    },
+    {
+      "id": "msolo",
+      "name": "Mass Spectrometer Observing Lunar Operations",
+      "shortName": "MSOLO",
+      "type": "mass-spectrometer",
+      "kind": "volatiles",
+      "power": "required",
+      "summary": "Mass spectrometer paired with TRIDENT to identify gases, including possible water vapor, and gases that come from the lander itself.",
+      "sourceIds": ["nasa-prime1", "nasa-im2-press-kit"]
+    },
+    {
+      "id": "lunar-vertex",
+      "name": "Lunar Vertex",
+      "shortName": "Lunar Vertex",
+      "type": "suite",
+      "kind": "magnetic",
+      "power": "required",
+      "summary": "Lander-and-rover suite for the Reiner Gamma swirl and its magnetic field.",
+      "sourceIds": ["nasa-prism"]
+    },
+    {
+      "id": "lunar-vise",
+      "name": "Lunar Vulkan Imaging and Spectroscopy Explorer",
+      "shortName": "Lunar-VISE",
+      "type": "suite",
+      "kind": "geology",
+      "power": "required",
+      "summary": "Five-instrument lander and rover suite for the Gruithuisen Domes. NASA's delivery count for Blue Ghost 3 is six payloads, so this suite is not the whole manifest.",
+      "sourceIds": ["nasa-prism", "psj-lunar-vise"]
+    }
+  ],
+  "pets": [
+    {
+      "id": "heat-flow-drill",
+      "name": "Heat-flow drill",
+      "instrument": "LISTER",
+      "payloadIds": ["lister"],
+      "power": "required",
+      "nightBehavior": "needs-power",
+      "passive": false,
+      "care": ["Power", "Warmth", "Signal"],
+      "engineDraw": { "key": "listerDraw", "value": 30 },
+      "moods": { "day": "happy", "sunset": "shivering", "night": "cold" },
+      "summary": "The adoptable heat-flow drill is LISTER. It is a powered probe. Lunar night stops it unless the lander can still feed it power.",
+      "sourceIds": ["nasa-to19d"]
+    },
+    {
+      "id": "retroreflector",
+      "name": "Laser retroreflector",
+      "instrument": "LRA and NGLR",
+      "payloadIds": ["lra", "nglr"],
+      "power": "none",
+      "nightBehavior": "passive",
+      "passive": true,
+      "care": ["Signal"],
+      "engineDraw": { "key": null, "value": 0 },
+      "moods": { "day": "happy", "sunset": "shivering", "night": "sleeping" },
+      "summary": "The adoptable retroreflector stands for the passive LRA and for NGLR. Neither one powers on. Night does not turn them off. The small LRA serves nearby spacecraft. NGLR is the one Earth lasers range to.",
+      "sourceIds": ["nasa-to2-im", "nasa-to19d"]
+    },
+    {
+      "id": "dust-shield",
+      "name": "Dust shield",
+      "instrument": "EDS",
+      "payloadIds": ["eds"],
+      "power": "required",
+      "nightBehavior": "needs-power",
+      "passive": false,
+      "care": ["Power", "Warmth", "Signal"],
+      "engineDraw": { "key": "edsDraw", "value": 20 },
+      "moods": { "day": "happy", "sunset": "shivering", "night": "cold" },
+      "summary": "The adoptable dust shield is EDS. Electric fields move the dust, and those fields need power, so the shield does not keep cleaning through the lunar night on its own.",
+      "sourceIds": ["nasa-to19d"]
+    },
+    {
+      "id": "trident",
+      "name": "Triddy",
+      "instrument": "TRIDENT",
+      "payloadIds": ["trident", "msolo"],
+      "power": "required",
+      "nightBehavior": "needs-power",
+      "passive": false,
+      "homeMissionId": "im-2",
+      "homeSiteId": "mons-mouton",
+      "care": ["Power", "Warmth", "Signal"],
+      "engineDraw": { "key": "tridentDraw", "value": 34 },
+      "moods": { "day": "happy", "sunset": "shivering", "night": "cold" },
+      "rarity": "Rare",
+      "passport": "Tried to pull about 1 meter of regolith and sniff for water ice with MSOLO.",
+      "vibe": "Ice-seeking drill pup in silver and ice-blue, with frost whiskers.",
+      "summary": "The adoptable PRIME-1 ice drill is Triddy (TRIDENT), paired with MSOLO. It is a powered rotary-percussive drill that draws more than LISTER while the Sun is up. Lunar night leaves it cold, not sleeping, unless the lander can still feed it power. Its home flight is IM-2 at Mons Mouton.",
+      "sourceIds": ["nasa-prime1", "nasa-im2-press-kit"]
+    },
+    {
+      "id": "ln-1",
+      "name": "Nodey",
+      "instrument": "LN-1",
+      "payloadIds": ["ln-1"],
+      "power": "required",
+      "nightBehavior": "needs-power",
+      "passive": false,
+      "homeMissionId": "im-1",
+      "homeSiteId": "malapert-a",
+      "care": ["Power", "Warmth", "Signal"],
+      "engineDraw": { "key": "ln1Draw", "value": 18 },
+      "moods": { "day": "happy", "sunset": "shivering", "night": "cold" },
+      "preferWait": true,
+      "signalBias": true,
+      "rarity": "Uncommon",
+      "passport": "Broadcast ranging so later vehicles could find the landed asset at Malapert A.",
+      "vibe": "Radio-beacon moth in gold and amber, with teal antenna tips.",
+      "summary": "The adoptable navigation beacon is Nodey (LN-1). It is a powered radio ranging demonstrator that draws less than EDS while the Sun is up. Lunar night leaves it cold, not sleeping. Signal care and waiting for Earth matter more for this pet than for the drills. Its home flight is IM-1 at Malapert A.",
+      "sourceIds": ["nasa-to2-im", "nasa-lro-im1"]
+    }
+  ],
+  "missions": [
+    {
+      "id": "peregrine",
+      "name": "Peregrine Mission One",
+      "taskOrder": "TO2-AB",
+      "provider": "Astrobotic",
+      "lander": "Peregrine",
+      "launchDate": "2024-01-08",
+      "status": "failed",
+      "outcome": "no-landing",
+      "region": "near-side",
+      "siteId": "sinus-viscositatis",
+      "nasaPayloadCount": 5,
+      "payloadIds": ["lra"],
+      "payloadNote": "NASA's deliveries page says five NASA payloads were on Peregrine. The LRA instrument page lists TO2-AB as one of its task orders. The other four are not named in this catalog.",
+      "summary": "Launched January 8, 2024. An anomaly after launch kept it from landing.",
+      "onTimelineGraphic": true,
+      "sourceIds": ["nasa-clps-deliveries", "nasa-timeline-graphic", "nasa-clps-encyclopedia", "nasa-to2-im"]
+    },
+    {
+      "id": "im-1",
+      "name": "IM-1",
+      "taskOrder": "TO2-IM",
+      "provider": "Intuitive Machines",
+      "lander": "Odysseus",
+      "launchDate": "2024-02-15",
+      "landingDate": "2024-02-22",
+      "status": "completed",
+      "outcome": "success",
+      "region": "polar",
+      "siteId": "malapert-a",
+      "nasaPayloadCount": 6,
+      "payloadIds": ["ln-1", "scalpss", "rolses", "ndl", "rfmg", "lra"],
+      "summary": "First CLPS landing. NASA's encyclopedia calls the delivery completed, and LRO gives the fix at Malapert A. The IM-2 press kit says surface operations lasted about seven Earth days. No tilt angle is stored, because those NASA pages give the landing fix and the duration, not an attitude.",
+      "onTimelineGraphic": true,
+      "sourceIds": ["nasa-to2-im", "nasa-lro-im1", "nasa-im2-press-kit", "nasa-timeline-graphic"]
+    },
+    {
+      "id": "blue-ghost-1",
+      "name": "Blue Ghost Mission 1",
+      "taskOrder": "TO19D",
+      "provider": "Firefly",
+      "lander": "Blue Ghost",
+      "launchDate": "2025-01-15",
+      "landingDate": "2025-03-02",
+      "status": "completed",
+      "outcome": "success",
+      "region": "near-side",
+      "siteId": "mare-crisium",
+      "nasaPayloadCount": 10,
+      "payloadIds": ["nglr", "radpc", "rac", "lms", "lexi", "lpv", "lister", "scalpss", "eds", "lugre"],
+      "summary": "Launched January 15, 2025 and landed in Mare Crisium on March 2, 2025. NASA and the LEAG science highlights count 10 NASA payloads, and those highlights say the ten activated on the surface.",
+      "onTimelineGraphic": true,
+      "sourceIds": ["nasa-clps-encyclopedia", "nasa-timeline-graphic", "leag-bg1-2025", "firefly-bg1", "nasa-to19d"]
+    },
+    {
+      "id": "im-2",
+      "name": "IM-2",
+      "taskOrder": "PRIME-1",
+      "provider": "Intuitive Machines",
+      "lander": "Athena",
+      "launchDate": "2025-02-27",
+      "landingDate": "2025-03-06",
+      "status": "completed",
+      "outcome": "partial",
+      "region": "polar",
+      "siteId": "mons-mouton",
+      "nasaPayloadCount": 3,
+      "payloadIds": ["trident", "msolo", "lra"],
+      "summary": "Launched February 27, 2025 and touched down at Mons Mouton on March 6, 2025. NASA says the lander was on its side and the PRIME-1 instruments could not accomplish their goals. The landing is why status is completed. The missed science is why outcome is partial.",
+      "onTimelineGraphic": true,
+      "sourceIds": ["nasa-timeline-graphic", "nasa-prime1", "nasa-im2-press-kit", "nasa-clps-deliveries"]
+    },
+    {
+      "id": "griffin-1",
+      "name": "Griffin Mission One",
+      "taskOrder": "TO20A",
+      "provider": "Astrobotic",
+      "lander": "Griffin",
+      "nasaTimelineYear": 2025,
+      "status": "planned",
+      "outcome": "scheduled",
+      "region": "polar",
+      "siteId": "mons-mouton",
+      "payloadIds": [],
+      "payloadNote": "NASA's deliveries page calls this a delivery test to Mons Mouton and does not list a payload count. The October 2026 encyclopedia still files it under 2025 and says the South Pole region. VIPER is not listed as a payload here.",
+      "scheduleNote": "The 2025 label is NASA's timeline bucket on a page that, as of October 21, 2026, still says this flight will happen. It is not a launch date.",
+      "summary": "Astrobotic's Griffin delivery. Not flown as of this catalog's asOf date.",
+      "onTimelineGraphic": true,
+      "sourceIds": ["nasa-clps-encyclopedia", "nasa-clps-deliveries", "nasa-timeline-graphic", "leag-clps-2024"]
+    },
+    {
+      "id": "blue-moon-mk1",
+      "name": "Blue Moon Mark 1",
+      "taskOrder": "CT-3",
+      "provider": "Blue Origin",
+      "lander": "Blue Moon Mark 1",
+      "nasaTimelineYear": 2025,
+      "status": "planned",
+      "outcome": "scheduled",
+      "region": "polar",
+      "siteId": "south-pole-region",
+      "payloadIds": ["scalpss"],
+      "payloadNote": "The October 2026 encyclopedia names Stereo Cameras for Lunar Plume Surface Studies and places the lander at the South Pole. The deliveries page says two NASA payloads for CT-3. The February 2025 press kit says one. This catalog names SCALPSS and does not pick a count.",
+      "scheduleNote": "Grouped under 2025 on the October 2026 encyclopedia even though the wording is still future. No launch date is stored.",
+      "summary": "Blue Origin's Mark 1 pathfinder. Not flown as of this catalog's asOf date.",
+      "onTimelineGraphic": true,
+      "sourceIds": ["nasa-clps-encyclopedia", "nasa-clps-deliveries", "nasa-im2-press-kit", "nasa-timeline-graphic"]
+    },
+    {
+      "id": "im-3",
+      "name": "IM-3",
+      "taskOrder": "CP-11",
+      "provider": "Intuitive Machines",
+      "lander": "Nova-C",
+      "nasaTimelineYear": 2026,
+      "status": "planned",
+      "outcome": "scheduled",
+      "region": "near-side",
+      "siteId": "reiner-gamma",
+      "nasaPayloadCount": 4,
+      "payloadIds": ["lunar-vertex"],
+      "payloadNote": "NASA says four payloads. Lunar Vertex is the named PRISM suite. The other three are not named here. The press kit also mentions a swarm-rover technology demonstration and international payloads, which are not counted as those four.",
+      "scheduleNote": "NASA's October 2026 encyclopedia places IM-3 in 2026. The July 2025 graphic says order inside a year is not exact.",
+      "summary": "Delivery to the Reiner Gamma swirl. Not flown as of this catalog's asOf date.",
+      "onTimelineGraphic": true,
+      "sourceIds": ["nasa-clps-encyclopedia", "nasa-clps-deliveries", "nasa-im2-press-kit", "nasa-prism", "nasa-timeline-graphic"]
+    },
+    {
+      "id": "blue-ghost-2",
+      "name": "Blue Ghost Mission 2",
+      "taskOrder": "CS-3/4",
+      "provider": "Firefly",
+      "lander": "Blue Ghost",
+      "nasaTimelineYear": 2026,
+      "status": "planned",
+      "outcome": "scheduled",
+      "region": "far-side",
+      "siteId": "far-side",
+      "payloadIds": [],
+      "payloadNote": "The October 2026 encyclopedia says two NASA surface payloads plus a communications relay satellite, with an ESA collaboration. The deliveries page says three NASA payloads for CS-3/4. No instrument is named here, because those two pages do not agree on the count and this catalog will not invent the names.",
+      "scheduleNote": "Placed in 2026 by the October 2026 encyclopedia. Order inside the year is not a launch date.",
+      "summary": "Far-side surface delivery plus a lunar-orbit relay. Not flown as of this catalog's asOf date.",
+      "onTimelineGraphic": true,
+      "sourceIds": ["nasa-clps-encyclopedia", "nasa-clps-deliveries", "nasa-timeline-graphic"]
+    },
+    {
+      "id": "draper-1",
+      "name": "Draper Mission 1",
+      "taskOrder": "CP-12",
+      "provider": "Draper",
+      "lander": "SERIES-2",
+      "nasaTimelineYear": 2026,
+      "status": "planned",
+      "outcome": "scheduled",
+      "region": null,
+      "siteId": null,
+      "nasaPayloadCount": 6,
+      "payloadIds": [],
+      "payloadNote": "The October 2026 encyclopedia says six NASA payloads to the lunar South Pole. The 2024 CLPS summary and the PRISM page name Schrödinger Basin for CP-12. Those destinations are not the same region, so this mission has no siteId and no region until the pages agree.",
+      "scheduleNote": "Placed in 2026 by the October 2026 encyclopedia. That is a timeline bucket, not a launch date.",
+      "summary": "Draper's first CLPS delivery stays in the catalog because NASA's October 2026 encyclopedia still lists it. The landing region is left blank on purpose.",
+      "onTimelineGraphic": true,
+      "sourceIds": ["nasa-clps-encyclopedia", "nasa-timeline-graphic", "leag-clps-2024", "nasa-prism"]
+    },
+    {
+      "id": "im-4",
+      "name": "IM-4",
+      "taskOrder": "CP-22",
+      "provider": "Intuitive Machines",
+      "lander": "Nova-C",
+      "nasaTimelineYear": 2027,
+      "status": "planned",
+      "outcome": "scheduled",
+      "region": "polar",
+      "siteId": "mons-mouton",
+      "nasaPayloadCount": 6,
+      "payloadIds": [],
+      "payloadNote": "NASA says six payloads to Mons Mouton. The IM-2 press kit describes the science themes and does not name the six instruments, so none are invented here.",
+      "scheduleNote": "NASA places IM-4 in 2027.",
+      "summary": "Later Intuitive Machines delivery to Mons Mouton. Not flown as of this catalog's asOf date.",
+      "onTimelineGraphic": true,
+      "sourceIds": ["nasa-clps-encyclopedia", "nasa-clps-deliveries", "nasa-im2-press-kit", "nasa-timeline-graphic"]
+    },
+    {
+      "id": "blue-ghost-3",
+      "name": "Blue Ghost Mission 3",
+      "taskOrder": "CP-21",
+      "provider": "Firefly",
+      "lander": "Blue Ghost",
+      "nasaTimelineYear": 2028,
+      "status": "planned",
+      "outcome": "scheduled",
+      "region": "near-side",
+      "siteId": "gruithuisen-domes",
+      "nasaPayloadCount": 6,
+      "payloadIds": ["lunar-vise"],
+      "payloadNote": "NASA says six payloads to the Gruithuisen Domes. Lunar-VISE is the named PRISM suite. The suite paper describes five of its own instruments, which is not the same number as NASA's delivery count, so the other delivery payloads are not guessed.",
+      "scheduleNote": "NASA's October 2026 encyclopedia places Blue Ghost Mission 3 in 2028.",
+      "summary": "Firefly delivery to the Gruithuisen Domes. Not flown as of this catalog's asOf date.",
+      "onTimelineGraphic": true,
+      "sourceIds": ["nasa-clps-encyclopedia", "nasa-clps-deliveries", "nasa-prism", "psj-lunar-vise", "nasa-timeline-graphic"]
+    },
+    {
+      "id": "blue-ghost-4",
+      "name": "Blue Ghost Mission 4",
+      "taskOrder": "CS-6",
+      "provider": "Firefly",
+      "lander": "Blue Ghost",
+      "status": "planned",
+      "outcome": "scheduled",
+      "region": "polar",
+      "siteId": "south-pole-region",
+      "nasaPayloadCount": 4,
+      "payloadIds": [],
+      "payloadNote": "NASA's deliveries page says four NASA payloads to the lunar south pole and does not name them or a year.",
+      "summary": "Later Firefly south-pole delivery listed by NASA Science. It is not on the July 2025 timeline graphic.",
+      "onTimelineGraphic": false,
+      "sourceIds": ["nasa-clps-deliveries"]
+    },
+    {
+      "id": "nova-d",
+      "name": "Nova-D",
+      "taskOrder": "CT-4",
+      "provider": "Intuitive Machines",
+      "lander": "Nova-D",
+      "status": "planned",
+      "outcome": "scheduled",
+      "region": "polar",
+      "siteId": "south-pole-region",
+      "nasaPayloadCount": 6,
+      "payloadIds": [],
+      "payloadNote": "NASA's deliveries page says the Nova-D lander will deliver six NASA payloads to the lunar south pole. The instruments and year are not named there.",
+      "summary": "Intuitive Machines technology delivery listed by NASA Science. It is not on the July 2025 timeline graphic.",
+      "onTimelineGraphic": false,
+      "sourceIds": ["nasa-clps-deliveries"]
+    },
+    {
+      "id": "cs-11",
+      "name": "CS-11 Schrödinger delivery",
+      "taskOrder": "CS-11",
+      "provider": null,
+      "lander": null,
+      "status": "planned",
+      "outcome": "scheduled",
+      "region": "far-side",
+      "siteId": "schrodinger-basin",
+      "nasaPayloadCount": 3,
+      "payloadIds": [],
+      "payloadNote": "NASA's deliveries page says a lander still to be determined will deliver three payloads to Schrödinger Basin. The provider is not named on that page.",
+      "summary": "Far-side Schrödinger delivery with the lander not chosen on the NASA page used here. Kept separate from Draper CP-12 because that mission's destination pages disagree.",
+      "onTimelineGraphic": false,
+      "sourceIds": ["nasa-clps-deliveries"]
+    },
+    {
+      "id": "cs-8",
+      "name": "CS-8",
+      "taskOrder": "CS-8",
+      "provider": null,
+      "lander": null,
+      "status": "planned",
+      "outcome": "scheduled",
+      "region": null,
+      "siteId": null,
+      "payloadIds": [],
+      "payloadNote": "NASA's deliveries page says CS-8 will deliver Moon Base payloads and does not name the instruments, provider, year, or site.",
+      "summary": "Sparse Moon Base delivery row from NASA's CLPS deliveries list. Blank region is intentional.",
+      "onTimelineGraphic": false,
+      "sourceIds": ["nasa-clps-deliveries"]
+    },
+    {
+      "id": "cx-2",
+      "name": "CX-2",
+      "taskOrder": "CX-2",
+      "provider": null,
+      "lander": null,
+      "status": "planned",
+      "outcome": "scheduled",
+      "region": null,
+      "siteId": null,
+      "payloadIds": [],
+      "payloadNote": "NASA's deliveries page says CX-2 will deliver one or more Lunar Terrain Vehicles and does not name the site or year.",
+      "summary": "Lunar Terrain Vehicle delivery row. Blank region is intentional.",
+      "onTimelineGraphic": false,
+      "sourceIds": ["nasa-clps-deliveries"]
+    }
+  ]
+}
