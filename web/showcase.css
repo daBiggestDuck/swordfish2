@@ -246,11 +246,13 @@ a:hover { text-decoration: underline; }
 
 /* Data / Missions backdrop + palette: the section's own tokens mapped to
    the client palette (#0B1320 / #1F2937 / #64748B / #D1D5DB / #F97316),
-   over real lunar regolith from the LRO mosaic. The texture is
-   pre-darkened in the asset itself (curves-mapped, desaturated), so the
-   background needs no scrim layer. --muted is lifted one slate step
-   (#94A3B8) from the palette's #64748B, which fails 4.5:1 on every
-   surface here; #64748B stays in the family for borders and chips. */
+   over real lunar regolith from the LRO mosaic. The backdrop is one
+   continuous 1200px patch cut from inside the lunar disc (no tiling,
+   no seams), curve-mapped dark in the asset itself so no scrim layer
+   is needed; content scrolls over it while the surface stays put.
+   --muted is lifted one slate step (#94A3B8) from the palette's
+   #64748B, which fails 4.5:1 on every surface here; #64748B stays in
+   the family for borders and chips. */
 .data-panel {
   --bg: #0b1320;
   --panel: #1f2937;
@@ -261,8 +263,10 @@ a:hover { text-decoration: underline; }
   --accent: #f97316;
   --accent-dim: rgba(249, 115, 22, 0.14);
   background-color: var(--bg);
-  background-image: url("assets/regolith-texture.jpg");
-  background-size: 420px;
+  background-image: url("assets/regolith-backdrop.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .local-panel .kicker,
