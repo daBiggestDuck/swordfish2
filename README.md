@@ -8,11 +8,41 @@ Challenge / planning context: see [`PLAN.md`](PLAN.md) (Payload Pets data-first 
 
 ---
 
+## Quick start — unified shell
+
+```bash
+./run-v0.sh                 # http://localhost:8765/
+./run-v0.sh 9000            # optional custom port
+```
+
+Open **http://localhost:8765/** — one page with shared nav and tabs:
+
+| Tab | What you get | Needs |
+|---|---|---|
+| **Map / Sites** | Interactive lunar explorer (`web/map.html`) | Shell only |
+| **Story / Passport** | Mission pop-ups, Pet Passport, Sun/Earth | `./run-story.sh` → :8081 |
+| **Engine / Care** | Care meters / lunar-day loop | `./run-engine.sh` → :8082 |
+| **Pets** | Triddy, Nodey & friends art/mood demo | Shell only |
+| **Data / Missions** | Catalog browser over `data/catalog.json` | Shell only |
+| **About** | Challenge brief (from `PLAN.md`) | Shell only |
+
+Story and Engine tabs iframe the Java apps. Start them in other terminals when you want those surfaces live:
+
+```bash
+./run-story.sh              # http://localhost:8081/
+./run-engine.sh             # http://localhost:8082/
+```
+
+The shell banner (and amber tab dots) tell you when those backends are down. Engine falls back to `demos/js-engine` until `:8082` is up.
+
+---
+
 ## What’s new (refresh)
 
+- **Unified `index.html` shell** — tabbed showcase via `./run-v0.sh` (no longer a hard redirect to the map alone).
 - **`Data`**: TO2-AB payloads use stable mission id `peregrine-1` (aligned with missions.json).
-- **`map`**: interactive NASA lunar explorer — `web/map.html` + globe assets, static-hosting support (`index.html` → map), `run_map.sh` / Node fallback, engine client bridge.
-- **`story`**: refreshed story server / Passport client (`12e20f6`) — engine event bridge, localhost CORS, optional `days` for Passport.
+- **`map`**: interactive NASA lunar explorer — `web/map.html` + globe assets, `run_map.sh` / Node fallback, engine client bridge.
+- **`story`**: refreshed story server / Passport client — engine event bridge, localhost CORS, optional `days` for Passport. Default port **8081** on v0.
 - **Triddy / Nodey** kept from `pranav/pets-triddy-nodey` (archetypes + `demos/js-*`).
 
 ---
@@ -24,46 +54,37 @@ Challenge / planning context: see [`PLAN.md`](PLAN.md) (Payload Pets data-first 
 | `main` | `e2a0e5d` | project rename baseline |
 | `Data` | `6b45ba1` | `data/*.json`, `src/data/`, `build.sh`, `PLAN.md` |
 | `engine` | `7c5db21` | `src/engine/`, `web/engine.*`, `run-engine.sh`, tests |
-| `map` | `666ecee` | `src/map/`, `web/map.*`, `data/maps/`, `run_map.sh`, root `index.html` |
+| `map` | `666ecee` | `src/map/`, `web/map.*`, `data/maps/`, `run_map.sh` |
 | `story` | `12e20f6` | `src/story/`, `web/story/`, `run-story.sh`, `STORY.md` |
 | `pets` | `d921b00` | `petSpriteOutline` (Moon Pals sprite outline) |
 | `ui` | `e2a0e5d` | ≡ `main` (no extra files yet) |
 | `pranav/pets-triddy-nodey` | `4dd133d` | **Triddy** (`trident`) + **Nodey** (`ln-1`) archetypes, catalog, `demos/js-*` |
-| `deployer` | `4a42a15` | `deployer/` local branch dashboard + `deploy.{sh,ps1,cmd}` |
 
 Layout:
 
 ```
+index.html      tabbed showcase shell (entry point)
+run-v0.sh       serve the shell on :8765
+web/showcase.*  shell chrome (nav, tabs, data/about panels)
 data/           baked JSON (sites, missions, pets, ephemeris, horizons, maps, catalog)
 src/data/       Java data pipeline
-src/engine/     Java game engine + local HTTP server
-src/map/        Java lunar map server
-src/story/      Java story / Passport / sky server
+src/engine/     Java game engine + local HTTP server (:8082)
+src/map/        Java lunar map server (:8080)
+src/story/      Java story / Passport / sky server (:8081)
 web/            map + engine pages (`web/map.html`, `web/engine.*`)
 web/story/      story UI
 demos/js-pets/  Triddy/Nodey pet-art browser demo
-demos/js-engine/ JS meter/tutor demo
+demos/js-engine/ JS meter/tutor demo (Engine tab fallback)
 demos/js-ui/    intro/stage demo
 ```
 
 ---
 
-## Quick start — open the showcase
+## Other entry points
 
 Needs **JDK 17+** for the Java servers. Node is optional (map fallback + JS demos/tests).
 
-### Fastest: browser demos (no compile)
-
-```bash
-# Pet art — Triddy & Nodey (open the HTML, or serve it)
-open demos/js-pets/index.html
-# or: python3 -m http.server 8765 --directory demos/js-pets
-
-open demos/js-engine/index.html
-open demos/js-ui/index.html
-```
-
-### Java surfaces (run in separate terminals)
+### Standalone Java surfaces
 
 | Surface | Command | URL |
 |---|---|---|
@@ -79,7 +100,14 @@ open demos/js-ui/index.html
 
 Pass a port if you need to: `./run-engine.sh 9000`.
 
-Static map preview (no Java): open root `index.html` (redirects to `web/map.html`) or serve the repo with any static server.
+### Browser demos (no compile)
+
+```bash
+open demos/js-pets/index.html
+open demos/js-engine/index.html
+open demos/js-ui/index.html
+# or serve via ./run-v0.sh and use the Pets / Engine tabs
+```
 
 ### Rebuild data (optional)
 
@@ -109,15 +137,15 @@ node --test test/map.test.mjs
 
 ## Limitations
 
-- **Not a single unified SPA.** Map, story, engine, and JS demos are separate entry points that share `data/` contracts; `ui` tip was still identical to `main`.
-- **Engine default port is 8082** on this branch so it does not collide with story’s 8081 / map’s 8080.
+- **Shell is a tabbed host, not a deep merge of the apps.** Map, story, engine, and pets remain separate HTML apps (iframes / panels) sharing `data/` contracts; `ui` tip was still identical to `main`.
+- **Story and Engine need their Java servers** for full API-backed UI. Without them, those tabs show a banner (Engine falls back to `demos/js-engine`).
+- **Ports on v0:** map `:8080`, story `:8081`, engine `:8082`, showcase shell `:8765`.
 - **Staging helper files** (`from-*`, `STAGING*.md`, tip notes) are gitignored / not part of the showcase.
 - Some Java pieces are offline-friendly; live Horizons / Moon Trek fetches only happen when you run `./build.sh` online.
 - `petSpriteOutline` is a sprite asset from the `pets` tip — full Swing Moon Pals UI may still live only on WIP trees.
+- ES-module demos (pets) need HTTP (`./run-v0.sh`), not `file://`.
 
 ---
-
-Tip SHAs: see [`V0_TIPS.md`](V0_TIPS.md).
 
 ## Source tips used for this merge
 

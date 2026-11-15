@@ -2,26 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="refresh" content="0; url=./web/map.html">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Payload Pets — Redirecting to Lunar Map</title>
-  <style>
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      background: #070b14;
-      color: #e6edf7;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    }
-    a { color: #67e8f9; }
-  </style>
+  <title>Payload Pets — v0 Showcase</title>
+  <meta name="description" content="Unified Payload Pets v0 showcase: lunar map, story/passport, care engine, pets, and CLPS mission data.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./web/showcase.css">
 </head>
 <body>
-  <p>Opening the 3D Lunar Map… <a href="./web/map.html">Click here if not redirected automatically</a>.</p>
-  <script>
-    window.location.replace('./web/map.html');
-  </script>
+  <a class="skip" href="#stage">Skip to content</a>
+
+  <div id="shell-banner" class="shell-banner" role="status" aria-live="polite" data-show="0"></div>
+
+  <header class="topnav">
+    <div class="brand">
+      <div class="brand-mark">Payload <span>Pets</span></div>
+      <div class="brand-sub">v0 showcase</div>
+    </div>
+
+    <nav id="tabs" class="tabs" role="tablist" aria-label="Showcase sections"></nav>
+
+    <div class="nav-meta">
+      <a class="hide-sm" href="./README.md">README</a>
+      <a href="https://www.nasa.gov/commercial-lunar-payload-services/" target="_blank" rel="noopener">CLPS</a>
+    </div>
+  </header>
+
+  <main id="stage" class="stage"></main>
+
+  <script src="./web/showcase.js" defer></script>
 </body>
 </html>
