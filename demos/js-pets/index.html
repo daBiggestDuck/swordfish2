@@ -3,22 +3,30 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Pet art, moods, and animations</title>
-    <meta name="description" content="Watch real CLPS instruments change mood from full sun to sunset to lunar night — LISTER, Retro, EDS, and Nodey.">
+    <title>Pet instruments · 3D moods</title>
+    <meta name="description" content="Watch real CLPS instruments in 3D change mood from full sun to sunset to lunar night — LISTER, Retro, EDS, and Nodey.">
     <link rel="stylesheet" href="styles.css">
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+        }
+      }
+    </script>
   </head>
   <body>
     <a class="skip" href="#stage">Skip to the pet</a>
     <header class="mast">
       <p class="eyebrow">Payload Pets · power &amp; comms tutorial</p>
-      <h1>Pet art and moods</h1>
-      <p class="judge-lede"><strong>For judges.</strong> Loop with Map: pick a pet → <em>Drop on Moon</em> → scrub the sun clock (day glow / night huddle / Nodey signal stress). Here, scrub <em>full sun → sunset → night</em> for the same moods.</p>
-      <p>Four adoptable payload pets: LISTER, Retro (LRA), EDS, and Nodey (LN-1). Active instruments need solar <strong>Power</strong>; Nodey teaches <strong>Signal</strong>; only the passive retroreflector sleeps through night.</p>
+      <h1>3D instruments and moods</h1>
+      <p class="judge-lede"><strong>For judges.</strong> Loop with Map: pick a pet → <em>Drop on Moon</em> → scrub the sun clock (day glow / night huddle / Nodey signal stress). Here, scrub <em>full sun → sunset → night</em> for the same 3D moods.</p>
+      <p>Four adoptable payload pets as procedural Three.js hardware — not cartoon faces. Active instruments need solar <strong>Power</strong>; Nodey teaches <strong>Signal</strong>; only the passive retroreflector sleeps through night.</p>
     </header>
     <p id="live" class="visually-hidden" role="status" aria-live="polite"></p>
     <main id="app"></main>
     <footer class="colophon" id="colophon"></footer>
-    <noscript>This page needs JavaScript to draw the pets and change their moods.</noscript>
+    <noscript>This page needs JavaScript to draw the 3D pets and change their moods.</noscript>
+    <script type="module" src="../../web/pets-3d/install.js"></script>
     <script type="module" src="src/ui.js"></script>
   </body>
 </html>

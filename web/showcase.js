@@ -300,7 +300,7 @@
     } else if (tab.id === "pets") {
       note.dataset.show = "1";
       note.innerHTML =
-        "<strong>Judge tip.</strong> After a Map drop, this tab mirrors the live site mood. Scrub <em>full sun → sunset → night</em> here too — Power pets (LISTER / EDS) huddle in night; Nodey teaches Signal; Retro sleeps because real hardware draws none.";
+        "<strong>Judge tip.</strong> After a Map drop, this tab mirrors the live site mood on the same <em>3D</em> instruments. Scrub <em>full sun → sunset → night</em> — Power pets (LISTER / EDS) huddle in night; Nodey teaches Signal; Retro sleeps because real hardware draws none.";
     } else {
       note.dataset.show = "0";
       note.textContent = "";
