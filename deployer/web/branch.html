@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Branch · Payload Pets Deployer</title>
+  <link rel="stylesheet" href="/_deployer/deployer.css">
+</head>
+<body>
+  <header>
+    <div>
+      <h1><a href="/">Payload Pets <span>deployer</span></a></h1>
+      <div class="small"><a href="/">← All branches</a></div>
+    </div>
+    <button id="refresh">↻ Check GitHub now</button>
+  </header>
+  <main>
+    <div class="card">
+      <div class="row spread"><h2 id="name"></h2><span id="status"></span></div>
+      <div id="owner" class="small"></div>
+      <div id="message" class="small muted"></div>
+    </div>
+
+    <div class="two">
+      <div>
+        <div class="card">
+          <h3>Live site</h3>
+          <div id="tabs" class="tabs"></div>
+          <div id="preview"></div>
+        </div>
+        <div class="card">
+          <h3>Website pages</h3>
+          <ul id="pages" class="plain"></ul>
+        </div>
+        <div class="card">
+          <h3>Build log</h3>
+          <pre id="buildlog" class="log"></pre>
+          <div id="applogs"></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <h3>Recent commits</h3>
+          <ul id="commits" class="plain small"></ul>
+        </div>
+        <div class="card">
+          <h3>Code <span id="filecount" class="muted small"></span></h3>
+          <div id="tree" class="tree"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="/_deployer/deployer.js"></script>
+  <script>
+    const branch = new URLSearchParams(location.search).get('b') || '';
+    let shownSha = null;
+    let shownApps = '';
+    let activeApp = 0;
+
+    function buildTree(files) {
+      const root = {};
+      for (const f of files) {
+        let node = root;
+        const parts = f.split('/');
+        parts.slice(0, -1).forEach((p) => { node = node[p + '/'] ||= {}; });
+        node[parts.at(-1)] = f;
+      }
+      const render = (node, depth) => {
+        const out = [];
+        for (const k of Object.keys(node).sort((a, b) => (b.endsWith('/') - a.endsWith('/')) || a.localeCompare(b))) {
+          if (typeof node[k] === 'string') out.push(el('a', { href: codeUrl(branch, node[k]), text: k }));
+          else out.push(el('details', { open: depth < 1 }, el('summary', { text: k }), render(node[k], depth + 1)));
+        }
+        return out;
+      };
+      return render(root, 0);
+    }
+
+    function showApps(apps) {
+      const key = apps.map((a) => `${a.name}:${a.status}`).join(',');
+      if (key === shownApps) return;
+      shownApps = key;
+      const tabs = $('#tabs');
+      tabs.replaceChildren();
+      const running = apps.filter((a) => a.status === 'running');
+      if (!apps.length) {
+        $('#preview').replaceChildren(el('p', { class: 'muted', text: 'This branch has no Java web server yet, so there is nothing to run. Its code and pages are still listed here.' }));
+        return;
+      }
+      if (activeApp >= apps.length) activeApp = 0;
+      apps.forEach((a, i) => {
+        const b = el('button', { class: i === activeApp ? 'active' : '' }, `${a.name} `, pill(a.status));
+        b.addEventListener('click', () => { activeApp = i; shownApps = ''; showApps(apps); });
+        tabs.append(b);
+      });
+      const a = apps[activeApp];
+      if (a.status !== 'running') {
+        $('#preview').replaceChildren(el('p', { class: 'muted', text: `${a.name} is ${a.status}. Check the build log below.` }));
+        return;
+      }
+      $('#preview').replaceChildren(
+        el('div', { class: 'row small', style: 'margin-bottom:8px' },
+          el('a', { class: 'button primary', href: a.url, target: '_blank', rel: 'noopener', text: `Open ${a.url} ↗` }),
+          el('span', { class: 'muted mono', text: a.mainClass })),
+        el('iframe', { class: 'preview', src: a.url, title: `${a.name} preview` }));
+    }
+
+    async function load() {
+      try {
+        const d = await api(`/_deployer/api/branch?b=${encodeURIComponent(branch)}`);
+        const b = d.branch;
+        document.title = `${b.name} · Payload Pets Deployer`;
+        $('#name').textContent = b.name;
+        $('#status').replaceChildren(pill(b.status));
+        $('#owner').replaceChildren(el('b', { text: b.owner || 'No owner listed' }), b.role ? ` · ${b.role}` : '');
+        $('#message').textContent = `${b.message}${b.deployedAt ? ` · built ${timeAgo(b.deployedAt)}` : ''}`;
+        showApps(b.apps);
+
+        $('#pages').replaceChildren(...(b.pages.length ? b.pages.map((p) => el('li', {},
+          el('a', { href: p.url, target: '_blank', rel: 'noopener', text: p.path }),
+          ' ', el('span', { class: 'small muted', text: p.live ? '(live site)' : '(file preview)' })))
+          : [el('li', { class: 'muted', text: 'No HTML pages on this branch yet.' })]));
+
+        $('#buildlog').textContent = d.buildLog || '(nothing yet)';
+        $('#applogs').replaceChildren(...d.appLogs.map((a) => el('details', {},
+          el('summary', { text: `${a.name} server output` }), el('pre', { class: 'log', text: a.log || '(no output yet)' }))));
+
+        $('#commits').replaceChildren(...d.commits.map((c) => el('li', {},
+          el('b', { text: c.subject }), el('br'),
+          el('span', { class: 'muted' }, `${c.author} · ${timeAgo(c.time * 1000)} · `, el('span', { class: 'sha mono', text: c.shortSha })))));
+
+        if (b.sha !== shownSha) {
+          shownSha = b.sha;
+          $('#filecount').textContent = `(${d.files.length} files)`;
+          $('#tree').replaceChildren(...buildTree(d.files));
+        }
+      } catch (e) {
+        $('#name').textContent = branch;
+        $('#message').textContent = e.message;
+      }
+    }
+
+    $('#refresh').addEventListener('click', async () => {
+      await api('/_deployer/api/refresh', { method: 'POST' }).catch(() => {});
+      setTimeout(load, 800);
+    });
+    load();
+    setInterval(load, 4000);
+  </script>
+</body>
+</html>

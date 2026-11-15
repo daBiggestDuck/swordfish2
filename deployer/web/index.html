@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payload Pets Deployer</title>
+  <link rel="stylesheet" href="/_deployer/deployer.css">
+</head>
+<body>
+  <header>
+    <div>
+      <h1><a href="/">Payload Pets <span>deployer</span></a></h1>
+      <div class="muted small">Every branch on GitHub, built and running. Push to your branch and it updates here by itself.</div>
+    </div>
+    <button id="refresh">↻ Check GitHub now</button>
+  </header>
+  <main>
+    <div id="banner"></div>
+    <div id="branches" class="grid"><p class="muted">Loading…</p></div>
+  </main>
+  <script src="/_deployer/deployer.js"></script>
+  <script>
+    function card(b) {
+      const links = el('div', { class: 'links' });
+      for (const a of b.apps) {
+        if (a.status === 'running') links.append(el('a', { class: 'button primary', href: a.url, target: '_blank', rel: 'noopener', text: `Open ${a.name} ↗` }));
+      }
+      links.append(el('a', { class: 'button', href: branchUrl(b.name), text: 'Branch page' }));
+      const livePages = b.pages.filter((p) => p.live).length;
+      return el('div', { class: 'card' },
+        el('div', { class: 'row spread' }, el('h2', {}, el('a', { href: branchUrl(b.name), text: b.name })), pill(b.status)),
+        el('div', { class: 'small' }, el('b', { text: b.owner || 'No owner listed' }), b.role ? ` · ${b.role}` : ''),
+        commitBox(b.head),
+        el('div', { class: 'small muted', text: `${b.message}${b.pages.length ? ` · ${b.pages.length} page${b.pages.length > 1 ? 's' : ''} (${livePages} live)` : ''}` }),
+        links);
+    }
+
+    async function load() {
+      try {
+        const s = await api('/_deployer/api/status');
+        $('#banner').replaceChildren(...[publicBanner(s), fetchBanner(s)].filter(Boolean));
+        const box = $('#branches');
+        box.replaceChildren(...s.branches.map(card));
+        if (!s.branches.length) box.replaceChildren(el('p', { class: 'muted', text: 'No branches found yet. Waiting for GitHub…' }));
+      } catch (e) {
+        $('#banner').replaceChildren(el('div', { class: 'banner bad', text: `Deployer not reachable: ${e.message}` }));
+      }
+    }
+
+    $('#refresh').addEventListener('click', async () => {
+      await api('/_deployer/api/refresh', { method: 'POST' }).catch(() => {});
+      setTimeout(load, 800);
+    });
+    load();
+    setInterval(load, 3000);
+  </script>
+</body>
+</html>

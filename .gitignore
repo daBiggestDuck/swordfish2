@@ -24,3 +24,6 @@ STAGING_SHAS.txt
 STAGING_MAP_STORY_PETS.md
 DATA_ENGINE_TIPS.txt
 TIPS.txt
+
+# Deployer local build output
+.deploy-out/

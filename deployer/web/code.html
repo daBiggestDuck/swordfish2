@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Code · Payload Pets Deployer</title>
+  <link rel="stylesheet" href="/_deployer/deployer.css">
+</head>
+<body>
+  <header>
+    <div>
+      <h1><a href="/">Payload Pets <span>deployer</span></a></h1>
+      <div class="small crumbs" id="crumbs"></div>
+    </div>
+    <a id="raw" class="button" target="_blank" rel="noopener">Open raw ↗</a>
+  </header>
+  <main>
+    <p id="info" class="muted small"></p>
+    <div id="code" class="code"></div>
+  </main>
+  <script src="/_deployer/deployer.js"></script>
+  <script>
+    const q = new URLSearchParams(location.search);
+    const branch = q.get('b') || '';
+    const path = q.get('path') || '';
+
+    async function load() {
+      $('#crumbs').replaceChildren(el('a', { href: '/', text: 'All branches' }), ' / ',
+        el('a', { href: branchUrl(branch), text: branch }), ' / ', el('span', { class: 'mono', text: path }));
+      $('#raw').href = `/_deployer/preview/${encodeURIComponent(branch)}/${path.split('/').map(encodeURIComponent).join('/')}`;
+      document.title = `${path.split('/').pop()} · ${branch}`;
+      try {
+        const f = await api(`/_deployer/api/file?b=${encodeURIComponent(branch)}&path=${encodeURIComponent(path)}`);
+        if (f.binary) {
+          $('#info').textContent = `Binary file (${f.size} bytes). Use “Open raw” to view it.`;
+          return;
+        }
+        const lines = f.text.split('\n');
+        if (lines.at(-1) === '') lines.pop();
+        $('#info').textContent = `${lines.length} lines · ${f.size} bytes${f.truncated ? ' · showing the first 1 MB' : ''}`;
+        const table = el('table');
+        lines.forEach((line, i) => {
+          table.append(el('tr', { id: `L${i + 1}` },
+            el('td', { class: 'n' }, el('a', { href: `#L${i + 1}`, text: String(i + 1) })),
+            el('td', { text: line })));
+        });
+        $('#code').replaceChildren(table);
+        if (location.hash) document.querySelector(location.hash)?.scrollIntoView({ block: 'center' });
+      } catch (e) {
+        $('#info').textContent = e.message;
+      }
+    }
+    load();
+  </script>
+</body>
+</html>
