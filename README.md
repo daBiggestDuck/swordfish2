@@ -55,7 +55,7 @@ The shell banner (and amber tab dots) tell you when those backends are down. Eng
 | `Data` | `6b45ba1` | `data/*.json`, `src/data/`, `build.sh`, `PLAN.md` |
 | `engine` | `7c5db21` | `src/engine/`, `web/engine.*`, `run-engine.sh`, tests |
 | `map` | `666ecee` | `src/map/`, `web/map.*`, `data/maps/`, `run_map.sh` |
-| `story` | `12e20f6` | `src/story/`, `web/story/`, `run-story.sh`, `STORY.md` |
+| `story` | `13f6021` | `src/story/`, `web/story/`, `run-story.sh`, `STORY.md` |
 | `pets` | `d921b00` | `petSpriteOutline` (Moon Pals sprite outline) |
 | `ui` | `e2a0e5d` | ≡ `main` (no extra files yet) |
 | `pranav/pets-triddy-nodey` | `4dd133d` | **Triddy** (`trident`) + **Nodey** (`ln-1`) archetypes, catalog, `demos/js-*` |
