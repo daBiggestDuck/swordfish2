@@ -125,7 +125,7 @@
       panel.appendChild(iframe);
     } else if (tab.kind === "data") {
       panel.innerHTML = `
-        <div class="local-panel">
+        <div class="local-panel data-panel">
           <header class="data-head">
             <div class="data-head-copy">
               <h1>Data / Missions</h1>
@@ -462,7 +462,17 @@
         });
     }
 
-    grid.innerHTML = rows.join("") || `<p class="meta">No matches.</p>`;
+    const noMatches = rows.length
+      ? ""
+      : `<p class="meta data-empty">No matches for “${escapeHtml(q || statusFilter)}”. <button type="button" class="data-empty-clear">Clear the filter</button> or switch View.</p>`;
+    grid.innerHTML = rows.join("") || noMatches;
+    if (!rows.length) {
+      grid.querySelector(".data-empty-clear")?.addEventListener("click", () => {
+        if ($("#data-q")) $("#data-q").value = "";
+        if ($("#data-status")) $("#data-status").value = "";
+        renderData();
+      });
+    }
   }
 
   function escapeHtml(s) {
