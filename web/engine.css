@@ -1,22 +1,22 @@
 /* Engine / Care — warm space palette (aligned with showcase / map tokens). */
 :root {
-  --maroon: #7f1d1d;
-  --orange: #ea580c;
+  --maroon: #64748B;
+  --orange: #F97216;
   --amber: #f59e0b;
-  --cream: #fef3c7;
-  --space: #111827;
+  --cream: #D1D4DB;
+  --space: #0B1320;
 
   --bg: var(--space);
-  --panel: #1a2234;
-  --panel-alt: #222b40;
-  --border: #3a4258;
-  --slate: #5c5340;
-  --text: #e8d9a8;
+  --panel: #151E2E;
+  --panel-alt: #202938;
+  --border: rgba(100, 116, 139, 0.45);
+  --slate: #64748B;
+  --text: #D1D4DB;
   --text-strong: var(--cream);
-  --muted: #c4b896;
+  --muted: #9AA4B4;
   --accent: var(--orange);
   --accent-ink: var(--space);
-  --accent-dim: rgba(234, 88, 12, 0.14);
+  --accent-dim: rgba(249, 114, 22, 0.16);
   --good: #4ade80;
   --warn: var(--amber);
   --bad: #f87171;
@@ -74,7 +74,7 @@ html.in-shell header { padding: .6rem 1.25rem; }
 html.in-shell header p { margin: .2rem auto 0; }
 
 a { color: var(--accent); }
-a:hover { color: #fb923c; }
+a:hover { color: #ff8b3d; }
 
 .card {
   background: var(--panel);
@@ -114,10 +114,10 @@ input:not([type=checkbox]), select { width: 100%; max-width: 480px; display: blo
 input[type=checkbox] { accent-color: var(--accent); width: 1rem; height: 1rem; }
 select option { background: var(--panel); color: var(--text); }
 button { cursor: pointer; font-weight: 600; font-size: .82rem; padding: .38rem .75rem; }
-button:hover:not(:disabled) { border-color: var(--slate); background: #334155; }
+button:hover:not(:disabled) { border-color: var(--slate); background: rgba(100, 116, 139, 0.25); }
 button:disabled { opacity: .45; cursor: not-allowed; }
 button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
-button.primary:hover:not(:disabled) { background: #fb923c; border-color: transparent; }
+button.primary:hover:not(:disabled) { background: #ff8b3d; border-color: transparent; }
 :is(button, input, select, a):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Game header */

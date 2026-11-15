@@ -1,18 +1,18 @@
 /* Showcase shell — warm space palette (Map / Sites tokens in web/map.css stay in sync). */
 :root {
   /* Core 5 from brand board */
-  --maroon: #7f1d1d;
-  --orange: #ea580c;
+  --maroon: #64748B;
+  --orange: #F97216;
   --amber: #f59e0b;
-  --cream: #fef3c7;
-  --space: #111827;
+  --cream: #D1D4DB;
+  --space: #0B1320;
 
   --bg: var(--space);
-  --panel: #1a2234;
-  --panel-alt: #222b40;
-  --border: #3a4258;
+  --panel: #151E2E;
+  --panel-alt: #202938;
+  --border: rgba(100, 116, 139, 0.45);
   --text: var(--cream);
-  --muted: #c4b896;
+  --muted: #9AA4B4;
   --accent: var(--orange);
   --accent-ink: var(--space);
   --good: #45d48a;
@@ -28,7 +28,7 @@
   --bg-panel: var(--panel-alt);
   --line: var(--border);
   --ok: var(--good);
-  --accent-dim: rgba(234, 88, 12, 0.16);
+  --accent-dim: rgba(249, 114, 22, 0.16);
 }
 
 * { box-sizing: border-box; }
@@ -79,7 +79,7 @@ body {
     radial-gradient(1px 1px at 44% 28%, rgba(245, 158, 11, 0.7) 50%, transparent 51%),
     radial-gradient(1.4px 1.4px at 61% 74%, rgba(254, 243, 199, 0.9) 50%, transparent 51%),
     radial-gradient(1px 1px at 73% 22%, rgba(254, 243, 199, 0.5) 50%, transparent 51%),
-    radial-gradient(1px 1px at 86% 48%, rgba(234, 88, 12, 0.55) 50%, transparent 51%),
+    radial-gradient(1px 1px at 86% 48%, rgba(249, 114, 22, 0.55) 50%, transparent 51%),
     radial-gradient(1.2px 1.2px at 18% 88%, rgba(254, 243, 199, 0.65) 50%, transparent 51%),
     radial-gradient(1px 1px at 52% 8%, rgba(254, 243, 199, 0.45) 50%, transparent 51%),
     radial-gradient(1px 1px at 94% 82%, rgba(245, 158, 11, 0.5) 50%, transparent 51%),
@@ -96,19 +96,19 @@ body {
 }
 .space-bg__nebula--a {
   background:
-    radial-gradient(ellipse 42% 34% at 18% 28%, rgba(127, 29, 29, 0.75), transparent 70%),
-    radial-gradient(ellipse 30% 26% at 72% 18%, rgba(234, 88, 12, 0.45), transparent 68%);
+    radial-gradient(ellipse 42% 34% at 18% 28%, rgba(100, 116, 139, 0.35), transparent 70%),
+    radial-gradient(ellipse 30% 26% at 72% 18%, rgba(249, 114, 22, 0.45), transparent 68%);
   animation: nebulaDriftA 28s ease-in-out infinite alternate;
 }
 .space-bg__nebula--b {
   background:
     radial-gradient(ellipse 38% 32% at 78% 68%, rgba(245, 158, 11, 0.4), transparent 70%),
-    radial-gradient(ellipse 28% 24% at 36% 76%, rgba(127, 29, 29, 0.55), transparent 68%);
+    radial-gradient(ellipse 28% 24% at 36% 76%, rgba(32, 41, 56, 0.72), transparent 68%);
   animation: nebulaDriftB 34s ease-in-out infinite alternate;
 }
 .space-bg__nebula--c {
   background:
-    radial-gradient(ellipse 48% 28% at 52% 48%, rgba(234, 88, 12, 0.22), transparent 72%),
+    radial-gradient(ellipse 48% 28% at 52% 48%, rgba(249, 114, 22, 0.22), transparent 72%),
     radial-gradient(ellipse 22% 18% at 12% 58%, rgba(254, 243, 199, 0.12), transparent 70%);
   animation: nebulaDriftC 22s ease-in-out infinite alternate;
   opacity: 0.4;
@@ -296,7 +296,7 @@ a:hover { text-decoration: underline; }
 }
 .nav-meta a:hover {
   color: var(--accent);
-  border-color: rgba(234, 88, 12, 0.5);
+  border-color: rgba(249, 114, 22, 0.5);
   text-decoration: none;
 }
 
@@ -391,13 +391,13 @@ a:hover { text-decoration: underline; }
 /* Data / Missions: space palette over lunar regolith (LRO mosaic patch). */
 .data-panel {
   --bg: var(--space);
-  --panel: rgba(26, 34, 52, 0.9);
-  --panel-alt: rgba(34, 43, 64, 0.92);
-  --border: #3a4258;
+  --panel: rgba(21, 30, 46, 0.92);
+  --panel-alt: rgba(32, 41, 56, 0.94);
+  --border: rgba(100, 116, 139, 0.45);
   --text: var(--cream);
-  --muted: #c4b896;
+  --muted: #9AA4B4;
   --accent: var(--orange);
-  --accent-dim: rgba(234, 88, 12, 0.16);
+  --accent-dim: rgba(249, 114, 22, 0.16);
   background-color: transparent;
   background-image:
     linear-gradient(180deg, rgba(17, 24, 39, 0.55), rgba(17, 24, 39, 0.72)),
@@ -452,7 +452,7 @@ a:hover { text-decoration: underline; }
   font-size: 0.84rem;
   line-height: 1.45;
 }
-.local-panel .hero-prop { color: #e8d9a8; font-size: 0.92rem; }
+.local-panel .hero-prop { color: #D1D4DB; font-size: 0.92rem; }
 .local-panel .judge-tip {
   background: var(--panel-alt);
   border: 0;
@@ -540,7 +540,7 @@ a:hover { text-decoration: underline; }
 }
 .tag.status-completed { color: var(--good); border-color: rgba(69, 212, 138, 0.4); background: rgba(69, 212, 138, 0.18); }
 .tag.status-failed { color: var(--bad); border-color: rgba(255, 107, 107, 0.4); background: rgba(255, 107, 107, 0.18); }
-.tag.status-planned { color: var(--accent); border-color: rgba(234, 88, 12, 0.45); background: rgba(234, 88, 12, 0.16); }
+.tag.status-planned { color: var(--accent); border-color: rgba(249, 114, 22, 0.45); background: rgba(249, 114, 22, 0.16); }
 .tag.status-cancelled { color: var(--muted); }
 
 /* ── Data / Missions: moon theme ──────────────────────────────────────
@@ -758,13 +758,13 @@ a:hover { text-decoration: underline; }
 @media (hover: hover) and (pointer: fine) {
   .card--reveal:hover {
     background: var(--panel-alt);
-    border-color: rgba(234, 88, 12, 0.5);
+    border-color: rgba(249, 114, 22, 0.5);
   }
 }
 .card--reveal:focus-visible,
 .card--reveal.card--pinned {
   background: var(--panel-alt);
-  border-color: rgba(234, 88, 12, 0.5);
+  border-color: rgba(249, 114, 22, 0.5);
 }
 
 .card--reveal .detail-head {
@@ -821,7 +821,7 @@ a:hover { text-decoration: underline; }
 }
 .source-chip:hover,
 .source-chip:focus-visible {
-  border-color: rgba(234, 88, 12, 0.55);
+  border-color: rgba(249, 114, 22, 0.55);
   color: var(--text);
 }
 
@@ -849,8 +849,8 @@ a:hover { text-decoration: underline; }
   margin-bottom: 0.75rem;
 }
 .about-block.callout-pole {
-  background: rgba(234, 88, 12, 0.1);
-  border-color: rgba(234, 88, 12, 0.4);
+  background: rgba(249, 114, 22, 0.1);
+  border-color: rgba(249, 114, 22, 0.4);
 }
 .about-block h2 {
   margin: 0 0 0.45rem;
@@ -889,7 +889,7 @@ a:hover { text-decoration: underline; }
 }
 .about-block thead th {
   color: var(--accent);
-  border-bottom-color: rgba(234, 88, 12, 0.4);
+  border-bottom-color: rgba(249, 114, 22, 0.4);
 }
 .provenance-list a { font-size: 0.84rem; }
 

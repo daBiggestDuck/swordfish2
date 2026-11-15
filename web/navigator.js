@@ -477,13 +477,13 @@ function renderChart(primary) {
   const zeroY = yAt(0);
   svg.innerHTML = `
     ${dualRects}
-    <line x1="${padL}" y1="${zeroY}" x2="${W - padR}" y2="${zeroY}" stroke="var(--border, #2a3244)" stroke-dasharray="4 4"/>
-    ${path(horiz, 'var(--muted, #c4b896)', 1, '3 3')}
-    ${path(earth, 'var(--accent, #ea580c)', 1.8)}
+    <line x1="${padL}" y1="${zeroY}" x2="${W - padR}" y2="${zeroY}" stroke="var(--border, #64748B)" stroke-dasharray="4 4"/>
+    ${path(horiz, 'var(--muted, #9AA4B4)', 1, '3 3')}
+    ${path(earth, 'var(--accent, #F97216)', 1.8)}
     ${path(sun, 'var(--warn, #ffb84d)', 2)}
-    <text x="8" y="${padT + 10}" fill="var(--muted, #c4b896)" font-size="10" font-family="ui-monospace,monospace">${ymax.toFixed(0)}°</text>
-    <text x="8" y="${H - padB}" fill="var(--muted, #c4b896)" font-size="10" font-family="ui-monospace,monospace">${ymin.toFixed(0)}°</text>
-    <text x="${padL}" y="${H - 8}" fill="var(--muted, #c4b896)" font-size="10" font-family="ui-monospace,monospace">${primary.site.shortName || primary.site.name}</text>
+    <text x="8" y="${padT + 10}" fill="var(--muted, #9AA4B4)" font-size="10" font-family="ui-monospace,monospace">${ymax.toFixed(0)}°</text>
+    <text x="8" y="${H - padB}" fill="var(--muted, #9AA4B4)" font-size="10" font-family="ui-monospace,monospace">${ymin.toFixed(0)}°</text>
+    <text x="${padL}" y="${H - 8}" fill="var(--muted, #9AA4B4)" font-size="10" font-family="ui-monospace,monospace">${primary.site.shortName || primary.site.name}</text>
   `;
   $('#chart-meta').textContent = `${primary.window.samples} samples · ${primary.window.stepHours}h step · ${primary.window.days}d window`;
 }

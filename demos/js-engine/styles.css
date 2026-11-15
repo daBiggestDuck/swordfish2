@@ -1,18 +1,18 @@
 /* Engine demo fallback — warm space palette, same tokens as web/engine.css */
 :root {
   color-scheme: dark;
-  --maroon: #7f1d1d;
-  --orange: #ea580c;
+  --maroon: #64748B;
+  --orange: #F97216;
   --amber: #f59e0b;
-  --cream: #fef3c7;
-  --space: #111827;
+  --cream: #D1D4DB;
+  --space: #0B1320;
 
   --bg: var(--space);
-  --panel: #1a2234;
-  --panel-alt: #222b40;
-  --border: #3a4258;
-  --text: #e8d9a8;
-  --muted: #c4b896;
+  --panel: #151E2E;
+  --panel-alt: #202938;
+  --border: rgba(100, 116, 139, 0.45);
+  --text: #D1D4DB;
+  --muted: #9AA4B4;
   --accent: var(--orange);
   --good: #4ade80;
   --warn: var(--amber);

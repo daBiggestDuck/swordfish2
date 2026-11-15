@@ -1,0 +1,29 @@
+{
+  "name": "payload-pets-map-rework",
+  "private": true,
+  "version": "1.2.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test test/map.test.mjs data/catalog.test.js web/pets-3d/api.test.js"
+  },
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.2.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cn": "^0.5.2",
+    "lucide-react": "^0.511.0",
+    "motion": "^12.12.1",
+    "radix-ui": "^1.8.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwind-merge": "^3.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.7",
+    "@vitejs/plugin-react": "^4.4.1",
+    "tailwindcss": "^4.1.7",
+    "vite": "^6.3.5"
+  }
+}

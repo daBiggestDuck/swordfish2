@@ -104,7 +104,7 @@ export async function renderPet3D(id, moodOrPhase, el, options = {}) {
   };
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x050811);
+  scene.background = new THREE.Color(0x0B1320);
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 40);
   camera.position.set(2.6, 1.85, 3.4);
@@ -254,8 +254,8 @@ export async function renderPet3D(id, moodOrPhase, el, options = {}) {
       state.mood === "sleeping" ? 0.15 : options.signalStress ? 0.7 : 0.45;
     scene.background = new THREE.Color(
       state.mood === "night" || state.mood === "sleeping" || state.mood === "cold"
-        ? 0x03060c
-        : 0x050811,
+        ? 0x070D17
+        : 0x0B1320,
     );
     syncTipGlow();
   }

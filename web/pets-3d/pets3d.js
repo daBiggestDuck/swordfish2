@@ -242,7 +242,7 @@ class SharedFarm {
     if (state.transparent || scene.background == null) {
       this.renderer.setClearColor(0x000000, 0);
     } else {
-      this.renderer.setClearColor(0x050811, 1);
+      this.renderer.setClearColor(0x0B1320, 1);
     }
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -410,7 +410,7 @@ function parseMountArgs(id, moodOrPhase, options) {
 
 function buildSceneKit({ surface, transparent, shadows }) {
   const scene = new THREE.Scene();
-  scene.background = transparent ? null : new THREE.Color(0x050811);
+  scene.background = transparent ? null : new THREE.Color(0x0B1320);
 
   const camera = new THREE.PerspectiveCamera(surface ? 36 : 38, 1, 0.1, 40);
   if (surface) {
@@ -609,7 +609,7 @@ async function mountSharedPet3D(id, moodOrPhase, el, options) {
     rim.intensity =
       state.mood === "sleeping" ? 0.15 : options.signalStress ? 0.7 : 0.45;
     scene.background = new THREE.Color(
-      state.mood === "sleeping" || state.mood === "cold" ? 0x03060c : 0x050811,
+      state.mood === "sleeping" || state.mood === "cold" ? 0x070D17 : 0x0B1320,
     );
     syncTipGlow();
   }
@@ -795,8 +795,8 @@ async function mountLivePet3D(id, moodOrPhase, el, options) {
           state.mood === "night" ||
             state.mood === "sleeping" ||
             state.mood === "cold"
-            ? 0x03060c
-            : 0x050811,
+            ? 0x070D17
+            : 0x0B1320,
         );
       } else {
         scene.background = null;

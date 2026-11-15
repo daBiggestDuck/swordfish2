@@ -1,18 +1,18 @@
 /* Pets demo — matched to web/map.css tokens; 3D mounts via PayloadPets3D */
 :root {
   color-scheme: dark;
-  --maroon: #7f1d1d;
-  --orange: #ea580c;
+  --maroon: #64748B;
+  --orange: #F97216;
   --amber: #f59e0b;
-  --cream: #fef3c7;
-  --space: #111827;
+  --cream: #D1D4DB;
+  --space: #0B1320;
 
   --bg: var(--space);
-  --panel: #1a2234;
-  --panel-alt: #222b40;
-  --border: #3a4258;
+  --panel: #151E2E;
+  --panel-alt: #202938;
+  --border: rgba(100, 116, 139, 0.45);
   --text: var(--cream);
-  --muted: #c4b896;
+  --muted: #9AA4B4;
   --accent: var(--orange);
   --good: #45d48a;
   --warn: var(--amber);
@@ -98,13 +98,13 @@ h2 { font-size: 1.15rem; margin: 0.2rem 0 0.4rem; }
   background: var(--panel);
   border: 1px solid var(--border);
 }
-.adopt-card.is-on { border-color: var(--accent); background: #14223f; }
+.adopt-card.is-on { border-color: var(--accent); background: rgba(249, 114, 22, 0.16); }
 .adopt-view {
   height: 132px;
   max-height: 132px;
   border-radius: 8px;
   overflow: hidden;
-  background: #050811;
+  background: #0B1320;
   border: 1px solid var(--border);
   margin-bottom: 0.4rem;
   position: relative;
@@ -131,13 +131,13 @@ button {
   border-radius: 6px; padding: 0.34rem 0.7rem; cursor: pointer; font-size: 0.8rem; font-weight: 600;
 }
 button:hover, button:focus-visible { filter: brightness(1.12); border-color: var(--accent); }
-button.is-on, .primary { background: var(--accent); color: #051024; border-color: var(--accent); }
+button.is-on, .primary { background: var(--accent); color: #0B1320; border-color: var(--accent); }
 
 .stage-art {
   min-height: 360px;
   height: 100%;
   border-radius: 12px;
-  background: #050811;
+  background: #0B1320;
   border: 1px solid var(--border);
   overflow: hidden;
   position: relative;
@@ -191,7 +191,7 @@ button.is-on, .primary { background: var(--accent); color: #051024; border-color
   font: inherit;
   font-size: 0.78rem;
   font-weight: 700;
-  color: #051024;
+  color: #0B1320;
   background: var(--accent);
   border: 1px solid var(--accent);
   border-radius: 6px;
@@ -211,13 +211,13 @@ button.is-on, .primary { background: var(--accent); color: #051024; border-color
   padding: 0.45rem 0.35rem 0.65rem; background: var(--panel); border: 1px solid var(--border);
 }
 .cell-label { color: var(--text); font-size: 0.86rem; text-align: center; margin-top: 0.35rem; }
-.cell.is-on { border-color: var(--accent); background: #14223f; }
+.cell.is-on { border-color: var(--accent); background: rgba(249, 114, 22, 0.16); }
 .thumb {
   height: 150px;
   max-height: 150px;
   border-radius: 8px;
   overflow: hidden;
-  background: #050811;
+  background: #0B1320;
   border: 1px solid var(--border);
   position: relative;
 }

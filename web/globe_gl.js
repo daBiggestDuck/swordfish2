@@ -597,7 +597,7 @@ const BG_FRAG_SHADER = `
 
     // Subtle deep-space Milky Way dust glow
     float galacticPlane = exp(-pow((ray.y * 0.72 + ray.x * 0.55 - ray.z * 0.35) / 0.24, 2.0));
-    vec3 spaceCol = vec3(0.008, 0.014, 0.032) + vec3(0.018, 0.028, 0.055) * galacticPlane;
+    vec3 spaceCol = vec3(0.043, 0.075, 0.125) + vec3(0.029, 0.030, 0.033) * galacticPlane;
 
     // 3-tier deep-space starfield with depth-scaled parallax shifts
     vec3 dirFar = normalize(ray + uCamRight * (uParallax.x * 0.004) + uCamUp * (uParallax.y * 0.004));
@@ -826,7 +826,10 @@ const FRAG_SHADER = `
     vec3 litColor;
     if (uShowTerminator > 0.5) {
       float solarGain = pow(clamp(lommel * (1.32 + oppSurge), 0.0, 1.65), 0.90) * cavityAo;
-      litColor = baseColor * (solarGain + 0.02) + vec3(rimSpec) + baseColor * earthshine * (1.0 - shadowMask * 0.9);
+      float nightSlope = clamp(0.72 + 0.28 * dot(bumpedN, Vw), 0.50, 1.10);
+      float nightRim = pow(1.0 - clamp(dot(N, Vw), 0.0, 1.0), 2.8) * 0.09;
+      float nightFill = (0.20 * nightSlope * cavityAo + nightRim) * (1.0 - shadowMask);
+      litColor = baseColor * (solarGain + nightFill + 0.02) + vec3(rimSpec) + baseColor * earthshine * (1.0 - shadowMask * 0.85);
       litColor += baseColor * vec3(1.0, 0.86, 0.65) * termCrisp;
     } else {
       float unshadowedShade = clamp(0.78 + dot(bumpedN, Vw) * 0.22, 0.45, 1.12);
@@ -1681,7 +1684,7 @@ export class LunarGlobeGL {
     if (this.gl) {
       const gl = this.gl;
       gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-      gl.clearColor(0.008, 0.014, 0.032, 1.0);
+      gl.clearColor(0.043, 0.075, 0.125, 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
       const basis = this._cameraBasis();
@@ -1742,14 +1745,14 @@ export class LunarGlobeGL {
       const ctx = this.ctx2d;
       const W = this.canvas.width;
       const H = this.canvas.height;
-      ctx.fillStyle = '#050811';
+      ctx.fillStyle = '#0B1320';
       ctx.fillRect(0, 0, W, H);
       const r = Math.min(W, H) * 0.42;
       ctx.beginPath();
       ctx.arc(W / 2, H / 2, r, 0, Math.PI * 2);
       ctx.fillStyle = '#6c727d';
       ctx.fill();
-      ctx.strokeStyle = '#ea580c';
+      ctx.strokeStyle = '#F97216';
       ctx.stroke();
     }
   }

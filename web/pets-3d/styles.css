@@ -1,17 +1,17 @@
 :root {
   color-scheme: dark;
-  --maroon: #7f1d1d;
-  --orange: #ea580c;
+  --maroon: #64748B;
+  --orange: #F97216;
   --amber: #f59e0b;
-  --cream: #fef3c7;
-  --space: #111827;
+  --cream: #D1D4DB;
+  --space: #0B1320;
 
   --bg: var(--space);
-  --panel: #1a2234;
-  --panel-alt: #222b40;
-  --border: #3a4258;
+  --panel: #151E2E;
+  --panel-alt: #202938;
+  --border: rgba(100, 116, 139, 0.45);
   --text: var(--cream);
-  --muted: #c4b896;
+  --muted: #9AA4B4;
   --accent: var(--orange);
   --warn: var(--amber);
   --ice: #fde68a;
@@ -77,7 +77,7 @@ h1 {
   min-height: 420px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: #0a0f1a;
+  background: #0B1320;
   overflow: hidden;
 }
 
@@ -181,13 +181,13 @@ button.is-on {
   width: 100%;
 }
 
-.thumb.is-on { border-color: var(--accent); background: #14223f; }
+.thumb.is-on { border-color: var(--accent); background: rgba(249, 114, 22, 0.16); }
 
 .thumb-view {
   height: 140px;
   border-radius: 8px;
   overflow: hidden;
-  background: #0a0f1a;
+  background: #0B1320;
   margin-bottom: 0.4rem;
 }
 
