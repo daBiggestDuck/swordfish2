@@ -41,7 +41,23 @@ public final class Sources {
             new Source("sciam-bg1", "Scientific American: Blue Ghost completes historic lunar mission",
                     "https://www.scientificamerican.com/article/blue-ghost-lander-successfully-completes-historic-lunar-mission/"),
             new Source("pds-clps", "NASA PDS: CLPS data archive",
-                    "https://pds-geosciences.wustl.edu/missions/clps/index.htm"));
+                    "https://pds-geosciences.wustl.edu/missions/clps/index.htm"),
+            new Source("nssdc-lrv", "NASA NSSDC: Apollo Lunar Roving Vehicle",
+                    "https://nssdc.gsfc.nasa.gov/planetary/lunar/apollo_lrv.html"),
+            new Source("nasa-moon-facts", "NASA NSSDC: Moon fact sheet",
+                    "https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html"),
+            new Source("leag-bg1", "LEAG 2025: Blue Ghost Mission 1 science highlights",
+                    "https://www.hou.usra.edu/meetings/leag2025/presentations/Wednesday/1030_Banks.pdf"),
+            new Source("nasa-lro-im1", "NASA: LRO images Intuitive Machines' Odysseus lander",
+                    "https://www.nasa.gov/missions/lro/nasas-lro-images-intuitive-machines-odysseus-lander/"),
+            new Source("lroc-im2", "LROC: IM-2 Athena seen obliquely",
+                    "https://lroc.im-ldi.com/images/1408"),
+            new Source("moontrek-clps", "NASA Moon Trek: CLPS sites layer",
+                    "https://trek.nasa.gov/moon/trekarcgis3/rest/services/CLPS_sites/MapServer/0/query"),
+            new Source("usgs-shackleton", "USGS Gazetteer of Planetary Nomenclature: Shackleton",
+                    "https://planetarynames.wr.usgs.gov/Feature/5450"),
+            new Source("nasa-shackleton", "NASA: Shackleton crater's illuminated rim and shadowed interior",
+                    "https://science.nasa.gov/resource/shackleton-craters-illuminated-rim-shadowed-interior/"));
 
     public static final List<Fact> FACTS = List.of(
             // Blue Ghost Mission 1
@@ -71,7 +87,16 @@ public final class Sources {
             // Other missions
             new Fact("IM-1", "Odysseus landed in February 2024 and operated seven Earth days before going dark.", "sciam-bg1"),
             new Fact("IM-2", "Athena landed near the south pole on March 6, 2025, tipped onto its side just after touchdown and was declared dead on March 7.", "sciam-bg1"),
-            new Fact("CLPS archive", "NASA's PDS holds CLPS data from Peregrine 1 (LETS, NIRVSS, NSS, PITMS), IM-1 (LRA, ROLSES, SCALPSS), IM-2 (LRA, MSOLO) and Blue Ghost 1 (LISTER, LMS, LPV, RAC, RadPC, SCALPSS).", "pds-clps"));
+            new Fact("CLPS archive", "NASA's PDS holds CLPS data from Peregrine 1 (LETS, NIRVSS, NSS, PITMS), IM-1 (LRA, ROLSES, SCALPSS), IM-2 (LRA, MSOLO) and Blue Ghost 1 (LISTER, LMS, LPV, RAC, RadPC, SCALPSS).", "pds-clps"),
+            // Rover Run
+            new Fact("Rover", "On Apollo 17 the rover went 35.9 km in 4 hours 26 minutes of total drive time, about 8.1 km/h.", "nssdc-lrv"),
+            new Fact("Rover", "Apollo 17's longest rover traverse was 20.1 km, and the rover never got more than 7.6 km from the lunar module.", "nssdc-lrv"),
+            new Fact("Rover", "The Moon's volumetric mean radius is 1,737.4 km.", "nasa-moon-facts"),
+            new Fact("Sites", "Blue Ghost Mission 1 landed at 18.5623° N, 61.8103° E in Mare Crisium.", "leag-bg1"),
+            new Fact("Sites", "NASA's LRO places the IM-1 (Odysseus) landing at 80.13° S, 1.44° E, near Malapert A.", "nasa-lro-im1"),
+            new Fact("Sites", "LROC found IM-2 (Athena) at 84.7906° S, 29.1957° E, on its side in a crater about 20 m across.", "lroc-im2"),
+            new Fact("Sites", "Shackleton crater is centred at 89.67° S, 129.78° E and is about 21 km across.", "usgs-shackleton"),
+            new Fact("Sites", "Peaks on Shackleton's rim get almost continual sunlight, while its interior is perpetually in shadow.", "nasa-shackleton"));
 
     public static final Map<String, Source> BY_ID =
             ALL.stream().collect(Collectors.toUnmodifiableMap(Source::id, Function.identity()));

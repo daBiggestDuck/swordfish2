@@ -33,6 +33,11 @@ public final class Json {
         return String.format(Locale.ROOT, "%.2f", d);
     }
 
+    /** Number rounded to 4 decimals (coordinates need more than 2). */
+    public static String n4(double d) {
+        return String.format(Locale.ROOT, "%.4f", d);
+    }
+
     public static String b(boolean v) {
         return Boolean.toString(v);
     }

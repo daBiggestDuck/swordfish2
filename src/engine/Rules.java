@@ -57,6 +57,17 @@ public final class Rules {
     public static final double DUST_PER_HOUR = 0.12;
     public static final double DUSTY = 60;
 
+    // ---- Rover (Rover Run: a rover carries the pet between sites) ----
+    /** [REAL] The Moon's volumetric mean radius, used for great-circle distances. */
+    public static final double MOON_RADIUS_KM = 1737.4;
+    /**
+     * [REAL] Average driving speed of Apollo 17's rover: 35.9 km in 4 h 26 min of drive time (about 8.1 km/h).
+     * [GAME] Real Apollo rovers never drove more than 20.1 km in one traverse; ours keeps going between sites.
+     */
+    public static final double ROVER_KMH = 35.9 / (4 + 26 / 60.0);
+    /** [GAME] Driving kicks dust onto the panels on top of the normal settling rate. */
+    public static final double DRIVE_DUST_PER_HOUR = 0.5;
+
     // ---- Science ----
     /** [REAL] LISTER measured at 8 depths down to 1 m. */
     public static final int LISTER_DEPTH_STOPS = 8;

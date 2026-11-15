@@ -15,6 +15,7 @@ public class EngineTest {
     static final Site CRISIUM = Sites.byId("MARE_CRISIUM").orElseThrow();
     static final Site MOUTON = Sites.byId("MONS_MOUTON").orElseThrow();
     static final Site SHADOW = Sites.byId("SHADOWED_CRATER").orElseThrow();
+    static final Site MALAPERT = Sites.byId("MALAPERT_A").orElseThrow();
     static final Pet LISTER = Pet.byId("LISTER").orElseThrow();
     static final Pet LRA = Pet.byId("LRA").orElseThrow();
     static final Pet EDS = Pet.byId("EDS").orElseThrow();
@@ -168,6 +169,87 @@ public class EngineTest {
             for (String key : List.of("\"petName\"", "\"power\"", "\"petTempK\"", "\"mood\"", "\"actions\"", "\"dayProgress\""))
                 check(json.contains(key), "json has " + key);
             check(json.contains("Pip \\\"the\\\" drill"), "names are escaped");
+        });
+
+        // ---------------------------------------------------------------- Rover Run
+
+        test("every site has real coordinates with a source; rover runs at Apollo 17's pace", () -> {
+            for (Site s : Sites.ALL) {
+                check(s.lat() >= -90 && s.lat() <= 90 && s.lon() >= -180 && s.lon() <= 180, s.id() + " coords");
+                check(Sources.BY_ID.containsKey(s.coordSourceId()), s.id() + " coord source " + s.coordSourceId());
+            }
+            eq(Rules.ROVER_KMH, 35.9 / (4 + 26 / 60.0), "35.9 km in 4 h 26 min");
+            check(Math.abs(Rules.ROVER_KMH - 8.1) < 0.01, "about 8.1 km/h");
+        });
+
+        test("great-circle distances are symmetric and sensible", () -> {
+            double d = MALAPERT.distanceKm(MOUTON);
+            eq(d, MOUTON.distanceKm(MALAPERT), "symmetric");
+            check(d > 100 && d < 250, "Malapert A to Mons Mouton is a polar hop: " + d);
+            double far = CRISIUM.distanceKm(MALAPERT);
+            check(far > 2500 && far < 3800, "Crisium to Malapert A is thousands of km: " + far);
+            eq(MALAPERT.distanceKm(MALAPERT), 0, "zero to itself");
+        });
+
+        test("drive: the rover stops at the destination, switches site and logs the trip", () -> {
+            Game g = new Game(LRA, MALAPERT);
+            Game.Result r = g.drive("MONS_MOUTON");
+            check(r.ok() && has(r.events(), "departed"), "departs: " + r.error());
+            double km = MALAPERT.distanceKm(MOUTON);
+            double hours = km / Rules.ROVER_KMH;
+            List<Event> ev = g.tick(hours + 100);
+            check(has(ev, "arrived"), "arrived event");
+            eq(g.hour(), hours, "time stops at arrival");
+            check(g.site().id().equals("MONS_MOUTON"), "now at Mons Mouton");
+            check(g.trip() == null, "trip over");
+            eq(g.kmDriven(), km, "odometer");
+            eq(g.legs(), 1, "one leg");
+        });
+
+        test("drive refuses bad trips; no science while moving", () -> {
+            Game g = new Game(LISTER, MALAPERT);
+            check(g.drive("MALAPERT_A").error().startsWith("Already at"), "same site");
+            check(g.drive("NOWHERE").error().startsWith("Unknown site"), "unknown site");
+            check(g.drive("MONS_MOUTON").ok(), "go");
+            check(g.drive("MARE_CRISIUM").error().startsWith("Already driving"), "one trip at a time");
+            check(g.act("work").error().contains("parked"), "no drilling while driving");
+            check(g.act("clean").ok(), "can still shake off dust");
+            Game dead = new Game(LISTER, SHADOW);
+            dead.tick(200);
+            check(dead.drive("MALAPERT_A").error() != null, "fainted pets don't drive");
+        });
+
+        test("driving kicks up dust and blends conditions toward the destination", () -> {
+            Game parked = new Game(LRA, MALAPERT);
+            parked.tick(10);
+            Game driving = new Game(LRA, MALAPERT);
+            driving.drive("SHADOWED_CRATER");
+            driving.tick(10);
+            eq(driving.dust() - parked.dust(), Rules.DRIVE_DUST_PER_HOUR * 10, "extra drive dust");
+            Game.Trip t = driving.trip();
+            check(t != null && t.progress() > 0 && t.progress() < 1, "mid-trip");
+            check(driving.sunlightHere() < MALAPERT.sunlight() && driving.sunlightHere() > 0,
+                    "sunlight fades toward the shadowed crater: " + driving.sunlightHere());
+        });
+
+        test("a pet that faints on the road stops the rover where it is", () -> {
+            Game g = new Game(LISTER, CRISIUM);
+            check(g.drive("MALAPERT_A").ok(), "long haul");
+            List<Event> ev = g.tick(Rules.GAME_HOURS);
+            check(!g.alive(), "neglected LISTER faints on a drive of hundreds of hours");
+            check(!has(ev, "arrived"), "never arrives");
+            check(g.trip() != null && g.trip().progress() < 1, "rover stopped mid-trip");
+        });
+
+        test("state JSON has the trip, odometer, cooldowns and coordinates", () -> {
+            Game g = new Game(EDS, MALAPERT);
+            check(g.act("work").ok(), "dust test");
+            g.drive("MONS_MOUTON");
+            g.tick(1);
+            String json = g.toJson();
+            for (String key : List.of("\"trip\":{", "\"kmDriven\"", "\"legs\"", "\"cooldowns\":{\"work\"",
+                    "\"sunlightHere\"", "\"lat\":-80.1300"))
+                check(json.contains(key), "json has " + key);
         });
 
         balanceReport();

@@ -46,12 +46,26 @@ final class Dashboard {
             .connectTimeout(Duration.ofSeconds(3))
             .build();
 
+    /**
+     * Engine data panel. The deployer adds it to the Story game page (web/story/rover.html) as the
+     * page passes through, so the game's own files are never changed. The panel reads live rover
+     * stats from the engine through {@link #ENGINE_API}.
+     */
+    static final String ENGINE_API = "/_deployer/engine/";
+    private static final Set<String> ENGINE_HUD_BRANCHES = Set.of("story");
+    /** Where the engine numbers come from, best first: Aku's engine branch, then the page's own branch, then main. */
+    private static final List<String> ENGINE_SOURCES = List.of("engine", "main");
+    private static final String ENGINE_HUD_TAGS =
+            "<link rel=\"stylesheet\" href=\"/_deployer/engine-hud.css\">"
+            + "<script src=\"/_deployer/engine-hud.js\" defer></script>";
+
     private static volatile long lastRefresh = 0;
 
     private Dashboard() {}
 
     static void start(Deployer d, int port, String password) throws IOException {
-        for (String name : List.of("index.html", "branch.html", "code.html", "deployer.css", "deployer.js")) {
+        for (String name : List.of("index.html", "branch.html", "code.html", "deployer.css", "deployer.js",
+                "engine-hud.css", "engine-hud.js")) {
             try (InputStream in = Dashboard.class.getResourceAsStream("/web/" + name)) {
                 if (in == null) throw new IOException("Missing dashboard file web/" + name);
                 ASSETS.put(name, in.readAllBytes());
@@ -103,6 +117,8 @@ final class Dashboard {
             case "/code" -> { page(ex, "code.html"); return; }
             case "/_deployer/deployer.css" -> { page(ex, "deployer.css"); return; }
             case "/_deployer/deployer.js" -> { page(ex, "deployer.js"); return; }
+            case "/_deployer/engine-hud.css" -> { page(ex, "engine-hud.css"); return; }
+            case "/_deployer/engine-hud.js" -> { page(ex, "engine-hud.js"); return; }
             case "/_deployer/api/status" -> { json(ex, 200, d.statusJson()); return; }
             case "/_deployer/api/refresh" -> { refresh(d, ex); return; }
             case "/_deployer/api/branch" -> { branch(d, ex); return; }
@@ -111,6 +127,10 @@ final class Dashboard {
         }
         if (path.startsWith("/_deployer/preview/")) {
             preview(d, ex);
+            return;
+        }
+        if (path.startsWith(ENGINE_API)) {
+            engineApi(d, ex);
             return;
         }
         if (path.startsWith("/site/")) {
@@ -224,6 +244,11 @@ final class Dashboard {
         });
         byte[] out = res.body();
         int code = res.statusCode();
+        if (code == 200 && wantsEngineHud(target[0], res)) {
+            out = withEngineHud(out);
+            ex.getResponseHeaders().remove("ETag");
+            ex.getResponseHeaders().remove("Last-Modified");
+        }
         boolean noBody = code == 204 || code == 304 || ex.getRequestMethod().equals("HEAD");
         ex.sendResponseHeaders(code, noBody ? -1 : out.length);
         if (!noBody) {
@@ -231,6 +256,53 @@ final class Dashboard {
                 os.write(out);
             }
         }
+    }
+
+    // ------------------------------------------------------------------ engine data panel
+
+    /** Only the Story branch's 3D game page (the one that loads rover.js) gets the panel. */
+    private static boolean wantsEngineHud(String branch, HttpResponse<byte[]> res) {
+        if (ENGINE_HUD_BRANCHES.stream().noneMatch(b -> b.equalsIgnoreCase(branch))) return false;
+        String type = res.headers().firstValue("Content-Type").orElse("");
+        if (!type.startsWith("text/html")) return false;
+        String html = new String(res.body(), StandardCharsets.UTF_8);
+        return html.contains("rover.js") && html.contains("</body>") && !html.contains("engine-hud.js");
+    }
+
+    private static byte[] withEngineHud(byte[] body) {
+        String html = new String(body, StandardCharsets.UTF_8);
+        int at = html.lastIndexOf("</body>");
+        return (html.substring(0, at) + ENGINE_HUD_TAGS + "\n" + html.substring(at)).getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * /_deployer/engine/api/engine/... -> the engine server's /api/engine/... Answers with the header
+     * X-Engine-Source (e.g. "engine@90c79ec") so the panel can show whose engine it is reading.
+     */
+    private static void engineApi(Deployer d, HttpExchange ex) throws IOException {
+        String rest = ex.getRequestURI().getRawPath().substring(ENGINE_API.length() - 1);
+        if (!rest.startsWith("/api/engine/") || !ex.getRequestMethod().equals("GET")) {
+            json(ex, 404, Json.obj("error", Json.q("Only GET /api/engine/... is passed to the engine")));
+            return;
+        }
+        List<String> order = new ArrayList<>(ENGINE_SOURCES);
+        String[] from = siteFromReferer(ex);
+        if (from == null) from = siteFromCookie(ex);
+        if (from != null) order.add(1, from[0]);
+        for (String branch : order) {
+            BranchState.App app = d.app(branch, "Engine");
+            if (app == null) continue;
+            BranchState st = d.branch(branch);
+            String sha;
+            synchronized (st) {
+                sha = st.sha == null ? "" : "@" + st.sha.substring(0, Math.min(7, st.sha.length()));
+            }
+            ex.getResponseHeaders().set("X-Engine-Source", branch + sha);
+            ex.getResponseHeaders().set("Cache-Control", "no-store");
+            proxy(ex, app, rest, new String[] {branch, "Engine"});
+            return;
+        }
+        json(ex, 503, Json.obj("error", Json.q("No engine is running yet. Check the engine branch on the dashboard.")));
     }
 
     // ------------------------------------------------------------------ dashboard API
