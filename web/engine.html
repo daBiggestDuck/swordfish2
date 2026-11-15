@@ -3,7 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
   <title>Payload Pets Engine</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%23F97316'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="engine.css">
 </head>
 <body>
@@ -13,15 +15,22 @@
   </header>
 
   <main>
-    <section id="setup" class="card">
+    <div id="conn" class="conn" data-kind="wait" role="status" aria-live="polite">
+      <span id="conn-text">Connecting to the engine…</span>
+      <button type="button" id="conn-retry">Retry now</button>
+    </div>
+
+    <form id="setup" class="card" autocomplete="off">
       <h2>Land your pet</h2>
-      <label>Name <input id="name" maxlength="24" value="Pip"></label>
-      <label>Pet <select id="pet"></select></label>
-      <label>Landing site <select id="site"></select></label>
+      <div class="setup-grid">
+        <label>Name <input id="name" maxlength="24" value="Pip"></label>
+        <label>Pet <select id="pet"></select></label>
+        <label>Landing site <select id="site"></select></label>
+      </div>
       <label class="check"><input type="checkbox" id="tipped"> Tipped landing (like IM-2)</label>
       <p id="site-note" class="muted"></p>
-      <button id="start" class="primary">Land</button>
-    </section>
+      <button id="start" type="submit" class="primary" disabled>Land</button>
+    </form>
 
     <section id="game" class="card" hidden>
       <div class="top">
@@ -29,14 +38,14 @@
           <div id="face" aria-hidden="true">🙂</div>
           <div>
             <h2 id="title"></h2>
-            <p id="mood" class="muted"></p>
+            <p id="mood" class="muted" aria-live="polite"></p>
           </div>
         </div>
         <div class="clock">
           <div id="clock"></div>
-          <div class="sky"><div id="sun"></div></div>
+          <div class="sky" aria-hidden="true"><div id="sun"></div></div>
           <div class="controls">
-            <button id="play">▶ Play</button>
+            <button type="button" id="play" class="primary" aria-pressed="false">▶ Play</button>
             <label>Speed
               <select id="speed">
                 <option value="1">1 h / sec</option>
@@ -44,15 +53,16 @@
                 <option value="12">12 h / sec</option>
               </select>
             </label>
+            <span class="hint">Space = play / pause</span>
           </div>
         </div>
       </div>
 
       <div class="grid">
-        <div class="meter"><span>Health</span><div class="bar"><i id="m-health"></i></div><b id="v-health"></b></div>
-        <div class="meter"><span>Power</span><div class="bar"><i id="m-power"></i></div><b id="v-power"></b></div>
-        <div class="meter"><span>Dust</span><div class="bar dust"><i id="m-dust"></i></div><b id="v-dust"></b></div>
-        <div class="meter"><span>Data stored</span><div class="bar data"><i id="m-data"></i></div><b id="v-data"></b></div>
+        <div class="meter"><span id="l-health">Health</span><div class="bar" role="progressbar" aria-labelledby="l-health" aria-valuemin="0" aria-valuemax="100"><i id="m-health"></i></div><b id="v-health"></b></div>
+        <div class="meter"><span id="l-power">Power</span><div class="bar" role="progressbar" aria-labelledby="l-power" aria-valuemin="0" aria-valuemax="100"><i id="m-power"></i></div><b id="v-power"></b></div>
+        <div class="meter"><span id="l-dust">Dust</span><div class="bar dust" role="progressbar" aria-labelledby="l-dust" aria-valuemin="0" aria-valuemax="100"><i id="m-dust"></i></div><b id="v-dust"></b></div>
+        <div class="meter"><span id="l-data">Data stored</span><div class="bar data" role="progressbar" aria-labelledby="l-data" aria-valuemin="0" aria-valuemax="100"><i id="m-data"></i></div><b id="v-data"></b></div>
       </div>
 
       <div class="temps">
@@ -71,7 +81,7 @@
 
       <h3>Mission log</h3>
       <ol id="log"></ol>
-      <button id="restart">New game</button>
+      <button type="button" id="restart">New game</button>
     </section>
 
     <section class="card">
@@ -87,6 +97,7 @@
     </section>
   </main>
 
+  <noscript><p class="card">This page needs JavaScript to draw the engine.</p></noscript>
   <script src="engine.js"></script>
 </body>
 </html>

@@ -1,9 +1,11 @@
 package engine;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
@@ -15,11 +17,13 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 /**
  * Local web server for the engine. JDK only, no libraries, no internet: it listens on
  * this computer only (localhost) and never calls out to any website.
  *
+ *   GET /api/engine/health                        {ok:true} liveness check for the v0 shell
  *   GET /api/engine/sites                         landing sites
  *   GET /api/engine/pets                          payload pets
  *   GET /api/engine/facts                         real facts, sources and milestones
@@ -45,17 +49,36 @@ public class EngineServer {
     };
 
     public static void main(String[] args) throws IOException {
-        int port = args.length > 0 ? Integer.parseInt(args[0]) : 8082;
-        HttpServer server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 0);
+        int port = 8082;
+        if (args.length > 0) {
+            try {
+                port = Integer.parseInt(args[0].trim());
+            } catch (NumberFormatException e) {
+                System.err.println("Port must be a number, got: " + args[0]);
+                System.exit(2);
+            }
+        }
+        HttpServer server;
+        try {
+            server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 0);
+        } catch (BindException e) {
+            System.err.println("Port " + port + " is already in use. Another engine may already be running:"
+                    + " open http://localhost:" + port + "/ or stop it, or pass a different port.");
+            System.exit(1);
+            return;
+        }
+        // A few threads so one slow request never freezes the clock for everyone else.
+        server.setExecutor(Executors.newFixedThreadPool(4));
 
-        server.createContext("/api/engine/sites", ex -> json(ex, 200, Json.array(Sites.ALL, Site::toJson)));
-        server.createContext("/api/engine/pets", ex -> json(ex, 200, Json.array(Pet.ALL, Pet::toJson)));
-        server.createContext("/api/engine/facts", ex -> json(ex, 200, Json.obj(
+        route(server, "/api/engine/health", ex -> json(ex, 200, Json.obj("ok", Json.b(true))));
+        route(server, "/api/engine/sites", ex -> json(ex, 200, Json.array(Sites.ALL, Site::toJson)));
+        route(server, "/api/engine/pets", ex -> json(ex, 200, Json.array(Pet.ALL, Pet::toJson)));
+        route(server, "/api/engine/facts", ex -> json(ex, 200, Json.obj(
                 "facts", Json.array(Sources.FACTS, Sources.Fact::toJson),
                 "sources", Json.array(Sources.ALL, Sources.Source::toJson),
                 "milestones", Json.array(Rules.MILESTONES, Rules.Milestone::toJson))));
 
-        server.createContext("/api/engine/new", ex -> {
+        route(server, "/api/engine/new", ex -> {
             Map<String, String> q = query(ex);
             Site site = Sites.byId(q.getOrDefault("site", "")).orElse(Sites.ALL.get(0));
             Pet pet = Pet.byId(q.getOrDefault("pet", "")).orElse(Pet.ALL.get(0));
@@ -69,28 +92,65 @@ public class EngineServer {
             json(ex, 200, Json.obj("id", Json.q(id), "state", game.toJson()));
         });
 
-        server.createContext("/api/engine/state", ex -> withGame(ex, (game, q) -> game.toJson()));
+        route(server, "/api/engine/state", ex -> withGame(ex, (game, q) -> game.toJson()));
 
-        server.createContext("/api/engine/tick", ex -> withGame(ex, (game, q) -> {
+        route(server, "/api/engine/tick", ex -> withGame(ex, (game, q) -> {
             double hours;
             try {
                 hours = Double.parseDouble(q.getOrDefault("hours", "1"));
             } catch (NumberFormatException e) {
                 hours = 1;
             }
+            if (!Double.isFinite(hours)) hours = 1;
             hours = Math.max(0, Math.min(MAX_TICK_HOURS, hours));
             List<Event> events = game.tick(hours);
             return Json.obj("events", Json.array(events, Event::toJson), "state", game.toJson());
         }));
 
-        server.createContext("/api/engine/act", ex -> withGame(ex, (game, q) -> {
+        route(server, "/api/engine/act", ex -> withGame(ex, (game, q) -> {
             Game.Result r = game.act(q.getOrDefault("action", ""));
             return Json.obj("result", r.toJson(), "state", game.toJson());
         }));
 
-        server.createContext("/", EngineServer::serveStatic);
+        route(server, "/", EngineServer::serveStatic);
         server.start();
         System.out.println("Payload Pets engine: http://localhost:" + port + "/  (local only, Ctrl+C to stop)");
+    }
+
+    /**
+     * Registers a handler that always answers: CORS preflight for the local v0 shell, and a JSON
+     * 500 instead of a dropped connection if anything inside throws.
+     */
+    private static void route(HttpServer server, String path, HttpHandler handler) {
+        server.createContext(path, ex -> {
+            try {
+                allowLocalOrigin(ex);
+                if ("OPTIONS".equalsIgnoreCase(ex.getRequestMethod())) {
+                    ex.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, OPTIONS");
+                    ex.sendResponseHeaders(204, -1);
+                    return;
+                }
+                handler.handle(ex);
+            } catch (Exception e) {
+                System.err.println("Engine request failed: " + ex.getRequestURI() + " -> " + e);
+                try {
+                    json(ex, 500, Json.obj("error", Json.q("Engine error: " + e.getClass().getSimpleName())));
+                } catch (IOException | RuntimeException ignored) {
+                    // headers may already be sent; nothing more we can do
+                }
+            } finally {
+                ex.close();
+            }
+        });
+    }
+
+    /** Lets pages served from localhost / 127.0.0.1 on any port (the v0 shell on :8765) read our replies. */
+    private static void allowLocalOrigin(HttpExchange ex) {
+        String origin = ex.getRequestHeaders().getFirst("Origin");
+        if (origin != null && origin.matches("http://(localhost|127\\.0\\.0\\.1)(:\\d{1,5})?")) {
+            ex.getResponseHeaders().set("Access-Control-Allow-Origin", origin);
+            ex.getResponseHeaders().set("Vary", "Origin");
+        }
     }
 
     private interface GameHandler {
@@ -151,8 +211,12 @@ public class EngineServer {
         String type = name.endsWith(".html") ? "text/html; charset=utf-8"
                 : name.endsWith(".css") ? "text/css; charset=utf-8"
                 : name.endsWith(".js") ? "text/javascript; charset=utf-8"
+                : name.endsWith(".mjs") ? "text/javascript; charset=utf-8"
+                : name.endsWith(".json") ? "application/json; charset=utf-8"
                 : name.endsWith(".svg") ? "image/svg+xml"
                 : name.endsWith(".png") ? "image/png"
+                : name.endsWith(".jpg") || name.endsWith(".jpeg") ? "image/jpeg"
+                : name.endsWith(".ico") ? "image/x-icon"
                 : "application/octet-stream";
         send(ex, 200, type, Files.readAllBytes(file));
     }

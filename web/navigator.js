@@ -44,10 +44,82 @@ function toIsoInput(ms) {
 
 function selectedUtcMs() {
   const date = $('#nav-date').value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return NaN;
   const time = $('#nav-time').value || '12:00';
   const [y, mo, d] = date.split('-').map(Number);
   const [hh, mm] = time.split(':').map(Number);
   return Date.UTC(y, mo - 1, d, hh || 0, mm || 0);
+}
+
+/** First and last sample times of the loaded ephemeris; the only dates we can honestly show. */
+function ephRange(eph) {
+  return { minMs: eph[0]._ms, maxMs: eph[eph.length - 1]._ms };
+}
+
+function selectedWindowDays() {
+  return Number($('#nav-window').value) || 14;
+}
+
+/** Latest start time that still leaves the whole mission window inside the ephemeris. */
+function latestStartMs(eph) {
+  const { minMs, maxMs } = ephRange(eph);
+  const lookMs = selectedWindowDays() * 86400000;
+  return Math.max(minMs, maxMs - lookMs);
+}
+
+/**
+ * Lock the date picker to the loaded ephemeris so out-of-range dates can't be picked.
+ * The max moves with the mission window: a 29.5-day window must start ~30 days before the data ends.
+ */
+function applyDateLimits(eph) {
+  if (!eph.length) return;
+  const { minMs, maxMs } = ephRange(eph);
+  const input = $('#nav-date');
+  input.min = toIsoInput(minMs).date;
+  input.max = toIsoInput(latestStartMs(eph)).date;
+  input.title = `Pick a start between ${input.min} and ${input.max} (UTC)`;
+  const hint = $('#date-range');
+  if (hint) {
+    hint.textContent = `Data ${toIsoInput(minMs).date} → ${toIsoInput(maxMs).date} · latest start ${input.max}`;
+  }
+}
+
+function setDateNote(text, kind = 'warn') {
+  const el = $('#date-note');
+  if (!el) return;
+  el.textContent = text || '';
+  el.dataset.kind = text ? kind : '';
+  el.hidden = !text;
+}
+
+/**
+ * Selected UTC clamped to the ephemeris. Snaps the inputs back into range and explains why,
+ * instead of silently showing the nearest sample from a different year.
+ */
+function resolveEpochMs(eph) {
+  applyDateLimits(eph);
+  const { minMs } = ephRange(eph);
+  const maxMs = latestStartMs(eph);
+  let ms = selectedUtcMs();
+  let note = '';
+  if (!Number.isFinite(ms)) {
+    ms = Number($('#nav-date').dataset.lastGoodMs) || minMs;
+    note = 'Pick a full UTC date. Showing the last valid date instead.';
+  } else if (ms < minMs) {
+    ms = minMs;
+    note = `No ephemeris before ${toIsoInput(minMs).date}. Moved to the first available sample.`;
+  } else if (ms > maxMs) {
+    ms = maxMs;
+    note = `A ${selectedWindowDays()}-day window can start no later than ${toIsoInput(maxMs).date} (ephemeris ends ${toIsoInput(ephRange(eph).maxMs).date}). Moved to that date.`;
+  }
+  if (note) {
+    const iso = toIsoInput(ms);
+    $('#nav-date').value = iso.date;
+    $('#nav-time').value = iso.time;
+    $('#nav-scrub').value = String(new Date(ms).getUTCHours());
+  }
+  $('#nav-date').dataset.lastGoodMs = String(ms);
+  return { ms, note };
 }
 
 function convertLongEphemeris(raw) {
@@ -424,11 +496,22 @@ function refresh() {
     $('#load-status').classList.add('error');
     return;
   }
-  const ms = selectedUtcMs();
+  const { ms, note } = resolveEpochMs(eph);
   const idx = nearestIndex(eph, ms);
   const windowDays = Number($('#nav-window').value) || 14;
   const sample = eph[idx];
   const stepH = ephStepHours(eph);
+
+  const wantSamples = Math.round((windowDays * 24) / stepH);
+  const haveSamples = eph.length - idx;
+  if (note) {
+    setDateNote(note);
+  } else if (haveSamples < wantSamples) {
+    const days = round1((haveSamples * stepH) / 24);
+    setDateNote(`Window cut to ${days} d: the ephemeris ends ${toIsoInput(ephRange(eph).maxMs).date}. Window percentages use only those days.`, 'info');
+  } else {
+    setDateNote('');
+  }
 
   $('#epoch-label').textContent = sample.timestampUtc;
   $('#eph-meta').textContent = `${eph.length} ephemeris samples · nearest to selected UTC · step ~${round1(stepH)}h`;
@@ -477,6 +560,8 @@ async function boot() {
     }
 
     const eph = activeEphemeris();
+    if (!eph.length) throw new Error('no ephemeris samples in data/ephemeris.json or the map bundle');
+    applyDateLimits(eph);
     const prefer = parseHorizonsDate('2026-Dec-03 12:00');
     const idx = nearestIndex(eph, prefer);
     const iso = toIsoInput(eph[idx]._ms);

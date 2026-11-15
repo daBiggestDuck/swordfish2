@@ -314,6 +314,11 @@
 
     styleIframeEmbed(iframe);
 
+    // Remember whether the last load happened while the backend was down, so we only
+    // reload when it has since come up. Reloading on every tab click would wipe a game in progress.
+    const wasDown = iframe.dataset.backendDown === "1";
+    iframe.dataset.backendDown = !ok && tab.need ? "1" : "0";
+
     const parked = iframe.dataset.parkedSrc;
     if (parked) {
       delete iframe.dataset.parkedSrc;
@@ -323,12 +328,26 @@
 
     if (iframe.getAttribute("src") !== src) {
       iframe.src = src;
-    } else if (ok && tab.need) {
-      // Backend came up after a failed load — reload
+    } else if (ok && tab.need && wasDown) {
+      // Backend came up after a failed load — reload once
       try {
         iframe.contentWindow?.location.reload();
       } catch {
         iframe.src = src;
+      }
+    }
+  }
+
+  /** Tell backend iframes we are leaving them (Engine pauses its clock so a pet doesn't faint unseen). */
+  function notifyHidden(exceptId) {
+    for (const t of TABS) {
+      if (!t.need || t.id === exceptId) continue;
+      const iframe = stageEl.querySelector(`[data-panel="${t.id}"] iframe`);
+      if (!iframe?.getAttribute("src")) continue;
+      try {
+        iframe.contentWindow?.postMessage({ type: "shell:tab-hidden" }, "*");
+      } catch {
+        /* frame not ready */
       }
     }
   }
@@ -479,6 +498,7 @@
     }
 
     parkWebGlIframes(WEBGL_TABS.has(tab.id) ? tab.id : null);
+    notifyHidden(tab.id);
 
     const panel = ensurePanel(tab);
     for (const p of stageEl.querySelectorAll(".panel")) {
@@ -528,9 +548,18 @@
     window.addEventListener("hashchange", () => show(hashTab()));
     // Re-probe backends periodically so Story/Engine light up without a full reload
     setInterval(async () => {
-      await Promise.all(TABS.filter((t) => t.need).map(probe));
+      const backends = TABS.filter((t) => t.need);
+      const results = await Promise.all(backends.map(probe));
       updateBanner();
-    }, 8000);
+      // If the visible tab was showing a fallback / "start the server" note and its server is now up,
+      // switch to the real surface without making the judge click anything.
+      const current = hashTab();
+      backends.forEach((t, i) => {
+        if (t.id !== current || !results[i]) return;
+        const panel = stageEl.querySelector(`[data-panel="${t.id}"]`);
+        if (panel?.querySelector("iframe")?.dataset.backendDown === "1") activateIframe(t, panel, true);
+      });
+    }, 5000);
   }
 
   boot();

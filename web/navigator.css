@@ -205,3 +205,12 @@ td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {
   .metric-grid, .win-row { grid-template-columns: 1fr 1fr; }
 }
+
+/* Date range guard (ephemeris covers a fixed window; see navigator.js resolveEpochMs) */
+.controls label small { display: block; margin-top: 2px; font-size: .68rem; font-family: var(--mono); }
+.date-note[hidden] { display: none; }
+.date-note {
+  margin: .5rem 0 0; padding: .4rem .6rem; border-radius: 6px; font-size: .78rem;
+  border: 1px solid var(--border); border-left: 3px solid var(--warn); background: var(--panel-alt); color: var(--text);
+}
+.date-note[data-kind="info"] { border-left-color: var(--accent); }

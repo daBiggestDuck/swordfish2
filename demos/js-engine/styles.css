@@ -1,23 +1,24 @@
-/* Engine demo fallback — matched to web/map.css tokens */
+/* Engine demo fallback — team palette, same tokens as web/engine.css
+   (#0B1320 / #1F2937 / #64748B / #D1D5DB / #F97316; muted text lifted to #94A3B8 for contrast). */
 :root {
   color-scheme: dark;
-  --bg: #0b0e14;
-  --panel: #141922;
-  --panel-alt: #1a212e;
-  --border: #2a3244;
-  --text: #e6ecf8;
-  --muted: #8c9bbd;
-  --accent: #62b0ff;
-  --good: #45d48a;
-  --warn: #ffb84d;
-  --bad: #ff6b6b;
+  --bg: #0b1320;
+  --panel: #1f2937;
+  --panel-alt: #2a3441;
+  --border: #475569;
+  --text: #d1d5db;
+  --muted: #94a3b8;
+  --accent: #f97316;
+  --good: #4ade80;
+  --warn: #fbbf24;
+  --bad: #f87171;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --ink: #051024;
+  --ink: #0b1320;
   --paper: var(--text);
   --night: var(--bg);
   --night-2: var(--panel-alt);
   --gold: var(--accent);
-  --gold-ink: #051024;
+  --gold-ink: #0b1320;
   --stamp: var(--bad);
   --sea: #44e2ff;
   --line: var(--border);
@@ -30,7 +31,7 @@ body {
   font-family: var(--sans); line-height: 1.4;
 }
 .skip {
-  position: absolute; left: 1rem; top: -3rem; background: var(--accent); color: #051024;
+  position: absolute; left: 1rem; top: -3rem; background: var(--accent); color: var(--ink);
   padding: 0.4rem 0.7rem; border-radius: 6px; font-weight: 600; font-size: 0.8rem;
 }
 .skip:focus { top: 0.5rem; }
@@ -69,7 +70,7 @@ button {
   background: var(--panel-alt); color: var(--text); border: 1px solid var(--border);
   border-radius: 6px; padding: 0.34rem 0.7rem; cursor: pointer; font-size: 0.8rem; font-weight: 600;
 }
-button.primary { background: var(--accent); color: #051024; border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--ink); border-color: var(--accent); }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
 button:hover:not(:disabled) { filter: brightness(1.12); }
 button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
