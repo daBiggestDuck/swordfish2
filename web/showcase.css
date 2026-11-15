@@ -384,7 +384,32 @@ a:hover { text-decoration: underline; }
   margin: 0;
   text-align: center;
 }
-.data-moon svg { display: block; width: 118px; height: 118px; }
+.data-moon svg { display: none; }
+.moon-photo {
+  position: relative;
+  display: block;
+  width: 118px;
+  height: 118px;
+  margin: 0 auto;
+  border-radius: 50%;
+  overflow: hidden; /* crop the mosaic's black margin; the limb meets the circle */
+}
+.moon-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.1); /* the disc is ~46% radius; 1.1× makes the limb meet the edge */
+}
+.moon-dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #44e2ff;
+  border: 1.5px solid #0b0e14;
+  transform: translate(-50%, -50%);
+}
 .data-moon figcaption {
   margin-top: 0.3rem;
   font-size: 0.78rem;
@@ -423,8 +448,28 @@ a:hover { text-decoration: underline; }
   right: 0.85rem;
   width: 20px;
   height: 20px;
+  border-radius: 50%;
+  overflow: hidden;
 }
-.moon-glyph svg { display: block; width: 100%; height: 100%; }
+.moon-glyph img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.1);
+}
+.moon-glyph i {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #44e2ff;
+  border: 1px solid #0b0e14;
+  transform: translate(-50%, -50%);
+}
+.moon-glyph[data-region="polar"] i { left: 50%; top: 90%; }
+.moon-glyph[data-region="near"] i { left: 10%; top: 50%; }
+.moon-glyph[data-region="far"] i { left: 90%; top: 50%; }
 .card--reveal h3 { padding-right: 26px; }
 
 /* ── Mission cards with hover detail (Data / Missions, missions view) ──

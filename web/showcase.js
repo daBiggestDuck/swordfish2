@@ -158,7 +158,7 @@
           </div>
           <div class="grid" id="data-grid"></div>
           <p id="data-error" class="error" hidden></p>
-          <p class="meta-foot">Catalog rules: <a href="./data/README.md">data/README.md</a> · map / Horizons bake notes: <a href="./data/maps/NOTICE.md">data/maps/NOTICE.md</a></p>
+          <p class="meta-foot">Catalog rules: <a href="./data/README.md">data/README.md</a> · map / Horizons bake notes: <a href="./data/maps/NOTICE.md">data/maps/NOTICE.md</a> · Moon image: “Moon nearside LRO color mosaic” by <a href="https://commons.wikimedia.org/wiki/File:Moon_nearside_LRO_color_mosaic_(bright).png" target="_blank" rel="noopener">NASA/GSFC/Arizona State University</a>, public domain, via Wikimedia Commons</p>
         </div>`;
     } else if (tab.kind === "about") {
       panel.innerHTML = `
@@ -361,9 +361,10 @@
               ? `${m.nasaPayloadCount} NASA payload${m.nasaPayloadCount === 1 ? "" : "s"}`
               : "",
           ].filter(Boolean).map(escapeHtml).join(" · ");
-          const regionDot = { polar: [60, 102], "near-side": [16, 60], "far-side": [104, 60] }[m.region];
-          const glyph = regionDot
-            ? `<span class="moon-glyph" aria-hidden="true"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="56" fill="#c9c6bd"/><circle cx="${regionDot[0]}" cy="${regionDot[1]}" r="11" fill="#44e2ff" stroke="#0b0e14" stroke-width="3"/></svg></span>`
+          const regionCls = { polar: "polar", "near-side": "near", "far-side": "far" }[m.region];
+          const regionLabel = { polar: "lunar south pole", "near-side": "near side", "far-side": "far side" }[m.region];
+          const glyph = regionCls
+            ? `<span class="moon-glyph" data-region="${regionCls}" title="Aims for the ${regionLabel}"><img src="web/assets/moon-nearside-lro.jpg" alt="" decoding="async"><i></i></span>`
             : "";
           return `<article class="card card--reveal" tabindex="0">
             <div class="card-face">
@@ -444,10 +445,11 @@
   }
 
   /**
-   * Moon theme, drawn from the catalog itself: a flat disc where each dot is
-   * the target region of a real mission in data/catalog.json. Position encodes
-   * region (bottom = south pole, left = near side, right = far side); the
-   * caption states the counts so the picture never claims more than the data.
+   * Moon theme, from the catalog and real imagery: an LRO nearside mosaic
+   * (NASA/GSFC/ASU, public domain) as the face, with a dot for each target
+   * region of a real mission in data/catalog.json. Position encodes region
+   * (bottom = south pole, left = near side, right = far side); the caption
+   * states the counts so the picture never claims more than the data.
    */
   function renderDataMoon(catalog) {
     const moonEl = $("#data-moon");
@@ -455,24 +457,17 @@
     const counts = { polar: 0, "near-side": 0, "far-side": 0 };
     for (const m of catalog.missions || []) if (counts[m.region] != null) counts[m.region]++;
     const total = (catalog.missions || []).length;
-    const dot = (cx, cy, n, label) =>
+    const dot = (x, y, n, label) =>
       n
-        ? `<g><circle cx="${cx}" cy="${cy}" r="4.5" fill="#44e2ff" stroke="#0b0e14" stroke-width="1.5"><title>${n} mission${n === 1 ? "" : "s"} — ${label}</title></circle></g>`
+        ? `<span class="moon-dot" style="left:${x}%;top:${y}%" title="${n} mission${n === 1 ? "" : "s"} — ${label}"></span>`
         : "";
     moonEl.innerHTML = `
-      <svg viewBox="0 0 120 120" width="118" height="118" role="img" aria-hidden="true">
-        <circle cx="60" cy="60" r="56" fill="#c9c6bd"/>
-        <g fill="#a9a69d">
-          <circle cx="45" cy="40" r="7"/><circle cx="75" cy="52" r="5"/>
-          <circle cx="52" cy="76" r="9"/><circle cx="84" cy="81" r="4"/>
-          <circle cx="34" cy="60" r="4"/><circle cx="68" cy="30" r="3.5"/>
-          <circle cx="28" cy="82" r="3"/>
-        </g>
-        <circle cx="46" cy="56" r="56" fill="#0b0e14" opacity="0.28"/>
-        ${dot(60, 109, counts.polar, "lunar south pole")}
-        ${dot(11, 60, counts["near-side"], "near side")}
-        ${dot(109, 60, counts["far-side"], "far side")}
-      </svg>
+      <span class="moon-photo" aria-hidden="true">
+        <img src="web/assets/moon-nearside-lro.jpg" alt="NASA LRO nearside mosaic of the Moon" width="118" height="118" decoding="async">
+        ${dot(50, 92, counts.polar, "lunar south pole")}
+        ${dot(8, 50, counts["near-side"], "near side")}
+        ${dot(92, 50, counts["far-side"], "far side, beyond this limb")}
+      </span>
       <figcaption>${counts.polar} of ${total} missions aim for the south pole${counts["far-side"] ? ` · ${counts["far-side"]} for the far side` : ""}</figcaption>`;
   }
 
