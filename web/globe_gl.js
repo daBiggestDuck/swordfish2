@@ -919,6 +919,9 @@ export class LunarGlobeGL {
     this.onSelectPoint = options.onSelectPoint || (() => {});
     this.onViewChange = options.onViewChange || (() => {});
     this.onTextureLoad = options.onTextureLoad || (() => {});
+    this.dragEnabled = options.dragEnabled ?? true;
+    this.zoomEnabled = options.zoomEnabled ?? true;
+    this.parallaxOnSphere = options.parallaxOnSphere ?? false;
 
     this.quickmap = options.quickmap || { notableAlbedoFeatures: options.quickmapFeatures || [] };
     this.psrZones = options.psrZones || [];
@@ -1527,7 +1530,7 @@ export class LunarGlobeGL {
   _bindEvents() {
     const host = this.canvas.parentElement || this.canvas;
     host.addEventListener('mousedown', (e) => {
-      if (this.canvas.hidden) return;
+      if (!this.dragEnabled || this.canvas.hidden) return;
       if (e.target !== this.canvas && !e.target?.closest?.('#globe-overlay')) return;
       if (e.target?.closest?.('.predrop-card')) return;
       this._cameraTween = null;
@@ -1590,8 +1593,31 @@ export class LunarGlobeGL {
 
       if (overGlobe) {
         const rect = this.canvas.getBoundingClientRect();
-        this.targetParallaxX = Math.max(-1, Math.min(1, ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1));
-        this.targetParallaxY = Math.max(-1, Math.min(1, ((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 - 1));
+        const normX = Math.max(-1, Math.min(1, ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1));
+        const normY = Math.max(-1, Math.min(1, ((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 - 1));
+
+        if (!this.dragEnabled) {
+          const sphereHit = this.screenToLatLon(e.clientX, e.clientY);
+          this.hoverVec = null;
+          this.canvas.style.cursor = 'default';
+          if (!this.parallaxOnSphere || sphereHit) {
+            this.targetParallaxX = normX;
+            this.targetParallaxY = normY;
+            this._startAnimLoop();
+          } else if (Math.hypot(this.targetParallaxX, this.targetParallaxY) > 0.0006) {
+            resetHoverParallax();
+          }
+          return;
+        }
+
+        const sphereHit = this.parallaxOnSphere ? this.screenToLatLon(e.clientX, e.clientY) : true;
+        if (sphereHit) {
+          this.targetParallaxX = normX;
+          this.targetParallaxY = normY;
+        } else {
+          this.targetParallaxX = 0;
+          this.targetParallaxY = 0;
+        }
         const targetSiteEl = e.target?.closest?.('[data-site-id]');
         const targetSiteId = targetSiteEl?.dataset?.siteId || targetSiteEl?.getAttribute?.('data-site-id');
         const siteHit = targetSiteId
@@ -1657,7 +1683,7 @@ export class LunarGlobeGL {
     }
 
     host.addEventListener('wheel', (e) => {
-      if (this.canvas.hidden) return;
+      if (!this.zoomEnabled || this.canvas.hidden) return;
       if (e.target !== this.canvas && !e.target?.closest?.('#globe-overlay')) return;
       e.preventDefault();
       this.distance = Math.max(1.38, Math.min(4.6, this.distance + e.deltaY * 0.0018));

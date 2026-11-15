@@ -156,6 +156,9 @@ export function MoonGlobeViewport({
       sites: initialData.sites || [],
       psrZones: initialData.psrZones || [],
       quickmap: initialData.quickmap || null,
+      dragEnabled: slideRef.current === "map",
+      zoomEnabled: slideRef.current === "map",
+      parallaxOnSphere: slideRef.current === "landing",
       onSelectPoint: ({ lat, lon, siteId }) => {
         if (slideRef.current !== "map") return;
         if (siteId) {
@@ -233,12 +236,47 @@ export function MoonGlobeViewport({
     return () => ro.disconnect();
   }, [cardRef, selectedDrop, computeOverlayGeometry]);
 
-  // Synchronize globe highlight + focus whenever slide or selected coordinates change
+  // Synchronize globe interaction mode, idle spin, highlight + focus across slides
   useEffect(() => {
     const globe = globeRef.current;
-    if (!globe) return;
+    if (!globe) return undefined;
 
-    if (slide === "map" && activeCoords) {
+    const isLandingSlide = slide === "landing";
+    const isMapSlide = slide === "map";
+    globe.dragEnabled = isMapSlide;
+    globe.zoomEnabled = isMapSlide;
+    globe.parallaxOnSphere = isLandingSlide;
+
+    if (isLandingSlide) {
+      globe.setStagedPoint(null, null);
+      globe.resetView();
+      globe.distance = 3.6;
+      globe.resize();
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      let rafId = 0;
+      const spin = () => {
+        if (slideRef.current !== "landing") return;
+        globe.yaw += 0.00035;
+        globe.render();
+        rafId = requestAnimationFrame(spin);
+      };
+      if (!reduceMotion) {
+        rafId = requestAnimationFrame(spin);
+      } else {
+        globe.render();
+      }
+      return () => {
+        if (rafId) cancelAnimationFrame(rafId);
+      };
+    }
+
+    if (globe.distance > 3.1) {
+      globe.distance = 2.68;
+    }
+    globe.resize();
+
+    if (isMapSlide && activeCoords) {
       globe.setStagedPoint(activeCoords.lat, activeCoords.lon);
       globe.focusLatLon(activeCoords.lat, activeCoords.lon, {
         duration: 360,
@@ -247,9 +285,6 @@ export function MoonGlobeViewport({
       });
     } else {
       globe.setStagedPoint(null, null);
-      if (slide === "landing") {
-        globe.resetView();
-      }
     }
 
     let rafId = 0;
@@ -281,8 +316,10 @@ export function MoonGlobeViewport({
     <div
       ref={stageRef}
       aria-label="Interactive 3D Lunar Moon Map"
-      className={`fixed inset-0 bg-[#0B1320] transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-        isLanding ? "translate-x-0 md:translate-x-[23vw]" : "translate-x-0"
+      className={`fixed bg-[#0B1320] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        isLanding
+          ? "top-1/2 left-[-18vw] h-[100vh] w-[180vw] -translate-y-1/2"
+          : "top-0 left-0 h-[100vh] w-[100vw] translate-y-0"
       } ${slide === "pets" ? "pointer-events-none opacity-0" : "opacity-100"}`}
     >
       <canvas
@@ -290,7 +327,7 @@ export function MoonGlobeViewport({
         className={`lunar-globe-canvas ${
           slide === "map"
             ? "cursor-crosshair active:cursor-grabbing"
-            : "cursor-grab active:cursor-grabbing"
+            : "cursor-default"
         }`}
       />
 

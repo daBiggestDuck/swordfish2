@@ -5,8 +5,9 @@
 
 const THREE_VERSION = "0.170.0";
 
-/** Absolute module URLs — tried in order. */
+/** Local pinned copy first (instant, offline-safe), followed by CDN mirrors. */
 export const THREE_CDN_URLS = Object.freeze([
+  new URL("./vendor/three.module.js", import.meta.url).href,
   `https://cdn.jsdelivr.net/npm/three@${THREE_VERSION}/build/three.module.js`,
   `https://unpkg.com/three@${THREE_VERSION}/build/three.module.js`,
   `https://esm.sh/three@${THREE_VERSION}`,

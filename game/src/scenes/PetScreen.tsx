@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ArrowLeft, BatteryCharging, Check, MapPin, PackageCheck, Snowflake } from "lucide-react";
+import { ArrowLeft, BatteryCharging, Check, Gamepad2, MapPin, PackageCheck, Snowflake } from "lucide-react";
 import type { Catalog } from "@/engine/types";
 import { useMoon } from "@/components/game/MoonStage";
 import { PetModel } from "@/components/game/PetVisuals";
@@ -13,27 +13,33 @@ export function PetScreen({
   catalog,
   landingId,
   petId,
+  copilotId,
   name,
   tipped,
   dropBadge,
   onPet,
+  onCopilot,
   onName,
   onTipped,
   onBack,
   onConfirm,
+  onLaunchRover3d,
   busy,
 }: {
   catalog: Catalog;
   landingId: string;
   petId: string;
+  copilotId?: string;
   name: string;
   tipped: boolean;
   dropBadge?: { label: string; coords: string } | null;
   onPet: (id: string) => void;
+  onCopilot?: (id: string) => void;
   onName: (v: string) => void;
   onTipped: (v: boolean) => void;
   onBack: () => void;
   onConfirm: () => void;
+  onLaunchRover3d?: () => void;
   busy: boolean;
 }) {
   const moon = useMoon();
@@ -116,26 +122,66 @@ export function PetScreen({
                 value={name}
                 maxLength={24}
                 onChange={(e) => onName(e.target.value)}
-                className="w-40 rounded-xl border border-night/20 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-orange-ui"
+                className="w-36 rounded-xl border border-night/20 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-orange-ui sm:w-40"
                 aria-label="Pet name"
               />
             </label>
+            {onLaunchRover3d && onCopilot && (
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                3D Co-pilot
+                <select
+                  value={copilotId && copilotId !== petId ? copilotId : catalog.pets.find((p) => p.id !== petId)?.id ?? ""}
+                  onChange={(e) => onCopilot(e.target.value)}
+                  className="rounded-xl border border-night/20 bg-white px-2.5 py-2 text-sm font-semibold outline-none focus:border-orange-ui"
+                  aria-label="3D Rover co-pilot pet"
+                >
+                  {catalog.pets
+                    .filter((p) => p.id !== petId)
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {PET_UI[p.id]?.nickname ?? p.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            )}
             <label className="flex items-center gap-2 text-sm font-semibold">
               <input type="checkbox" checked={tipped} onChange={(e) => onTipped(e.target.checked)} className="size-4 accent-[#f97316]" />
               Tipped landing, like IM-2 (¼ solar)
             </label>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex flex-wrap items-center gap-2">
               <button type="button" onClick={onBack} className="flex items-center gap-1 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-night/10">
                 <ArrowLeft className="size-4" /> Back
               </button>
-              <button
-                type="button"
-                onClick={onConfirm}
-                disabled={busy}
-                className="flex items-center gap-2 rounded-xl bg-night px-5 py-2.5 text-sm font-bold text-mist shadow-lg transition-transform hover:-translate-y-0.5 disabled:opacity-50"
-              >
-                <PackageCheck className="size-4 text-orange-ui" /> Load onto the rover
-              </button>
+              {onLaunchRover3d ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={onConfirm}
+                    disabled={busy}
+                    className="flex items-center gap-1.5 rounded-xl border border-night/25 bg-white px-4 py-2.5 text-sm font-bold text-night shadow-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+                  >
+                    <PackageCheck className="size-4 text-slate-600" /> Orbital Sim
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onLaunchRover3d}
+                    disabled={busy}
+                    className="flex items-center gap-2 rounded-xl bg-orange-ui px-5 py-2.5 text-sm font-bold text-night shadow-lg transition-transform hover:-translate-y-0.5 hover:bg-[#fb923c] disabled:opacity-50"
+                  >
+                    <Gamepad2 className="size-4 text-night" /> Drive 3D Rover
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onConfirm}
+                  disabled={busy}
+                  className="flex items-center gap-2 rounded-xl bg-night px-5 py-2.5 text-sm font-bold text-mist shadow-lg transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+                >
+                  <PackageCheck className="size-4 text-orange-ui" /> Load onto the rover
+                </button>
+              )}
             </div>
           </div>
         </section>

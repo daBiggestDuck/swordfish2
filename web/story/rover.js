@@ -84,7 +84,7 @@ function buildTerrain() {
   bump.repeat.set(150, 150);
   const mat = new THREE.MeshStandardMaterial({ color: 0xb9b8b6, roughness: 1, metalness: 0, bumpMap: bump, bumpScale: 2.2 });
   // real lunar surface photo (NASA LROC WAC, from the map branch's assets)
-  new THREE.TextureLoader().load('/assets/lroc_wac_global.jpg', (tex) => {
+  new THREE.TextureLoader().load('../assets/lroc_wac_global.jpg', (tex) => {
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
     tex.repeat.set(6, 6);
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -630,6 +630,22 @@ sceneEl.addEventListener('pointerup', () => { cam.dragging = false; });
 sceneEl.addEventListener('wheel', (e) => { cam.dist = Math.max(4.5, Math.min(18, cam.dist + e.deltaY * .01)); }, { passive: true });
 $('#again').addEventListener('click', () => { car.x = car.z = 0; car.heading = 0; startDay(); });
 
+function nearestStorySite(list, lat, lon) {
+  const rad = Math.PI / 180;
+  const lat1 = lat * rad;
+  let best = list[0];
+  let bestD = Infinity;
+  for (const s of list) {
+    const lat2 = (s.lat || 0) * rad;
+    const dLat = lat2 - lat1;
+    const dLon = ((s.lon || 0) - lon) * rad;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+    const d = 2 * Math.asin(Math.min(1, Math.sqrt(h)));
+    if (d < bestD) { bestD = d; best = s; }
+  }
+  return best || list[0];
+}
+
 // ---------------------------------------------------------------- boot
 async function boot() {
   THREE = await getThree();
@@ -639,12 +655,22 @@ async function boot() {
   const want = (q.get('pets') || 'lister,ln-1').split(',').map((x) => x.trim().toLowerCase());
   chosen = want.map((id) => pets.find((x) => x.id.toLowerCase() === id || x.name.toLowerCase() === id)).filter(Boolean).slice(0, 2);
   for (const extra of pets) if (chosen.length < 2 && !chosen.includes(extra)) chosen.push(extra);
+  const rawLat = q.has('lat') && q.get('lat') !== '' ? Number(q.get('lat')) : NaN;
+  const rawLon = q.has('lon') && q.get('lon') !== '' ? Number(q.get('lon')) : NaN;
+  const hasCustomCoords = Number.isFinite(rawLat) && Number.isFinite(rawLon);
   const siteId = (q.get('site') || chosen[0].defaultSite || 'MARE_CRISIUM').toUpperCase().replace(/-/g, '_');
-  site = sites.find((x) => x.id === siteId) || sites[0];
-  $('#site').textContent = site.name;
-  const lat = site.lat || 0, lon = site.lon || 0;
+  const aliasedId = siteId === 'SHACKLETON_RIM' ? 'SHACKLETON_RIDGE' : siteId;
+  site = sites.find((x) => x.id === aliasedId)
+    || (hasCustomCoords ? nearestStorySite(sites, rawLat, rawLon) : null)
+    || sites[0];
+  const dropName = q.get('dropName')?.trim();
+  const displaySiteName = dropName || site.name;
+  site = { ...site, name: displaySiteName };
+  $('#site').textContent = displaySiteName;
+  const lat = hasCustomCoords ? rawLat : (site.lat || 0);
+  const lon = hasCustomCoords ? rawLon : (site.lon || 0);
   SUN_MAX = Math.max(3, 90 - Math.abs(lat)) * Math.PI / 180;
-  CRATERS = makeCraters([...site.id].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7) || 7);
+  CRATERS = makeCraters([...(site.id + (hasCustomCoords ? `${lat.toFixed(2)},${lon.toFixed(2)}` : ''))].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7) || 7);
   const earthEl = 90 - Math.acos(Math.cos(lat * Math.PI / 180) * Math.cos(lon * Math.PI / 180)) * 57.3;
   earthUp = earthEl > 0;
 
@@ -673,7 +699,7 @@ async function boot() {
   addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); });
 
   buildSky();
-  { const el = Math.max(2, (90 - Math.acos(Math.cos((site.lat || 0) * Math.PI / 180) * Math.cos((site.lon || 0) * Math.PI / 180)) * 57.3)) * Math.PI / 180;
+  { const el = Math.max(2, (90 - Math.acos(Math.cos(lat * Math.PI / 180) * Math.cos(lon * Math.PI / 180)) * 57.3)) * Math.PI / 180;
     const pos = new THREE.Vector3(-.45 * Math.cos(el), Math.sin(el), -.9 * Math.cos(el)).normalize().multiplyScalar(600);
     earthSprite.position.copy(pos); earthGlow.position.copy(pos); earthSprite.visible = earthGlow.visible = earthUp; }
   buildTerrain();
@@ -687,6 +713,21 @@ async function boot() {
   rover.position.y = blockTop(0, 0);
   phase = 'landing'; phaseT = 0;
   banner('Landing…', site.name, 2.6);
+  try { window.focus(); } catch {}
+  sceneEl.addEventListener('pointerdown', () => { try { window.focus(); } catch {} });
+  if (q.get('from') === 'map' && window.parent && window.parent !== window) {
+    const row = $('.end-row');
+    if (row && !$('#choose-site-btn')) {
+      const backBtn = document.createElement('button');
+      backBtn.id = 'choose-site-btn';
+      backBtn.className = 'btn';
+      backBtn.type = 'button';
+      backBtn.style.marginLeft = '10px';
+      backBtn.textContent = 'Pick new landing site';
+      backBtn.addEventListener('click', () => window.parent.postMessage({ type: 'payloadpets:back-to-map' }, '*'));
+      row.append(backBtn);
+    }
+  }
   requestAnimationFrame(frame);
 }
 boot().catch((e) => {

@@ -14,12 +14,16 @@ import { DriveScreen } from "@/scenes/DriveScreen";
 import { EndScreen, type Outcome } from "@/scenes/EndScreen";
 import type { LegInfo } from "@/scenes/ArrivalCard";
 import { describeEvent, type FeedItem } from "@/lib/events";
-import { modelMood } from "@/lib/pets";
+import { modelMood, PET_UI } from "@/lib/pets";
 
 type Phase = "boot" | "home" | "land" | "pet" | "destination" | "drive" | "arrived" | "over";
 
 const TICK_MS = 180;
 const STEP_OF: Partial<Record<Phase, number>> = { land: 0, pet: 1, destination: 2, drive: 3, arrived: 3 };
+
+function defaultCopilotFor(primaryId: string): string {
+  return primaryId === "LN-1" ? "LISTER" : "LN-1";
+}
 
 interface LaunchContext {
   fromMap: boolean;
@@ -91,6 +95,7 @@ export default function App() {
 
   const [landingId, setLandingId] = useState("MALAPERT_A");
   const [petId, setPetId] = useState("LN-1");
+  const [copilotId, setCopilotId] = useState("LISTER");
   const [petName, setPetName] = useState("Pip");
   const [tipped, setTipped] = useState(false);
   const [destId, setDestId] = useState("MONS_MOUTON");
@@ -336,6 +341,33 @@ export default function App() {
     setPhase("land");
   }, []);
 
+  const handleSelectPet = useCallback(
+    (nextId: string) => {
+      setPetId(nextId);
+      setCopilotId((prev) => (prev === nextId ? defaultCopilotFor(nextId) : prev));
+    },
+    [],
+  );
+
+  const launchRover3d = useCallback(() => {
+    if (!(launch.fromMap && window.parent && window.parent !== window)) return;
+    const primaryModel = PET_UI[petId]?.model ?? "ln-1";
+    const resolvedCopilotId = copilotId === petId ? defaultCopilotFor(petId) : copilotId;
+    const copilotModel = PET_UI[resolvedCopilotId]?.model ?? (primaryModel === "ln-1" ? "lister" : "ln-1");
+    window.parent.postMessage(
+      {
+        type: "payloadpets:launch-rover-3d",
+        pets: [primaryModel, copilotModel === primaryModel ? (primaryModel === "ln-1" ? "lister" : "ln-1") : copilotModel],
+        petName: petName.trim() || "Pip",
+        site: launch.siteId || landingId,
+        lat: launch.lat,
+        lon: launch.lon,
+        dropName: launch.dropName,
+      },
+      "*",
+    );
+  }, [launch, petId, copilotId, petName, landingId]);
+
   const again = () => {
     sessionRef.current = null;
     setState(null);
@@ -425,14 +457,17 @@ export default function App() {
             catalog={catalog}
             landingId={landingId}
             petId={petId}
+            copilotId={copilotId}
             name={petName}
             tipped={tipped}
             dropBadge={dropBadge}
-            onPet={setPetId}
+            onPet={handleSelectPet}
+            onCopilot={setCopilotId}
             onName={setPetName}
             onTipped={setTipped}
             onBack={() => (launch.fromMap ? returnToMap() : setPhase("land"))}
             onConfirm={startRun}
+            onLaunchRover3d={launch.fromMap ? launchRover3d : undefined}
             busy={busy}
           />
         )}
