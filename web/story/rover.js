@@ -1040,8 +1040,6 @@ async function boot() {
     }
   }
   requestAnimationFrame(frame);
-  // ?preview=passport jumps straight to the end screen (for demos and screenshots)
-  if (new URLSearchParams(location.search).get('preview') === 'passport') { survived = true; ACTS.slice(0, 2).forEach((x) => { x.targets.forEach((tg) => { tg.done = true; }); x.step = 9; }); setTimeout(finish, 1500); }
 }
 boot().catch((e) => {
   console.error(e);
