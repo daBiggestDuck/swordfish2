@@ -388,3 +388,16 @@ html, body, button, input { font-family: var(--subtext-font); }
   .cert .pp-photos { flex-direction: row; margin: 0 22px 12px; }
   .cert .pp-fields { margin: 0 22px; grid-template-columns: 1fr; }
 }
+
+/* time warp, pause menu, low-meter warnings */
+.warp { margin-left: 10px; font-family: var(--mono); font-size: .72rem; color: #F97316; letter-spacing: .08em; }
+.pause { position: fixed; inset: 0; z-index: 60; display: none; place-items: center; background: rgba(11,19,32,.72); backdrop-filter: blur(6px); }
+.pause.is-visible { display: grid; }
+.pause-card { width: min(420px, calc(100vw - 32px)); padding: 26px 28px; border-radius: 14px; background: #1F2937; border: 1px solid #334155; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
+.pause-card h2 { margin: 4px 0 16px; font-family: "Bruno Ace SC", sans-serif; font-size: 1.6rem; color: #D1D5DB; }
+.pause-keys { list-style: none; margin: 0 0 20px; padding: 0; display: grid; gap: 8px; font-family: "Space Grotesk", sans-serif; font-size: .9rem; color: #D1D5DB; }
+.pause-keys li { display: grid; grid-template-columns: 120px 1fr; align-items: center; }
+.pause .btn { width: 100%; }
+@keyframes lowpulse { 50% { opacity: .35; } }
+body.low-power #m-power, body.low-warmth #m-warmth, body.low-hull #m-hull { animation: lowpulse .8s ease-in-out infinite; }
+body.low-power .hud-radar, body.low-warmth .hud-radar { box-shadow: 0 0 0 1px rgba(249,115,22,.6), 0 0 24px rgba(249,115,22,.25); }

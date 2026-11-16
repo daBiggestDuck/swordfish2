@@ -16,7 +16,7 @@
   <header class="hud hud-top">
     <div class="clock">
       <span class="clock-site" id="site">Mare Crisium</span>
-      <span class="clock-day" id="day">Day 1</span><span class="clock-of">/ 14</span>
+      <span class="clock-day" id="day">Day 1</span><span class="clock-of">/ 14</span><span id="warp" class="warp"></span>
     </div>
     <div class="track"><i id="track"></i></div>
     <div id="chapter" class="chapter">Chapter 1 · Touchdown</div>
@@ -51,7 +51,7 @@
       <button id="opt-heat" class="opt" type="button" aria-pressed="false"><kbd>H</kbd><span>Heater: off</span><i></i></button>
       <button id="opt-send" class="opt send" type="button"><kbd>F</kbd><span>Send data home</span><b class="sig"></b></button>
     </div>
-    <div class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive · drag to look · <kbd>C</kbd> camera</div>
+    <div class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive · drag to look · <kbd>C</kbd> camera · <kbd>T</kbd> time warp · <kbd>Esc</kbd> pause</div>
   </aside>
 
   <!-- story subtitles (real NASA missions) -->
@@ -75,6 +75,24 @@
 
   <!-- intro banner -->
   <div id="banner" class="banner"><b id="banner-title">Touchdown</b><span id="banner-text"></span></div>
+
+  <!-- pause menu -->
+  <div id="pause" class="pause" role="dialog" aria-label="Paused">
+    <div class="pause-card">
+      <div class="eyebrow">Mission paused</div>
+      <h2>Paused</h2>
+      <ul class="pause-keys">
+        <li><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>Drive the rover</li>
+        <li><span><kbd>P</kbd></span>Point the solar panel at the Sun</li>
+        <li><span><kbd>H</kbd></span>Heater on or off</li>
+        <li><span><kbd>F</kbd></span>Send science data to Earth</li>
+        <li><span><kbd>C</kbd></span>Cockpit or chase camera</li>
+        <li><span><kbd>T</kbd></span>Time warp ×4</li>
+        <li><span><kbd>M</kbd></span>Sound on or off</li>
+      </ul>
+      <button id="resume" class="btn primary" type="button">Resume (Esc)</button>
+    </div>
+  </div>
 
   <!-- loading -->
   <div id="loading" class="loading"><div class="spinner"></div><span>Preparing the Moon…</span></div>

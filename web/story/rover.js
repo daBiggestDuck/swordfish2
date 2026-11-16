@@ -23,6 +23,38 @@ const care = { tracking: false, heater: false };
 const rv = { odo: 0, sent: 0, maxSun: 0, hull: 100, hits: 0 };
 let lastSend = -1, sleepReady = false, survived = null, epi = -1;
 let ROCKS = [], shake = 0;
+let paused = false, warp = 1, muted = false;
+const warned = { power: false, warmth: false, hull: false };
+
+// ---------------------------------------------------------------- sound (WebAudio, no files)
+let AC = null, hum = null;
+function audio() {
+  if (AC || muted) return AC;
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    const o = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain();
+    o.type = 'sawtooth'; o.frequency.value = 48; f.type = 'lowpass'; f.frequency.value = 260; g.gain.value = 0;
+    o.connect(f).connect(g).connect(AC.destination); o.start();
+    hum = { o, g };
+  } catch { AC = null; }
+  return AC;
+}
+function tone(freq, dur = .12, type = 'sine', vol = .08, when = 0, slide = 0) {
+  if (muted || !AC) return;
+  const at = AC.currentTime + when, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, at);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(20, freq + slide), at + dur);
+  g.gain.setValueAtTime(vol, at); g.gain.exponentialRampToValueAtTime(.0001, at + dur);
+  o.connect(g).connect(AC.destination); o.start(at); o.stop(at + dur + .02);
+}
+const sfx = {
+  done() { tone(660, .12, 'triangle', .09); tone(880, .12, 'triangle', .09, .1); tone(1320, .22, 'triangle', .08, .2); },
+  step() { tone(990, .09, 'triangle', .07); },
+  hit() { tone(110, .35, 'square', .12, 0, -70); },
+  send() { for (let i = 0; i < 4; i++) tone(1200 + i * 220, .07, 'sine', .05, i * .07); },
+  warn() { tone(440, .18, 'square', .05); tone(330, .25, 'square', .05, .2); },
+  ui() { tone(520, .06, 'sine', .05); },
+};
 const cam = { yaw: 0, pitch: 0.32, dist: 8.5, dragging: false, lx: 0, ly: 0, mode: 'fp', lookYaw: 0, lookPitch: -0.2 };
 const WORLD = 650; // half-size of the block world, in blocks
 
@@ -361,7 +393,7 @@ function sendData() {
   if (power < 25) { banner('Low power', 'You need 25% power to send data', 1.8); return; }
   power -= 14;
   rv.sent++;
-  lastSend = t;
+  lastSend = t; sfx.send();
   petDo('hop', 1.2, `${who('ln-1', 'retro')} beams the data home`);
   log('Science data sent home to Earth.', `Day ${Math.max(1, Math.ceil(dayP * 14))}`);
   renderMeters();
@@ -516,7 +548,7 @@ function completeActivity(a) {
   petDo('hop', 1.6);
   toastQueue.push({ title: a.story.title, text: a.story.text, sourceUrl: a.story.sourceUrl, short: true });
   log(a.name + ': done', `Day ${Math.max(1, Math.ceil(dayP * 14))}`);
-  shake = .15;
+  shake = .15; sfx.done();
 }
 
 function updateActivities(dt) {
@@ -716,7 +748,8 @@ function startDay() {
 // ---------------------------------------------------------------- loop
 
 function update(dt) {
-  t += dt; phaseT += dt;
+  t += dt; phaseT += (phase === 'day' || phase === 'night') ? dt * warp : dt;
+  const gdt = dt * warp; // game time: meters run faster under time warp
   if (phase === 'day') dayP = Math.min(1, phaseT / DAY_SECS);
   if (phase === 'landing') dayP = 0;
   const arc = phase === 'day' || phase === 'landing' ? Math.sin(Math.PI * Math.max(dayP, .08)) : 0;
@@ -726,7 +759,8 @@ function update(dt) {
   const a = phase === 'day' || phase === 'landing' ? Math.PI * Math.max(dayP, .08) : Math.PI * 1.04;
   const dir = new THREE.Vector3(Math.cos(a), Math.max(.03, Math.sin(a) * Math.sin(SUN_MAX) + .02), .38).normalize();
   rv.maxSun = Math.max(rv.maxSun, Math.asin(Math.min(1, sunUp)) * 57.3);
-  $('#rover-read').textContent = `Odometer ${(rv.odo / 1000).toFixed(2)} km · Data sent home ${rv.sent}`;
+  $('#rover-read').textContent = `${(Math.abs(car.speed) * 3.6).toFixed(1)} km/h · Odometer ${(rv.odo / 1000).toFixed(2)} km · Data sent ${rv.sent}`;
+  if (hum && AC) hum.g.gain.setTargetAtTime(muted || paused ? 0 : Math.min(.05, Math.abs(car.speed) * .007), AC.currentTime, .1), hum.o.frequency.setTargetAtTime(40 + Math.abs(car.speed) * 9, AC.currentTime, .1);
   $('#m-hull').style.width = `${rv.hull}%`; $('#m-hull').classList.toggle('low', rv.hull < 30); $('#v-hull').textContent = Math.round(rv.hull);
   $('#sky-read').textContent = `Sun ${(Math.asin(Math.min(1, sunUp)) * 57.3).toFixed(0)}° · Earth ${earthUp ? 'in view' : 'below horizon'}`;
   sun.position.copy(rover.position).addScaledVector(dir, 60);
@@ -767,7 +801,7 @@ function update(dt) {
       if (impact > 1.2) {
         const dmg = Math.min(30, impact * 3.2);
         rv.hull = Math.max(0, rv.hull - dmg); rv.hits++;
-        shake = Math.min(1, .25 + impact * .08);
+        shake = Math.min(1, .25 + impact * .08); sfx.hit();
         banner('Collision!', `Hit a boulder: hull -${dmg.toFixed(0)}%`, 1.4);
         log(`Hit a boulder at ${impact.toFixed(1)} m/s. Hull ${Math.round(rv.hull)}%.`, `Day ${Math.max(1, Math.ceil(dayP * 14))}`);
       }
@@ -798,13 +832,17 @@ function update(dt) {
   if (live) {
     if (care.heater && power <= 0) { care.heater = false; renderCare(); }
     if (phase === 'night') { // no Sun: batteries only. Sleep mode halves the drain.
-      power = Math.max(0, power - ((sleepReady ? .3 : .7) + (care.heater ? (sleepReady ? .2 : .6) : 0) + Math.abs(car.speed) * .12) * dt);
-      warmth = Math.max(0, Math.min(100, warmth + (-.9 + (care.heater && power > 0 ? .95 : 0)) * dt));
+      power = Math.max(0, power - ((sleepReady ? .3 : .7) + (care.heater ? (sleepReady ? .2 : .6) : 0) + Math.abs(car.speed) * .12) * gdt);
+      warmth = Math.max(0, Math.min(100, warmth + (-.9 + (care.heater && power > 0 ? .95 : 0)) * gdt));
     } else {
-      power = Math.max(0, Math.min(100, power + ((care.tracking ? arc * 7.5 : sunUp * 4.5) - .9 - Math.abs(car.speed) * .12 - (care.heater ? 1.8 : 0)) * dt));
-      warmth = Math.max(0, Math.min(100, warmth + (sunUp * 3.2 - 1.9 + (care.heater ? 3 : 0)) * dt));
+      power = Math.max(0, Math.min(100, power + ((care.tracking ? arc * 7.5 : sunUp * 4.5) - .9 - Math.abs(car.speed) * .12 - (care.heater ? 1.8 : 0)) * gdt));
+      warmth = Math.max(0, Math.min(100, warmth + (sunUp * 3.2 - 1.9 + (care.heater ? 3 : 0)) * gdt));
     }
     renderMeters();
+    for (const [k, v, msg] of [['power', power, phase === 'night' ? 'Turn the heater off when you can' : 'Press P to track the Sun'], ['warmth', warmth, 'Press H to turn on the heater'], ['hull', rv.hull, 'Drive slower around boulders']]) {
+      if (v < 20 && !warned[k]) { warned[k] = true; sfx.warn(); banner(`${k[0].toUpperCase() + k.slice(1)} low`, msg, 2.4); document.body.classList.add(`low-${k}`); }
+      else if (v > 30 && warned[k]) { warned[k] = false; document.body.classList.remove(`low-${k}`); }
+    }
   }
   for (const r of petRigs) {
     const mood = phase === 'night' ? (r.id === 'retro' ? 'sleeping' : 'shivering') : warmth < 25 ? 'shivering' : power < 15 ? 'sleeping' : 'happy';
@@ -899,7 +937,7 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min(.05, (now - last) / 1000);
   last = now;
-  update(dt);
+  if (!paused) update(dt);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
@@ -913,9 +951,30 @@ addEventListener('keydown', (e) => {
   if (e.key === 'p' || e.key === 'P') { care.tracking = !care.tracking; renderCare(); }
   if (e.key === 'h' || e.key === 'H') { care.heater = !care.heater; renderCare(); }
   if (e.key === 'f' || e.key === 'F') sendData();
+  if (e.key === 'p' || e.key === 'P' || e.key === 'h' || e.key === 'H') sfx.ui();
+  if (e.key === 't' || e.key === 'T') setWarp(warp === 1 ? 4 : 1);
+  if (e.key === 'm' || e.key === 'M') { muted = !muted; if (!muted) audio(); banner(muted ? 'Sound off' : 'Sound on', '', 1); }
+  if (e.key === 'Escape') setPaused(!paused);
 });
-$('#opt-track').addEventListener('click', () => { care.tracking = !care.tracking; renderCare(); });
-$('#opt-heat').addEventListener('click', () => { care.heater = !care.heater; renderCare(); });
+addEventListener('keydown', () => audio(), { once: true });
+addEventListener('pointerdown', () => audio(), { once: true });
+function setWarp(w) {
+  if (phase !== 'day' && phase !== 'night') return;
+  warp = w; sfx.ui();
+  $('#warp').textContent = w > 1 ? `▶▶ ×${w}` : '';
+  banner(w > 1 ? 'Time warp ×4' : 'Real time', w > 1 ? 'Days pass four times faster. Press T to slow down.' : '1 second = 1 hour of daylight', 1.6);
+}
+function setPaused(on) {
+  if (phase !== 'day' && phase !== 'night' && on) return;
+  paused = on; keys.clear();
+  $('#pause').classList.toggle('is-visible', on);
+  if (hum && AC) hum.g.gain.value = 0;
+  if (!on) last = performance.now();
+}
+$('#resume').addEventListener('click', () => setPaused(false));
+document.addEventListener('visibilitychange', () => { if (document.hidden) setPaused(true); });
+$('#opt-track').addEventListener('click', () => { care.tracking = !care.tracking; renderCare(); sfx.ui(); });
+$('#opt-heat').addEventListener('click', () => { care.heater = !care.heater; renderCare(); sfx.ui(); });
 $('#opt-send').addEventListener('click', sendData);
 document.querySelectorAll('.touch button').forEach((b) => {
   b.addEventListener('pointerdown', () => keys.add(b.dataset.k));
@@ -936,7 +995,7 @@ sceneEl.addEventListener('pointermove', (e) => {
 });
 sceneEl.addEventListener('pointerup', () => { cam.dragging = false; });
 sceneEl.addEventListener('wheel', (e) => { cam.dist = Math.max(4.5, Math.min(18, cam.dist + e.deltaY * .01)); }, { passive: true });
-$('#again').addEventListener('click', () => { car.x = car.z = 0; car.heading = 0; sleepReady = false; survived = null; lastSend = -1; endCutscene(); startDay(); });
+$('#again').addEventListener('click', () => { car.x = car.z = 0; car.heading = 0; sleepReady = false; survived = null; lastSend = -1; warp = 1; $('#warp').textContent = ''; endCutscene(); startDay(); });
 
 function nearestStorySite(list, lat, lon) {
   const rad = Math.PI / 180;
