@@ -231,3 +231,18 @@ html, body { background: #0B1320; }
 .cert .pp-stamp { position: static; transform: rotate(-8deg); }
 .cert .pp-mrz { margin: 0 -1.6rem; border-radius: 0 0 12px 12px; text-align: left; }
 @media (max-width: 640px) { .cert .pp-fields { grid-template-columns: auto 1fr; } .cert-foot { grid-template-columns: 1fr; justify-items: center; } }
+
+/* ---- minimap + activities ---- */
+.hud-map { left: 18px; top: 100px; width: 210px; padding: 12px; display: grid; gap: 8px; justify-items: center; pointer-events: auto; }
+.hud-map canvas { width: 170px; height: 170px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(249,115,22,.55), 0 10px 24px rgba(0,0,0,.5); }
+.hud-map .eyebrow { justify-self: start; }
+.acts { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; gap: 6px; }
+.acts li { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 8px; font-size: .8rem; padding: 6px 8px; border-radius: 9px; background: rgba(255,255,255,.04); border: 1px solid transparent; transition: border-color .3s, background .3s; }
+.acts li i { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+.acts li b { font-family: var(--mono); font-size: .68rem; color: var(--muted); font-weight: 500; }
+.acts li.active { border-color: rgba(249,115,22,.6); background: rgba(249,115,22,.1); }
+.acts li.active b { color: #F97316; }
+.acts li.done { opacity: .7; }
+.acts li.done span { text-decoration: line-through; }
+.acts li.done b { color: #45d48a; }
+@media (max-width: 900px) { .hud-map { top: auto; bottom: 170px; width: 170px; } .hud-map canvas { width: 120px; height: 120px; } }

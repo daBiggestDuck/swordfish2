@@ -22,6 +22,13 @@
     <div id="rover-read" class="sky-read"></div>
   </header>
 
+  <!-- minimap + activities -->
+  <aside class="hud hud-map glass" aria-label="Minimap and activities">
+    <canvas id="minimap" width="170" height="170" aria-label="Minimap: you are the orange arrow; the flag is your landing site; coloured dots are activities; grey dots are boulders"></canvas>
+    <div class="eyebrow">Activities</div>
+    <ol id="acts" class="acts"></ol>
+  </aside>
+
   <!-- top right: mission log -->
   <aside class="hud hud-log glass" aria-live="polite">
     <div class="eyebrow">Mission log</div>

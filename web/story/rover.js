@@ -5,7 +5,7 @@ import { createStoryClient } from './story-client.js';
 import { getThree, buildPetModel } from './pets-3d/pets3d.js';
 
 const $ = (s) => document.querySelector(s);
-const DAY_SECS = 90;          // 14 Earth days of sunlight
+const DAY_SECS = 240;         // 14 Earth days of sunlight (about 4 minutes, room for activities)
 const NIGHT_SECS = 8;         // the start of the lunar night, then the story screen
 const PET_COLORS = { lister: '#ffb84d', retro: '#62b0ff', eds: '#a9b6ff', 'ln-1': '#45d48a' };
 
@@ -23,7 +23,7 @@ const care = { tracking: false, heater: false };
 const rv = { odo: 0, sent: 0, maxSun: 0, hull: 100, hits: 0 };
 let ROCKS = [], shake = 0;
 const cam = { yaw: 0, pitch: 0.32, dist: 8.5, dragging: false, lx: 0, ly: 0, mode: 'fp', lookYaw: 0, lookPitch: -0.2 };
-const WORLD = 400; // half-size of the block world, in blocks
+const WORLD = 650; // half-size of the block world, in blocks
 
 // ---------------------------------------------------------------- terrain (same formula for mesh + rover)
 let SUN_MAX = 60 * Math.PI / 180; // highest the Sun gets at this site: 90 - |latitude| (set at boot)
@@ -32,7 +32,7 @@ function makeCraters(seed) {
   let s = seed;
   const r = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
   // many small craters, a few big ones (like the real Moon)
-  return Array.from({ length: 520 }, () => { const k = r(); return { x: (r() - .5) * 860, z: (r() - .5) * 860, r: 1.2 + Math.pow(k, 3) * 30, d: .25 + r() * .5 }; })
+  return Array.from({ length: 900 }, () => { const k = r(); return { x: (r() - .5) * 1340, z: (r() - .5) * 1340, r: 1.2 + Math.pow(k, 3) * 30, d: .25 + r() * .5 }; })
     .map((c) => ({ ...c, d: c.d * Math.min(4, c.r * .22) }));
 }
 function heightAt(x, z) {
@@ -74,19 +74,19 @@ function noiseTexture(size = 512) {
 }
 
 function buildTerrain() {
-  const SIZE = 900, SEG = 300;
+  const SIZE = 1400, SEG = 340;
   const geo = new THREE.PlaneGeometry(SIZE, SIZE, SEG, SEG);
   geo.rotateX(-Math.PI / 2);
   const pos = geo.attributes.position;
   for (let i = 0; i < pos.count; i++) pos.setY(i, heightAt(pos.getX(i), pos.getZ(i)));
   geo.computeVertexNormals();
   const bump = noiseTexture();
-  bump.repeat.set(150, 150);
+  bump.repeat.set(230, 230);
   const mat = new THREE.MeshStandardMaterial({ color: 0xb9b8b6, roughness: 1, metalness: 0, bumpMap: bump, bumpScale: 2.2 });
   // real lunar surface photo (NASA LROC WAC, from the map branch's assets)
   new THREE.TextureLoader().load('../assets/lroc_wac_global.jpg', (tex) => {
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(6, 6);
+    tex.repeat.set(9, 9);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     mat.map = tex;
@@ -109,13 +109,13 @@ function buildTerrain() {
   }
   rockGeo.computeVertexNormals();
   const rockMat = new THREE.MeshStandardMaterial({ color: 0x8e8c89, roughness: .96, bumpMap: bump, bumpScale: 3 });
-  const N = 1100, hitRocks = [];
+  const N = 1500, hitRocks = [];
   const rocks = new THREE.InstancedMesh(rockGeo, rockMat, N);
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), p = new THREE.Vector3();
   let rs = 99;
   const r = () => ((rs = (rs * 1664525 + 1013904223) >>> 0) / 4294967296);
   for (let i = 0; i < N; i++) {
-    let x = (r() - .5) * 820, z = (r() - .5) * 820;
+    let x = (r() - .5) * 1260, z = (r() - .5) * 1260;
     if (Math.hypot(x, z) < 6) x += 12;
     const size = .06 + Math.pow(r(), 4) * 1.6;
     sc.set(size * (.8 + r() * .5), size * (.7 + r() * .5), size * (.8 + r() * .5));
@@ -379,6 +379,164 @@ function renderMeters() {
   }
 }
 
+// ---------------------------------------------------------------- activities, flag, minimap
+const NASA_BG1 = 'https://www.nasa.gov/news-release/touchdown-carrying-nasa-science-fireflys-blue-ghost-lands-on-moon/';
+const NASA_PRIME1 = 'https://www.nasa.gov/centers-and-facilities/kennedy/nasas-polar-ice-experiment-paves-way-for-future-moon-missions/';
+const NASA_LN1 = 'https://www.nasa.gov/centers-and-facilities/marshall/nasa-lights-beacon-on-moon-with-autonomous-navigation-system-test/';
+const FLAG = { x: 5, z: 3 };
+const ACTS = [];
+let mapT = 0;
+
+function marker(x, z, color, radius) {
+  const g = new THREE.Group();
+  g.position.set(x, heightAt(x, z), z);
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(.5, .5, 70, 16, 1, true),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .32, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  beam.position.y = 35;
+  const ring = new THREE.Mesh(new THREE.RingGeometry(radius - .35, radius, 64),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .85, side: THREE.DoubleSide, depthWrite: false }));
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = .2;
+  g.add(beam, ring);
+  scene.add(g);
+  return { group: g, beam, ring };
+}
+function markDone(m) {
+  m.beam.material.color.set(0x45d48a); m.beam.material.opacity = .12;
+  m.ring.material.color.set(0x45d48a);
+}
+
+function buildActivities() {
+  // 1. three regolith samples near the landing site
+  const samples = [[46, .6], [72, 2.4], [98, 4.3]].map(([d, a]) => ({ x: Math.cos(a) * d, z: Math.sin(a) * d }));
+  ACTS.push({ id: 'samples', name: 'Collect 3 regolith samples', radius: 3.5,
+    targets: samples.map((p) => ({ ...p, done: false, m: marker(p.x, p.z, 0xF97316, 3.5) })),
+    story: { title: 'Samples collected!', text: "Your pets bagged 3 regolith samples. Blue Ghost 1 carried NASA's Lunar PlanetVac to test a new way of picking up Moon soil.", sourceUrl: NASA_BG1 } });
+  // 2. ice scan in the nearest large crater (cold and dark inside)
+  const crater = CRATERS.filter((c) => c.r > 7 && Math.hypot(c.x, c.z) > 60 && Math.hypot(c.x, c.z) < WORLD - 120)
+    .sort((a, b) => Math.hypot(a.x, a.z) - Math.hypot(b.x, b.z))[0] || { x: 120, z: -80, r: 10 };
+  ACTS.push({ id: 'ice', name: 'Scan for water ice in a crater', radius: Math.min(9, crater.r * .55), hold: 0, need: 6,
+    targets: [{ x: crater.x, z: crater.z, done: false, m: marker(crater.x, crater.z, 0x44e2ff, Math.min(9, crater.r * .55)) }],
+    story: { title: 'Ice scan complete!', text: "You scanned the crater floor for ice. NASA's PRIME-1 drill hunted for ice near the south pole, because ice could one day give astronauts water.", sourceUrl: NASA_PRIME1 } });
+  // 3. navigation beacon on the highest nearby hilltop (needs Earth in view)
+  let best = { x: 150, z: 150, h: -1e9 };
+  for (let a = 0; a < Math.PI * 2; a += .15) for (let d = 90; d < 280; d += 15) {
+    const x = Math.cos(a) * d, z = Math.sin(a) * d, h = heightAt(x, z);
+    if (h > best.h) best = { x, z, h };
+  }
+  ACTS.push({ id: 'beacon', name: 'Plant a nav beacon on the hilltop', radius: 5, hold: 0, need: 4, needsEarth: true,
+    targets: [{ x: best.x, z: best.z, done: false, m: marker(best.x, best.z, 0x8e9bff, 5) }],
+    story: { title: 'Beacon online!', text: 'Your beacon now helps future explorers find their way. NASA tested the same idea with LN-1, a navigation beacon on IM-1.', sourceUrl: NASA_LN1 } });
+}
+
+function resetActivities() {
+  for (const a of ACTS) {
+    a.hold = 0;
+    for (const tg of a.targets) {
+      tg.done = false;
+      const col = a.id === 'samples' ? 0xF97316 : a.id === 'ice' ? 0x44e2ff : 0x8e9bff;
+      tg.m.beam.material.color.set(col); tg.m.beam.material.opacity = .32; tg.m.ring.material.color.set(col);
+    }
+  }
+}
+const actDone = (a) => a.targets.every((tg) => tg.done);
+
+function completeActivity(a) {
+  toastQueue.push(a.story);
+  log(a.name.replace(/^./, (c) => c.toLowerCase()) + ': done!', `Day ${Math.max(1, Math.ceil(dayP * 14))}`);
+  banner('Activity complete', a.name, 2.2);
+  shake = .15;
+}
+
+function updateActivities(dt) {
+  if (phase !== 'day' && phase !== 'night') return;
+  const still = Math.abs(car.speed) < .9;
+  for (const a of ACTS) {
+    if (actDone(a)) continue;
+    for (const tg of a.targets) {
+      if (tg.done) continue;
+      const inside = Math.hypot(car.x - tg.x, car.z - tg.z) < a.radius;
+      if (a.id === 'samples') {
+        if (inside) { tg.done = true; markDone(tg.m); log(`Sample ${a.targets.filter((x) => x.done).length} of 3 collected.`, 'Science'); if (actDone(a)) completeActivity(a); }
+      } else if (inside && still && (!a.needsEarth || earthUp)) {
+        a.hold += dt;
+        if (a.id === 'ice') warmth = Math.max(0, warmth - dt * 1.4); // cold in the crater shadow
+        if (a.hold >= a.need) { tg.done = true; markDone(tg.m); completeActivity(a); }
+      } else {
+        a.hold = Math.max(0, a.hold - dt * 2);
+        if (inside && a.needsEarth && !earthUp && !a.warned) { a.warned = true; banner('No Earth in view', 'The beacon needs a line of sight to Earth', 2); }
+      }
+    }
+  }
+}
+
+function renderActivities() {
+  $('#acts').replaceChildren(...ACTS.map((a) => {
+    const li = document.createElement('li');
+    const done = actDone(a);
+    const next = a.targets.find((tg) => !tg.done);
+    const dist = next ? Math.round(Math.hypot(car.x - next.x, car.z - next.z)) : 0;
+    li.className = done ? 'done' : a.hold > 0 ? 'active' : '';
+    const label = a.id === 'samples' ? `${a.name} (${a.targets.filter((x) => x.done).length}/3)` : a.name;
+    const status = done ? 'Done' : a.hold > 0 ? `${Math.round(a.hold / a.need * 100)}% · hold still` : `${dist} m`;
+    li.innerHTML = '<i></i><span></span><b></b>';
+    li.querySelector('i').style.background = a.id === 'samples' ? '#F97316' : a.id === 'ice' ? '#44e2ff' : '#8e9bff';
+    li.querySelector('span').textContent = label;
+    li.querySelector('b').textContent = status;
+    return li;
+  }));
+}
+
+function buildFlag() {
+  const g = new THREE.Group();
+  g.position.set(FLAG.x, heightAt(FLAG.x, FLAG.z), FLAG.z);
+  const metal = new THREE.MeshStandardMaterial({ color: 0xe5e7eb, metalness: .8, roughness: .3 });
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(.035, .035, 2.6, 10), metal);
+  pole.position.y = 1.3;
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, 1.3, 8), metal); // top rod, like the Apollo flags (no wind on the Moon)
+  rod.rotation.z = Math.PI / 2; rod.position.set(.65, 2.55, 0);
+  const c = document.createElement('canvas'); c.width = 320; c.height = 200;
+  const x = c.getContext('2d');
+  x.fillStyle = '#0B1320'; x.fillRect(0, 0, 320, 200);
+  x.fillStyle = '#F97316'; x.fillRect(0, 0, 320, 34); x.fillRect(0, 166, 320, 34);
+  x.fillStyle = '#D1D5DB'; x.font = 'bold 34px Inter, sans-serif'; x.textAlign = 'center'; x.fillText('PAYLOAD PETS', 160, 100);
+  x.font = '20px Inter, sans-serif'; x.fillStyle = '#94A3B8'; x.fillText((site && site.name || 'Moon').slice(0, 26), 160, 136);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const cloth = new THREE.Mesh(new THREE.PlaneGeometry(1.3, .82, 12, 4), new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: .8 }));
+  const cp = cloth.geometry.attributes.position; // a gentle permanent ripple, as the Apollo flags had
+  for (let i = 0; i < cp.count; i++) cp.setZ(i, Math.sin(cp.getX(i) * 7) * .04);
+  cloth.geometry.computeVertexNormals();
+  cloth.position.set(.65, 2.13, 0);
+  [pole, rod, cloth].forEach((m) => { m.castShadow = true; g.add(m); });
+  scene.add(g);
+}
+
+function drawMinimap() {
+  const c = $('#minimap'), g = c.getContext('2d'), W = c.width, H = c.height, R = 140; // metres shown from centre to edge
+  const k = (W / 2) / R;
+  g.clearRect(0, 0, W, H);
+  g.save();
+  g.beginPath(); g.arc(W / 2, H / 2, W / 2 - 1, 0, Math.PI * 2); g.clip();
+  g.fillStyle = '#0B1320'; g.fillRect(0, 0, W, H);
+  g.translate(W / 2, H / 2);
+  g.rotate(car.heading - Math.PI / 2); // heading-up map
+  const P = (wx, wz) => [(wx - car.x) * k, (wz - car.z) * k];
+  g.strokeStyle = 'rgba(100,116,139,.6)'; g.lineWidth = 1;
+  for (const cr of CRATERS) { const [x, y] = P(cr.x, cr.z); if (Math.abs(x) < W && Math.abs(y) < H) { g.beginPath(); g.arc(x, y, cr.r * k, 0, Math.PI * 2); g.stroke(); } }
+  g.fillStyle = 'rgba(209,213,219,.75)';
+  for (const rk of ROCKS) { const [x, y] = P(rk.x, rk.z); if (Math.abs(x) < W && Math.abs(y) < H) { g.beginPath(); g.arc(x, y, Math.max(1.2, rk.r * k), 0, Math.PI * 2); g.fill(); } }
+  g.strokeStyle = 'rgba(249,115,22,.6)'; { const [x, y] = P(0, 0); g.beginPath(); g.arc(x, y, (WORLD - 48) * k, 0, Math.PI * 2); g.stroke(); }
+  for (const a of ACTS) for (const tg of a.targets) {
+    const [x, y] = P(tg.x, tg.z);
+    g.fillStyle = tg.done ? '#45d48a' : a.id === 'samples' ? '#F97316' : a.id === 'ice' ? '#44e2ff' : '#8e9bff';
+    g.beginPath(); g.arc(x, y, 4.5, 0, Math.PI * 2); g.fill();
+  }
+  { const [x, y] = P(FLAG.x, FLAG.z); g.fillStyle = '#ffffff'; g.fillRect(x - .8, y - 9, 1.6, 10); g.fillStyle = '#F97316'; g.fillRect(x + .8, y - 9, 7, 5); }
+  g.restore();
+  g.fillStyle = '#F97316'; g.beginPath(); g.moveTo(W / 2, H / 2 - 8); g.lineTo(W / 2 - 5.5, H / 2 + 6); g.lineTo(W / 2 + 5.5, H / 2 + 6); g.closePath(); g.fill();
+  g.strokeStyle = '#0B1320'; g.lineWidth = 1.5; g.stroke();
+}
+
 // ---------------------------------------------------------------- story
 async function pollStory() {
   if (polling) return;
@@ -425,7 +583,7 @@ function finish() {
   const code = (x) => String(x).toUpperCase().replace(/[^A-Z0-9]+/g, '<');
   $('#pp-no').textContent = `No. ${code(site.id)}-${String(rv.sent).padStart(2, '0')}${String(found.length).padStart(2, '0')}`.replace(/</g, '-');
   $('#pp-photos').replaceChildren(...chosen.map((p) => { const d = document.createElement('div'); d.className = 'pp-photo'; d.style.setProperty('--c', PET_COLORS[p.id] || '#F97316'); d.innerHTML = '<i class="pet-dot"></i><span></span>'; d.querySelector('span').textContent = p.name; return d; }));
-  const fields = [['Crew', names], ['Landing site', site.name], ['Days on the Moon', '14 Earth days + first night'], ['Highest Sun', `${rv.maxSun.toFixed(0)}° above the horizon`], ['Driven', `${(rv.odo / 1000).toFixed(2)} km`], ['Data sent home', String(rv.sent)], ['Rover hull', `${Math.round(rv.hull)}% (${rv.hits} boulder hit${rv.hits === 1 ? '' : 's'})`], ['Stories found', String(found.length)], ['Power / warmth at night', `${Math.round(power)}% / ${Math.round(warmth)}%`]];
+  const fields = [['Crew', names], ['Landing site', site.name], ['Days on the Moon', '14 Earth days + first night'], ['Highest Sun', `${rv.maxSun.toFixed(0)}° above the horizon`], ['Driven', `${(rv.odo / 1000).toFixed(2)} km`], ['Data sent home', String(rv.sent)], ['Rover hull', `${Math.round(rv.hull)}% (${rv.hits} boulder hit${rv.hits === 1 ? '' : 's'})`], ['Activities', `${ACTS.filter(actDone).length} of ${ACTS.length}: ${ACTS.filter(actDone).map((a) => a.id === 'samples' ? 'samples' : a.id === 'ice' ? 'ice scan' : 'nav beacon').join(', ') || 'none yet'}`], ['Stories found', String(found.length)], ['Power / warmth at night', `${Math.round(power)}% / ${Math.round(warmth)}%`]];
   $('#pp-fields').replaceChildren(...fields.flatMap(([k, v]) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; return [dt, dd]; }));
   $('#pp-stamp').textContent = rating;
   $('#pp-mrz').textContent = `P<MOON<${code(names)}<<${code(site.name)}`.padEnd(44, '<').slice(0, 44);
@@ -436,12 +594,13 @@ function finish() {
 function startDay() {
   phase = 'day'; phaseT = 0; dayP = 0; power = 80; warmth = 70;
   rv.odo = 0; rv.sent = 0; rv.maxSun = 0; rv.hull = 100; rv.hits = 0;
+  resetActivities();
   seen.clear(); found.length = 0; toastQueue.length = 0;
   $('#log').replaceChildren();
   story.forEach((s, i) => s.setContext(site.id, chosen[i].id));
   $('#end').classList.remove('is-visible');
   log(`${chosen.map((c) => c.name).join(' and ')} landed at ${site.name}.`, 'Touchdown');
-  banner('Touchdown', `${site.name} · W A S D to drive · drag to look · C to switch view`, 4);
+  banner('Touchdown', `${site.name} · follow the glowing markers on your minimap`, 4);
 }
 
 // ---------------------------------------------------------------- loop
@@ -570,6 +729,10 @@ function update(dt) {
   }
 
   if (shake > 0) { camera.position.x += (Math.random() - .5) * shake * .35; camera.position.y += (Math.random() - .5) * shake * .35; shake = Math.max(0, shake - dt * 1.8); }
+
+  updateActivities(dt);
+  mapT += dt;
+  if (mapT > .15) { mapT = 0; drawMinimap(); renderActivities(); }
 
   // story flow
   if (phase === 'day') {
@@ -705,6 +868,8 @@ async function boot() {
   buildTerrain();
   buildRover();
   buildDust();
+  buildFlag();
+  buildActivities();
   await addPets();
   renderCrew();
   renderMeters();
