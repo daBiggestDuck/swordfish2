@@ -358,8 +358,8 @@ function renderCrew() {
 function sendData() {
   if (phase !== 'day' && phase !== 'night') return;
   if (!earthUp) { banner('No signal', 'Earth is below the horizon here', 1.8); return; }
-  if (power < 12) { banner('Low power', 'Charge up before sending data', 1.8); return; }
-  power -= 8;
+  if (power < 25) { banner('Low power', 'You need 25% power to send data', 1.8); return; }
+  power -= 14;
   rv.sent++;
   lastSend = t;
   petDo('hop', 1.2, `${who('ln-1', 'retro')} beams the data home`);
@@ -411,23 +411,23 @@ function markDone(m) {
 
 function buildActivities() {
   // 1. three regolith samples near the landing site
-  const samples = [[46, .6], [72, 2.4], [98, 4.3]].map(([d, a]) => ({ x: Math.cos(a) * d, z: Math.sin(a) * d }));
-  ACTS.push({ id: 'samples', name: 'Collect 3 regolith samples', radius: 3.5,
+  const samples = [[70, .6], [118, 1.9], [165, 3.1], [210, 4.3], [255, 5.5]].map(([d, a]) => ({ x: Math.cos(a) * d, z: Math.sin(a) * d }));
+  ACTS.push({ id: 'samples', name: 'Collect 5 regolith samples', radius: 3.5,
     targets: samples.map((p) => ({ ...p, done: false, m: marker(p.x, p.z, 0xF97316, 3.5) })),
-    story: { title: 'Samples collected!', text: "Your pets bagged 3 regolith samples. Blue Ghost 1 carried NASA's Lunar PlanetVac to test a new way of picking up Moon soil.", sourceUrl: NASA_BG1 } });
+    story: { title: 'Samples collected!', text: "Your pets bagged 5 regolith samples. Blue Ghost 1 carried NASA's Lunar PlanetVac to test a new way of picking up Moon soil.", sourceUrl: NASA_BG1 } });
   // 2. ice scan in the nearest large crater (cold and dark inside)
-  const crater = CRATERS.filter((c) => c.r > 7 && Math.hypot(c.x, c.z) > 60 && Math.hypot(c.x, c.z) < WORLD - 120)
+  const crater = CRATERS.filter((c) => c.r > 7 && Math.hypot(c.x, c.z) > 140 && Math.hypot(c.x, c.z) < WORLD - 120)
     .sort((a, b) => Math.hypot(a.x, a.z) - Math.hypot(b.x, b.z))[0] || { x: 120, z: -80, r: 10 };
-  ACTS.push({ id: 'ice', name: 'Scan for water ice in a crater', radius: Math.min(9, crater.r * .55), hold: 0, need: 6,
+  ACTS.push({ id: 'ice', name: 'Scan for water ice in a crater', radius: Math.min(9, crater.r * .55), hold: 0, need: 10,
     targets: [{ x: crater.x, z: crater.z, done: false, m: marker(crater.x, crater.z, 0x44e2ff, Math.min(9, crater.r * .55)) }],
     story: { title: 'Ice scan complete!', text: "You scanned the crater floor for ice. NASA's PRIME-1 drill hunted for ice near the south pole, because ice could one day give astronauts water.", sourceUrl: NASA_PRIME1 } });
   // 3. navigation beacon on the highest nearby hilltop (needs Earth in view)
   let best = { x: 150, z: 150, h: -1e9 };
-  for (let a = 0; a < Math.PI * 2; a += .15) for (let d = 90; d < 280; d += 15) {
+  for (let a = 0; a < Math.PI * 2; a += .15) for (let d = 220; d < 420; d += 15) {
     const x = Math.cos(a) * d, z = Math.sin(a) * d, h = heightAt(x, z);
     if (h > best.h) best = { x, z, h };
   }
-  ACTS.push({ id: 'beacon', name: 'Plant a nav beacon on the hilltop', radius: 5, hold: 0, need: 4, needsEarth: true,
+  ACTS.push({ id: 'beacon', name: 'Plant a nav beacon on the hilltop', radius: 5, hold: 0, need: 7, needsEarth: true,
     targets: [{ x: best.x, z: best.z, done: false, m: marker(best.x, best.z, 0x8e9bff, 5) }],
     story: { title: 'Beacon online!', text: 'Your beacon now helps future explorers find their way. NASA tested the same idea with LN-1, a navigation beacon on IM-1.', sourceUrl: NASA_LN1 } });
   // 4. back to the flag before night
@@ -455,7 +455,7 @@ function setupSteps() {
   ice.needsHeater = true;
   ice.extra = [{ label: 'Drive out of the crater and send the results', hint: 'Leave the crater, then press F with Earth in view.', test: (a) => lastSend > a.stepAt && Math.hypot(car.x - ice.targets[0].x, car.z - ice.targets[0].z) > ice.radius }];
   const b = by('beacon');
-  b.needsPower = 50;
+  b.needsPower = 70;
   b.extra = [{ label: 'Test the beacon: send a ping home', hint: 'Press F to ping Earth through your new beacon.', test: (a) => lastSend > a.stepAt }];
   by('home').extra = [{ label: 'Sleep mode: stow the solar panel and turn the heater on', hint: 'Panel off (P) and heater on (H). Sleep mode halves the power you use at night.', test: () => !care.tracking && care.heater }];
   for (const a of ACTS) { a.step = 0; a.stepAt = 0; }
@@ -531,7 +531,7 @@ function updateActivities(dt) {
     if (tg.done) continue;
     const inside = Math.hypot(car.x - tg.x, car.z - tg.z) < a.radius;
     if (a.id === 'samples') {
-      if (inside) { tg.done = true; markDone(tg.m); petDo('work', 1.4, `${who('lister', 'eds')} drills sample ${a.targets.filter((x) => x.done).length} of 3`); }
+      if (inside) { tg.done = true; markDone(tg.m); petDo('work', 1.4, `${who('lister', 'eds')} drills sample ${a.targets.filter((x) => x.done).length} of ${a.targets.length}`); }
     } else if (inside && still && (!a.needsEarth || earthUp) && (!a.needsHeater || care.heater) && (!a.needsPower || power >= a.needsPower)) {
       a.hold += dt;
       if (petAct.until < t + .2) petDo('work', .4); // pets busy while scanning or deploying
@@ -573,9 +573,9 @@ function renderObjective() {
   const next = a.targets.find((tg) => !tg.done);
   const dist = next ? Math.round(Math.hypot(car.x - next.x, car.z - next.z)) : 0;
   const got = a.targets.filter((x) => x.done).length;
-  const pct = a.id === 'samples' ? got / 3 : a.hold / a.need;
+  const pct = a.id === 'samples' ? got / a.targets.length : a.hold / a.need;
   $('#obj-kicker').textContent = `Chapter ${c.n} · ${c.title}`;
-  $('#obj-title').textContent = a.id === 'samples' ? `${a.name} (${got}/3)` : a.name;
+  $('#obj-title').textContent = a.id === 'samples' ? `${a.name} (${got}/${a.targets.length})` : a.name;
   $('#obj-status').textContent = a.hold > 0 ? `${Math.round(pct * 100)}%` : `${dist} m`;
   $('#obj-bar').style.width = `${Math.min(100, pct * 100)}%`;
   const near = next && dist < a.radius;
@@ -694,7 +694,7 @@ function finish() {
   $('#pp-no').textContent = `No. ${code(site.id)}-${String(rv.sent).padStart(2, '0')}${String(found.length).padStart(2, '0')}`.replace(/</g, '-');
   $('#pp-photos').replaceChildren(...chosen.map((p) => { const d = document.createElement('div'); d.className = 'pp-photo'; d.style.setProperty('--c', PET_COLORS[p.id] || '#F97316'); d.innerHTML = '<i class="pet-dot"></i><span></span>'; d.querySelector('span').textContent = p.name; return d; }));
   const fields = [['Crew', names], ['Landing site', site.name], ['Days on the Moon', '14 days of sunlight + 14 nights'], ['Night survival', survived ? `Woke up at dawn with ${Math.round(power)}% power` : 'Did not wake up at dawn'], ['Highest Sun', `${rv.maxSun.toFixed(0)}° above the horizon`], ['Driven', `${(rv.odo / 1000).toFixed(2)} km`], ['Data sent home', String(rv.sent)], ['Rover hull', `${Math.round(rv.hull)}% (${rv.hits} boulder hit${rv.hits === 1 ? '' : 's'})`], ['Activities', `${ACTS.filter(actDone).length} of ${ACTS.length}: ${ACTS.filter(actDone).map((a) => a.id === 'samples' ? 'samples' : a.id === 'ice' ? 'ice scan' : a.id === 'beacon' ? 'nav beacon' : 'back at base').join(', ') || 'none yet'}`], ['Stories found', String(found.length)], ['Power / warmth at night', `${Math.round(power)}% / ${Math.round(warmth)}%`]];
-  $('#pp-fields').replaceChildren(...fields.flatMap(([k, v]) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; return [dt, dd]; }));
+  $('#pp-fields').replaceChildren(...fields.flatMap(([k, v]) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; dd.dataset.k = k; return [dt, dd]; }));
   $('#pp-stamp').textContent = rating;
   $('#pp-mrz').textContent = `P<MOON<${code(names)}<<${code(site.name)}`.padEnd(44, '<').slice(0, 44);
   $('#end').classList.add('is-visible');
@@ -743,7 +743,7 @@ function update(dt) {
   const live = phase === 'day' || phase === 'night';
   const fwd = live ? (keys.has('up') ? 1 : 0) - (keys.has('down') ? 1 : 0) : 0;
   const steer = live ? (keys.has('left') ? 1 : 0) - (keys.has('right') ? 1 : 0) : 0;
-  const maxSpeed = rv.hull <= 0 ? 0 : power > 2 ? 9 * (.5 + rv.hull / 200) : 2;
+  const maxSpeed = rv.hull <= 0 ? 0 : power > 2 ? 7 * (.5 + rv.hull / 200) : 2;
   car.speed += fwd * 10 * dt;
   car.speed *= Math.pow(fwd ? .6 : .2, dt);
   car.speed = Math.max(-4, Math.min(maxSpeed, car.speed));
@@ -765,7 +765,7 @@ function update(dt) {
       const impact = Math.abs(car.speed);
       car.x = rk.x + dx / d * min; car.z = rk.z + dz / d * min; // stopped by the rock
       if (impact > 1.2) {
-        const dmg = Math.min(25, impact * 2.4);
+        const dmg = Math.min(30, impact * 3.2);
         rv.hull = Math.max(0, rv.hull - dmg); rv.hits++;
         shake = Math.min(1, .25 + impact * .08);
         banner('Collision!', `Hit a boulder: hull -${dmg.toFixed(0)}%`, 1.4);
@@ -1040,6 +1040,8 @@ async function boot() {
     }
   }
   requestAnimationFrame(frame);
+  // ?preview=passport jumps straight to the end screen (for demos and screenshots)
+  if (new URLSearchParams(location.search).get('preview') === 'passport') { survived = true; ACTS.slice(0, 2).forEach((x) => { x.targets.forEach((tg) => { tg.done = true; }); x.step = 9; }); setTimeout(finish, 1500); }
 }
 boot().catch((e) => {
   console.error(e);
