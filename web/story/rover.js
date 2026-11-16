@@ -427,6 +427,10 @@ function buildActivities() {
   ACTS.push({ id: 'beacon', name: 'Plant a nav beacon on the hilltop', radius: 5, hold: 0, need: 4, needsEarth: true,
     targets: [{ x: best.x, z: best.z, done: false, m: marker(best.x, best.z, 0x8e9bff, 5) }],
     story: { title: 'Beacon online!', text: 'Your beacon now helps future explorers find their way. NASA tested the same idea with LN-1, a navigation beacon on IM-1.', sourceUrl: NASA_LN1 } });
+  // 4. back to the flag before night
+  ACTS.push({ id: 'home', name: 'Return to your landing flag', radius: 9, hold: 0, need: 2,
+    targets: [{ x: FLAG.x, z: FLAG.z, done: false, m: marker(FLAG.x, FLAG.z, 0xffffff, 9) }],
+    story: { title: 'Safe at base', text: 'Your pets are parked by the flag, powered down and ready for the two-week lunar night.', sourceUrl: NASA_BG1 } });
 }
 
 function resetActivities() {
@@ -434,57 +438,95 @@ function resetActivities() {
     a.hold = 0;
     for (const tg of a.targets) {
       tg.done = false;
-      const col = a.id === 'samples' ? 0xF97316 : a.id === 'ice' ? 0x44e2ff : 0x8e9bff;
+      const col = actColor(a);
       tg.m.beam.material.color.set(col); tg.m.beam.material.opacity = .32; tg.m.ring.material.color.set(col);
     }
   }
 }
 const actDone = (a) => a.targets.every((tg) => tg.done);
 
+// The story: one objective at a time, each its own chapter.
+const CHAPTERS = {
+  samples: { n: 1, title: 'Touchdown', text: 'Your pets made it to the Moon. First job: collect soil samples around the landing site.', hint: 'Drive onto each glowing orange beam. Follow the dot on your minimap.' },
+  ice: { n: 2, title: 'Into the Dark', text: 'Scientists want to know if ice hides in the cold shadows of craters.', hint: 'Drive into the crater and hold still while you scan. It is cold in there: watch your warmth.' },
+  beacon: { n: 3, title: 'Phone Home', text: 'Climb the highest hill and plant a beacon where Earth can see it.', hint: 'Park on the hilltop and hold still. Earth must be above the horizon.' },
+  home: { n: 4, title: 'Race the Sunset', text: 'The Sun is going down. Get your pets back to the flag before the long night.', hint: 'Drive back to your flag and park.' },
+};
+function actColor(a) { return a.id === 'samples' ? 0xF97316 : a.id === 'ice' ? 0x44e2ff : a.id === 'beacon' ? 0x8e9bff : 0xffffff; }
+const current = () => ACTS.find((a) => !actDone(a)) || null;
+let shownChapter = null, cineUntil = 0;
+
+function cutscene(kicker, title, text, secs = 3.6) {
+  $('#cine-kicker').textContent = kicker;
+  $('#cine-title').textContent = title;
+  $('#cine-text').textContent = text;
+  $('#cine').classList.add('is-on');
+  document.body.classList.add('cinematic');
+  cineUntil = t + secs;
+}
+function endCutscene() { $('#cine').classList.remove('is-on'); document.body.classList.remove('cinematic'); }
+
+function startChapter(a) {
+  shownChapter = a ? a.id : 'done';
+  if (!a) { cutscene('Mission complete', 'All objectives done', 'Enjoy the view until sunset.'); return; }
+  const c = CHAPTERS[a.id];
+  setChapter(`Chapter ${c.n} · ${c.title}`);
+  cutscene(`Chapter ${c.n} of 4`, c.title, c.text);
+  const card = document.querySelector('.hud-obj');
+  card.classList.add('is-new');
+  setTimeout(() => card.classList.remove('is-new'), 600);
+}
+
 function completeActivity(a) {
-  toastQueue.push(a.story);
-  log(a.name.replace(/^./, (c) => c.toLowerCase()) + ': done!', `Day ${Math.max(1, Math.ceil(dayP * 14))}`);
-  banner('Activity complete', a.name, 2.2);
+  toastQueue.push({ title: a.story.title, text: a.story.text, sourceUrl: a.story.sourceUrl, short: true });
+  log(a.name + ': done', `Day ${Math.max(1, Math.ceil(dayP * 14))}`);
   shake = .15;
 }
 
 function updateActivities(dt) {
   if (phase !== 'day' && phase !== 'night') return;
+  const a = current();
+  // only the current objective's marker glows; finished ones fade, later ones stay hidden
+  for (const x of ACTS) for (const tg of x.targets) tg.m.group.visible = x === a ? !tg.done : false;
+  if ((a ? a.id : 'done') !== shownChapter && t > cineUntil + .5) startChapter(a);
+  if (!a) return;
   const still = Math.abs(car.speed) < .9;
-  for (const a of ACTS) {
-    if (actDone(a)) continue;
-    for (const tg of a.targets) {
-      if (tg.done) continue;
-      const inside = Math.hypot(car.x - tg.x, car.z - tg.z) < a.radius;
-      if (a.id === 'samples') {
-        if (inside) { tg.done = true; markDone(tg.m); log(`Sample ${a.targets.filter((x) => x.done).length} of 3 collected.`, 'Science'); if (actDone(a)) completeActivity(a); }
-      } else if (inside && still && (!a.needsEarth || earthUp)) {
-        a.hold += dt;
-        if (a.id === 'ice') warmth = Math.max(0, warmth - dt * 1.4); // cold in the crater shadow
-        if (a.hold >= a.need) { tg.done = true; markDone(tg.m); completeActivity(a); }
-      } else {
-        a.hold = Math.max(0, a.hold - dt * 2);
-        if (inside && a.needsEarth && !earthUp && !a.warned) { a.warned = true; banner('No Earth in view', 'The beacon needs a line of sight to Earth', 2); }
-      }
+  for (const tg of a.targets) {
+    if (tg.done) continue;
+    const inside = Math.hypot(car.x - tg.x, car.z - tg.z) < a.radius;
+    if (a.id === 'samples') {
+      if (inside) { tg.done = true; markDone(tg.m); banner(`Sample ${a.targets.filter((x) => x.done).length} of 3`, 'Bagged and stored', 1.2); if (actDone(a)) completeActivity(a); }
+    } else if (inside && still && (!a.needsEarth || earthUp)) {
+      a.hold += dt;
+      if (a.id === 'ice') warmth = Math.max(0, warmth - dt * 1.4); // cold in the crater shadow
+      if (a.hold >= a.need) { tg.done = true; markDone(tg.m); completeActivity(a); }
+    } else {
+      a.hold = Math.max(0, a.hold - dt * 2);
+      if (inside && a.needsEarth && !earthUp && !a.warned) { a.warned = true; banner('No Earth in view', 'The beacon needs a line of sight to Earth', 2); }
     }
   }
 }
 
-function renderActivities() {
-  $('#acts').replaceChildren(...ACTS.map((a) => {
-    const li = document.createElement('li');
-    const done = actDone(a);
-    const next = a.targets.find((tg) => !tg.done);
-    const dist = next ? Math.round(Math.hypot(car.x - next.x, car.z - next.z)) : 0;
-    li.className = done ? 'done' : a.hold > 0 ? 'active' : '';
-    const label = a.id === 'samples' ? `${a.name} (${a.targets.filter((x) => x.done).length}/3)` : a.name;
-    const status = done ? 'Done' : a.hold > 0 ? `${Math.round(a.hold / a.need * 100)}% · hold still` : `${dist} m`;
-    li.innerHTML = '<i></i><span></span><b></b>';
-    li.querySelector('i').style.background = a.id === 'samples' ? '#F97316' : a.id === 'ice' ? '#44e2ff' : '#8e9bff';
-    li.querySelector('span').textContent = label;
-    li.querySelector('b').textContent = status;
-    return li;
-  }));
+function renderObjective() {
+  const a = current();
+  if (!a) {
+    $('#obj-kicker').textContent = 'All objectives done';
+    $('#obj-title').textContent = 'Explore until sunset';
+    $('#obj-status').textContent = '';
+    $('#obj-bar').style.width = '100%';
+    $('#obj-hint').textContent = 'Your pets did great. Night falls at the end of Day 14.';
+    return;
+  }
+  const c = CHAPTERS[a.id];
+  const next = a.targets.find((tg) => !tg.done);
+  const dist = next ? Math.round(Math.hypot(car.x - next.x, car.z - next.z)) : 0;
+  const got = a.targets.filter((x) => x.done).length;
+  const pct = a.id === 'samples' ? got / 3 : a.hold / a.need;
+  $('#obj-kicker').textContent = `Chapter ${c.n} · ${c.title}`;
+  $('#obj-title').textContent = a.id === 'samples' ? `${a.name} (${got}/3)` : a.name;
+  $('#obj-status').textContent = a.hold > 0 ? `${Math.round(pct * 100)}%` : `${dist} m`;
+  $('#obj-bar').style.width = `${Math.min(100, pct * 100)}%`;
+  $('#obj-hint').textContent = a.hold > 0 ? 'Hold still…' : dayP > .8 && a.id !== 'home' ? 'The Sun is setting soon: hurry!' : c.hint;
 }
 
 function buildFlag() {
@@ -528,7 +570,8 @@ function drawMinimap() {
   g.strokeStyle = 'rgba(249,115,22,.6)'; { const [x, y] = P(0, 0); g.beginPath(); g.arc(x, y, (WORLD - 48) * k, 0, Math.PI * 2); g.stroke(); }
   for (const a of ACTS) for (const tg of a.targets) {
     const [x, y] = P(tg.x, tg.z);
-    g.fillStyle = tg.done ? '#45d48a' : a.id === 'samples' ? '#F97316' : a.id === 'ice' ? '#44e2ff' : '#8e9bff';
+    if (!tg.done && a !== current()) continue;
+    g.fillStyle = tg.done ? 'rgba(69,212,138,.7)' : '#' + actColor(a).toString(16).padStart(6, '0');
     g.beginPath(); g.arc(x, y, 4.5, 0, Math.PI * 2); g.fill();
   }
   { const [x, y] = P(FLAG.x, FLAG.z); g.fillStyle = '#ffffff'; g.fillRect(x - .8, y - 9, 1.6, 10); g.fillStyle = '#F97316'; g.fillRect(x + .8, y - 9, 7, 5); }
@@ -547,8 +590,7 @@ async function pollStory() {
       if (seen.has(m.id)) continue;
       seen.add(m.id);
       found.push({ ...m, day: Math.max(1, Math.ceil(dayP * 14)) });
-      toastQueue.push(m);
-      log(m.title, `Day ${Math.max(1, Math.ceil(dayP * 14))}`);
+
     }
   } catch (e) { /* try again next poll */ }
   polling = false;
@@ -583,7 +625,7 @@ function finish() {
   const code = (x) => String(x).toUpperCase().replace(/[^A-Z0-9]+/g, '<');
   $('#pp-no').textContent = `No. ${code(site.id)}-${String(rv.sent).padStart(2, '0')}${String(found.length).padStart(2, '0')}`.replace(/</g, '-');
   $('#pp-photos').replaceChildren(...chosen.map((p) => { const d = document.createElement('div'); d.className = 'pp-photo'; d.style.setProperty('--c', PET_COLORS[p.id] || '#F97316'); d.innerHTML = '<i class="pet-dot"></i><span></span>'; d.querySelector('span').textContent = p.name; return d; }));
-  const fields = [['Crew', names], ['Landing site', site.name], ['Days on the Moon', '14 Earth days + first night'], ['Highest Sun', `${rv.maxSun.toFixed(0)}° above the horizon`], ['Driven', `${(rv.odo / 1000).toFixed(2)} km`], ['Data sent home', String(rv.sent)], ['Rover hull', `${Math.round(rv.hull)}% (${rv.hits} boulder hit${rv.hits === 1 ? '' : 's'})`], ['Activities', `${ACTS.filter(actDone).length} of ${ACTS.length}: ${ACTS.filter(actDone).map((a) => a.id === 'samples' ? 'samples' : a.id === 'ice' ? 'ice scan' : 'nav beacon').join(', ') || 'none yet'}`], ['Stories found', String(found.length)], ['Power / warmth at night', `${Math.round(power)}% / ${Math.round(warmth)}%`]];
+  const fields = [['Crew', names], ['Landing site', site.name], ['Days on the Moon', '14 Earth days + first night'], ['Highest Sun', `${rv.maxSun.toFixed(0)}° above the horizon`], ['Driven', `${(rv.odo / 1000).toFixed(2)} km`], ['Data sent home', String(rv.sent)], ['Rover hull', `${Math.round(rv.hull)}% (${rv.hits} boulder hit${rv.hits === 1 ? '' : 's'})`], ['Activities', `${ACTS.filter(actDone).length} of ${ACTS.length}: ${ACTS.filter(actDone).map((a) => a.id === 'samples' ? 'samples' : a.id === 'ice' ? 'ice scan' : a.id === 'beacon' ? 'nav beacon' : 'back at base').join(', ') || 'none yet'}`], ['Stories found', String(found.length)], ['Power / warmth at night', `${Math.round(power)}% / ${Math.round(warmth)}%`]];
   $('#pp-fields').replaceChildren(...fields.flatMap(([k, v]) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; return [dt, dd]; }));
   $('#pp-stamp').textContent = rating;
   $('#pp-mrz').textContent = `P<MOON<${code(names)}<<${code(site.name)}`.padEnd(44, '<').slice(0, 44);
@@ -600,7 +642,7 @@ function startDay() {
   story.forEach((s, i) => s.setContext(site.id, chosen[i].id));
   $('#end').classList.remove('is-visible');
   log(`${chosen.map((c) => c.name).join(' and ')} landed at ${site.name}.`, 'Touchdown');
-  banner('Touchdown', `${site.name} · follow the glowing markers on your minimap`, 4);
+  shownChapter = null;
 }
 
 // ---------------------------------------------------------------- loop
@@ -732,13 +774,13 @@ function update(dt) {
 
   updateActivities(dt);
   mapT += dt;
-  if (mapT > .15) { mapT = 0; drawMinimap(); renderActivities(); }
+  if (mapT > .15) { mapT = 0; drawMinimap(); renderObjective(); }
+  if (cineUntil && t > cineUntil) { cineUntil = 0; endCutscene(); }
 
   // story flow
   if (phase === 'day') {
     $('#day').textContent = `Day ${Math.min(14, Math.floor(dayP * 14) + 1)}`;
     $('#track').style.width = `${dayP * 100}%`;
-    setChapter(dayP < .25 ? 'Chapter 1 · Sunrise: landing day' : dayP < .7 ? 'Chapter 2 · High noon: science time' : 'Chapter 3 · Sunset: race the cold');
     if (t - lastPoll > .6) { lastPoll = t; pollStory(); }
     if (dayP >= 1) { phase = 'night'; phaseT = 0; $('#day').textContent = 'Night'; setChapter('Chapter 4 · The long night begins'); log('The Sun has set over the Moon.', 'Day 14'); banner('Night falls', 'Two weeks of darkness begin'); pollStory(); }
   } else if (phase === 'night' && phaseT > NIGHT_SECS && !toastQueue.length && t > toastUntil) {

@@ -12,58 +12,65 @@
 <body class="is-loading">
   <canvas id="scene" aria-label="3D Moon surface. Your rover carries your two pets."></canvas>
 
-  <!-- top left: day + chapter -->
-  <header class="hud hud-day glass">
-    <div class="eyebrow">Lunar day · <span id="site">Mare Crisium</span></div>
-    <div class="day"><span id="day">Day 1</span><small> / 14</small></div>
+  <!-- top centre: day clock -->
+  <header class="hud hud-top">
+    <div class="clock">
+      <span class="clock-site" id="site">Mare Crisium</span>
+      <span class="clock-day" id="day">Day 1</span><span class="clock-of">/ 14</span>
+    </div>
     <div class="track"><i id="track"></i></div>
-    <div id="chapter" class="chapter">Chapter 1 · Sunrise</div>
-    <div id="sky-read" class="sky-read"></div>
-    <div id="rover-read" class="sky-read"></div>
+    <div id="chapter" class="chapter">Chapter 1 · Touchdown</div>
   </header>
 
-  <!-- minimap + activities -->
-  <aside class="hud hud-map glass" aria-label="Minimap and activities">
-    <canvas id="minimap" width="170" height="170" aria-label="Minimap: you are the orange arrow; the flag is your landing site; coloured dots are activities; grey dots are boulders"></canvas>
-    <div class="eyebrow">Activities</div>
-    <ol id="acts" class="acts"></ol>
+  <!-- top right: the one current objective -->
+  <aside class="hud hud-obj" aria-live="polite">
+    <div class="obj-kicker" id="obj-kicker">Objective</div>
+    <div class="obj-title" id="obj-title">Collect 3 regolith samples</div>
+    <div class="obj-row"><div class="obj-bar"><i id="obj-bar"></i></div><b id="obj-status">46 m</b></div>
+    <div class="obj-hint" id="obj-hint">Follow the glowing beam on your minimap.</div>
   </aside>
 
-  <!-- top right: mission log -->
-  <aside class="hud hud-log glass" aria-live="polite">
-    <div class="eyebrow">Mission log</div>
-    <ol id="log" class="log"></ol>
+  <!-- bottom left: radar + vitals -->
+  <aside class="hud hud-radar" aria-label="Minimap and rover status">
+    <canvas id="minimap" width="230" height="230" aria-label="Minimap: you are the orange arrow; the flag is your landing site; the glowing dot is your objective"></canvas>
+    <div class="vitals">
+      <div class="vital"><span>Power</span><div class="bar"><i id="m-power"></i></div><b id="v-power">80</b></div>
+      <div class="vital"><span>Warmth</span><div class="bar warm"><i id="m-warmth"></i></div><b id="v-warmth">70</b></div>
+      <div class="vital"><span>Hull</span><div class="bar hull"><i id="m-hull"></i></div><b id="v-hull">100</b></div>
+    </div>
+    <div id="sky-read" class="readout"></div>
+    <div id="rover-read" class="readout"></div>
   </aside>
 
-  <!-- story toast -->
-  <div id="toast" class="toast glass" role="status">
+  <!-- bottom right: crew + actions -->
+  <aside class="hud hud-actions">
+    <div id="crew" class="crew"></div>
+    <div class="opts">
+      <button id="opt-track" class="opt" type="button" aria-pressed="false"><kbd>P</kbd><span>Solar panel: stowed</span><i></i></button>
+      <button id="opt-heat" class="opt" type="button" aria-pressed="false"><kbd>H</kbd><span>Heater: off</span><i></i></button>
+      <button id="opt-send" class="opt send" type="button"><kbd>F</kbd><span>Send data home</span><b class="sig"></b></button>
+    </div>
+    <div class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive · drag to look · <kbd>C</kbd> camera</div>
+  </aside>
+
+  <!-- story subtitles (real NASA missions) -->
+  <div id="toast" class="toast subtitle" role="status">
     <div class="toast-tag">Real mission</div>
     <b id="toast-title"></b>
     <p id="toast-text"></p>
     <a id="toast-src" target="_blank" rel="noopener">NASA source ↗</a>
   </div>
+  <ol id="log" class="log" hidden></ol>
 
-  <!-- bottom: crew + meters + controls -->
-  <footer class="hud hud-bottom">
-    <div id="crew" class="crew glass"></div>
-    <div class="meters glass">
-      <div class="meter"><span>Power</span><div class="bar"><i id="m-power"></i></div><b id="v-power">80</b></div>
-      <div class="meter"><span>Warmth</span><div class="bar warm"><i id="m-warmth"></i></div><b id="v-warmth">70</b></div>
-      <div class="meter"><span>Hull</span><div class="bar hull"><i id="m-hull"></i></div><b id="v-hull">100</b></div>
-      <div class="opts">
-        <button id="opt-track" class="opt" type="button" aria-pressed="false"><i></i><span>Solar panel: stowed</span><kbd>P</kbd></button>
-        <button id="opt-heat" class="opt" type="button" aria-pressed="false"><i></i><span>Heater: off</span><kbd>H</kbd></button>
-        <button id="opt-send" class="opt send" type="button"><b class="sig"></b><span>Send data home</span><kbd>F</kbd></button>
-      </div>
-    </div>
-    <div class="keys glass"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive · <kbd>F</kbd> send data · <kbd>C</kbd> view</div>
-  </footer>
   <div class="touch">
     <button data-k="left" aria-label="Steer left">◀</button>
     <button data-k="up" aria-label="Drive forward">▲</button>
     <button data-k="down" aria-label="Reverse">▼</button>
     <button data-k="right" aria-label="Steer right">▶</button>
   </div>
+
+  <!-- chapter cutscene: letterbox bars + title card -->
+  <div id="cine" class="cine" aria-live="polite"><i class="bar-top"></i><i class="bar-bot"></i><div class="cine-card"><span id="cine-kicker"></span><b id="cine-title"></b><p id="cine-text"></p></div></div>
 
   <!-- intro banner -->
   <div id="banner" class="banner"><b id="banner-title">Touchdown</b><span id="banner-text"></span></div>

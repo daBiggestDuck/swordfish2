@@ -246,3 +246,79 @@ html, body { background: #0B1320; }
 .acts li.done span { text-decoration: line-through; }
 .acts li.done b { color: #45d48a; }
 @media (max-width: 900px) { .hud-map { top: auto; bottom: 170px; width: 170px; } .hud-map canvas { width: 120px; height: 120px; } }
+
+/* ================================================================
+   HUD v3: one layout, game style. Everything above for .hud-day,
+   .hud-map, .hud-log, .hud-bottom, .meters, .keys.glass is unused now.
+   ================================================================ */
+.hud { text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+
+/* top centre: day clock */
+.hud-top { left: 0; right: 0; top: 14px; margin: 0 auto; width: min(360px, 70vw); text-align: center; display: grid; gap: 6px; justify-items: center; }
+.clock { display: flex; align-items: baseline; gap: 8px; }
+.clock-site { font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.clock-day { font-family: "Space Grotesk", Inter, sans-serif; font-size: 1.9rem; font-weight: 700; letter-spacing: -.02em; color: #fff; }
+.clock-of { font-size: .9rem; color: #F97316; font-weight: 600; }
+.hud-top .track { width: 100%; height: 4px; background: rgba(255,255,255,.12); }
+.hud-top .chapter { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: #D1D5DB; margin: 0; }
+
+/* top right: objective card */
+.hud-obj { right: 18px; top: 18px; width: min(330px, 40vw); padding: 14px 16px 14px 18px; border-left: 3px solid #F97316; background: linear-gradient(90deg, rgba(11,19,32,.82), rgba(11,19,32,.55)); border-radius: 4px 12px 12px 4px; box-shadow: 0 12px 30px rgba(0,0,0,.4); transition: transform .5s var(--ease), opacity .4s; }
+.hud-obj.is-new { transform: translateX(16px); opacity: 0; }
+.obj-kicker { font-family: var(--mono); font-size: .62rem; letter-spacing: .16em; text-transform: uppercase; color: #F97316; }
+.obj-title { font-family: "Space Grotesk", Inter, sans-serif; font-size: 1.15rem; font-weight: 700; color: #fff; margin: 4px 0 8px; line-height: 1.2; }
+.obj-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+.obj-bar { height: 5px; border-radius: 99px; background: rgba(255,255,255,.12); overflow: hidden; }
+.obj-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #F97316, #fdba74); transition: width .25s linear; }
+.obj-row b { font-family: var(--mono); font-size: .75rem; color: #D1D5DB; font-weight: 600; }
+.obj-hint { margin-top: 8px; font-size: .8rem; color: #94A3B8; line-height: 1.4; }
+
+/* bottom left: radar + vitals */
+.hud-radar { left: 18px; bottom: 18px; width: 230px; display: grid; gap: 8px; }
+.hud-radar canvas { width: 230px; height: 230px; border-radius: 50%; box-shadow: 0 0 0 3px rgba(11,19,32,.9), 0 0 0 5px rgba(249,115,22,.55), 0 14px 30px rgba(0,0,0,.55); }
+.vitals { display: grid; gap: 5px; padding: 0 6px; }
+.vital { display: grid; grid-template-columns: 3.6rem 1fr 1.8rem; align-items: center; gap: 8px; font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; color: #D1D5DB; }
+.vital .bar { height: 6px; }
+.vital b { font-family: var(--mono); font-size: .68rem; text-align: right; color: #94A3B8; }
+.readout { padding: 0 6px; font-family: var(--mono); font-size: .64rem; color: #94A3B8; }
+
+/* bottom right: crew + actions */
+.hud-actions { right: 18px; bottom: 18px; width: 300px; display: grid; gap: 10px; justify-items: stretch; }
+.hud-actions .crew { display: flex; gap: 8px; justify-content: flex-end; padding: 0; background: none; border: 0; box-shadow: none; backdrop-filter: none; }
+.hud-actions .pet-chip { padding: 5px 10px 5px 5px; background: rgba(11,19,32,.7); }
+.hud-actions .pet-dot { width: 26px; height: 26px; }
+.hud-actions .pet-chip b { font-size: .8rem; }
+.hud-actions .pet-chip span { font-size: .66rem; }
+.hud-actions .opts { gap: 6px; margin: 0; }
+.hud-actions .opt { background: rgba(11,19,32,.72); border-color: rgba(100,116,139,.35); padding: 8px 10px; font-size: .8rem; backdrop-filter: blur(8px); }
+.hud-actions .opt kbd { order: -1; }
+.hud-actions .keys { text-align: right; font-size: .7rem; color: #94A3B8; padding: 0; background: none; border: 0; box-shadow: none; backdrop-filter: none; }
+
+/* story subtitles, bottom centre */
+.toast.subtitle { top: auto; bottom: 28px; left: 50%; width: min(620px, calc(100vw - 600px)); min-width: 300px; text-align: center; padding: 12px 18px; background: rgba(5,8,15,.78); border: 0; border-radius: 10px; box-shadow: none; transform: translate(-50%, 30px); }
+.toast.subtitle.is-visible { transform: translate(-50%, 0); }
+.toast.subtitle b { font-size: .95rem; color: #F97316; margin: 2px 0; }
+.toast.subtitle p { font-size: .88rem; color: #E5E7EB; margin: 0 0 4px; }
+.toast.subtitle .toast-tag { font-size: .58rem; color: #94A3B8; }
+
+/* chapter cutscene */
+.cine { position: fixed; inset: 0; z-index: 4; pointer-events: none; }
+.cine .bar-top, .cine .bar-bot { position: absolute; left: 0; right: 0; height: 12vh; background: #000; transition: transform .8s var(--ease); }
+.cine .bar-top { top: 0; transform: translateY(-100%); }
+.cine .bar-bot { bottom: 0; transform: translateY(100%); }
+.cine-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -40%); text-align: center; opacity: 0; transition: opacity .7s ease, transform .9s var(--ease); width: min(640px, 90vw); }
+.cine-card span { font-family: var(--mono); font-size: .72rem; letter-spacing: .3em; text-transform: uppercase; color: #F97316; }
+.cine-card b { display: block; margin: 8px 0; font-family: "Space Grotesk", Inter, sans-serif; font-size: clamp(2rem, 5vw, 3.4rem); font-weight: 700; color: #fff; letter-spacing: -.02em; text-shadow: 0 6px 30px rgba(0,0,0,.9); }
+.cine-card p { margin: 0; font-size: 1rem; color: #D1D5DB; text-shadow: 0 2px 10px #000; }
+.cine.is-on .bar-top, .cine.is-on .bar-bot { transform: none; }
+.cine.is-on .cine-card { opacity: 1; transform: translate(-50%, -50%); }
+body.cinematic .hud { opacity: 0; transition: opacity .5s; }
+
+@media (max-width: 900px) {
+  .hud-radar { width: 150px; } .hud-radar canvas { width: 150px; height: 150px; }
+  .hud-actions { width: 220px; }
+  .toast.subtitle { width: calc(100vw - 32px); bottom: 300px; }
+  .hud-obj { width: min(260px, 60vw); }
+}
+
+.toast.subtitle a { display: none; }
