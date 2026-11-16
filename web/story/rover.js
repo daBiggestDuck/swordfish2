@@ -5,8 +5,8 @@ import { createStoryClient } from './story-client.js';
 import { getThree, buildPetModel } from './pets-3d/pets3d.js';
 
 const $ = (s) => document.querySelector(s);
-const DAY_SECS = 240;         // 14 Earth days of sunlight (about 4 minutes, room for activities)
-const NIGHT_SECS = 8;         // the start of the lunar night, then the story screen
+const DAY_SECS = 354;         // lunar daylight lasts about 354 hours: 1 second = 1 hour
+const NIGHT_SECS = 177;       // the 14-day lunar night, time-lapsed at 2 hours per second
 const PET_COLORS = { lister: '#ffb84d', retro: '#62b0ff', eds: '#a9b6ff', 'ln-1': '#45d48a' };
 
 let THREE, renderer, scene, camera, sun, sunSprite, hemi, fill, rover, wheels = [], beacon, dust;
@@ -21,6 +21,7 @@ const keys = new Set();
 let edgeWarned = false, earthSprite = null, earthGlow = null, earthUp = true;
 const care = { tracking: false, heater: false };
 const rv = { odo: 0, sent: 0, maxSun: 0, hull: 100, hits: 0 };
+let lastSend = -1, sleepReady = false, survived = null, epi = -1;
 let ROCKS = [], shake = 0;
 const cam = { yaw: 0, pitch: 0.32, dist: 8.5, dragging: false, lx: 0, ly: 0, mode: 'fp', lookYaw: 0, lookPitch: -0.2 };
 const WORLD = 650; // half-size of the block world, in blocks
@@ -360,6 +361,7 @@ function sendData() {
   if (power < 12) { banner('Low power', 'Charge up before sending data', 1.8); return; }
   power -= 8;
   rv.sent++;
+  lastSend = t;
   log('Science data sent home to Earth.', `Day ${Math.max(1, Math.ceil(dayP * 14))}`);
   renderMeters();
 }
@@ -435,7 +437,7 @@ function buildActivities() {
 
 function resetActivities() {
   for (const a of ACTS) {
-    a.hold = 0;
+    a.hold = 0; a.step = 0; a.stepAt = 0; a.targetsAt = 0; a.completed = false; a.warned = false;
     for (const tg of a.targets) {
       tg.done = false;
       const col = actColor(a);
@@ -443,7 +445,20 @@ function resetActivities() {
     }
   }
 }
-const actDone = (a) => a.targets.every((tg) => tg.done);
+const targetsDone = (a) => a.targets.every((tg) => tg.done);
+const actDone = (a) => targetsDone(a) && (a.step || 0) >= (a.extra ? a.extra.length : 0);
+function setupSteps() {
+  const by = (id) => ACTS.find((a) => a.id === id);
+  by('samples').extra = [{ label: 'Send the sample data to Earth', hint: 'Press F while Earth is in view. Sending costs some power.', test: (a) => lastSend > a.stepAt }];
+  const ice = by('ice');
+  ice.needsHeater = true;
+  ice.extra = [{ label: 'Drive out of the crater and send the results', hint: 'Leave the crater, then press F with Earth in view.', test: (a) => lastSend > a.stepAt && Math.hypot(car.x - ice.targets[0].x, car.z - ice.targets[0].z) > ice.radius }];
+  const b = by('beacon');
+  b.needsPower = 50;
+  b.extra = [{ label: 'Test the beacon: send a ping home', hint: 'Press F to ping Earth through your new beacon.', test: (a) => lastSend > a.stepAt }];
+  by('home').extra = [{ label: 'Sleep mode: stow the solar panel and turn the heater on', hint: 'Panel off (P) and heater on (H). Sleep mode halves the power you use at night.', test: () => !care.tracking && care.heater }];
+  for (const a of ACTS) { a.step = 0; a.stepAt = 0; }
+}
 
 // The story: one objective at a time, each its own chapter.
 const CHAPTERS = {
@@ -495,15 +510,21 @@ function updateActivities(dt) {
     if (tg.done) continue;
     const inside = Math.hypot(car.x - tg.x, car.z - tg.z) < a.radius;
     if (a.id === 'samples') {
-      if (inside) { tg.done = true; markDone(tg.m); banner(`Sample ${a.targets.filter((x) => x.done).length} of 3`, 'Bagged and stored', 1.2); if (actDone(a)) completeActivity(a); }
-    } else if (inside && still && (!a.needsEarth || earthUp)) {
+      if (inside) { tg.done = true; markDone(tg.m); banner(`Sample ${a.targets.filter((x) => x.done).length} of 3`, 'Bagged and stored', 1.2); }
+    } else if (inside && still && (!a.needsEarth || earthUp) && (!a.needsHeater || care.heater) && (!a.needsPower || power >= a.needsPower)) {
       a.hold += dt;
       if (a.id === 'ice') warmth = Math.max(0, warmth - dt * 1.4); // cold in the crater shadow
-      if (a.hold >= a.need) { tg.done = true; markDone(tg.m); completeActivity(a); }
+      if (a.hold >= a.need) { tg.done = true; markDone(tg.m); }
     } else {
       a.hold = Math.max(0, a.hold - dt * 2);
       if (inside && a.needsEarth && !earthUp && !a.warned) { a.warned = true; banner('No Earth in view', 'The beacon needs a line of sight to Earth', 2); }
     }
+  }
+  if (targetsDone(a)) {
+    if (!a.targetsAt) { a.targetsAt = t; a.stepAt = t; if (a.extra && a.extra.length) banner('Next step', a.extra[0].label, 2.4); }
+    const st = a.extra && a.extra[a.step];
+    if (st && st.test(a)) { a.step++; a.stepAt = t; if (a.id === 'home') sleepReady = true; }
+    if (actDone(a) && !a.completed) { a.completed = true; completeActivity(a); }
   }
 }
 
@@ -518,6 +539,15 @@ function renderObjective() {
     return;
   }
   const c = CHAPTERS[a.id];
+  if (targetsDone(a) && a.extra && a.extra[a.step]) {
+    const st = a.extra[a.step];
+    $('#obj-kicker').textContent = `Chapter ${c.n} · ${c.title} · step 2 of 2`;
+    $('#obj-title').textContent = st.label;
+    $('#obj-status').textContent = '';
+    $('#obj-bar').style.width = '60%';
+    $('#obj-hint').textContent = st.hint;
+    return;
+  }
   const next = a.targets.find((tg) => !tg.done);
   const dist = next ? Math.round(Math.hypot(car.x - next.x, car.z - next.z)) : 0;
   const got = a.targets.filter((x) => x.done).length;
@@ -526,7 +556,10 @@ function renderObjective() {
   $('#obj-title').textContent = a.id === 'samples' ? `${a.name} (${got}/3)` : a.name;
   $('#obj-status').textContent = a.hold > 0 ? `${Math.round(pct * 100)}%` : `${dist} m`;
   $('#obj-bar').style.width = `${Math.min(100, pct * 100)}%`;
-  $('#obj-hint').textContent = a.hold > 0 ? 'Hold still…' : dayP > .8 && a.id !== 'home' ? 'The Sun is setting soon: hurry!' : c.hint;
+  const near = next && dist < a.radius;
+  $('#obj-hint').textContent = near && a.needsHeater && !care.heater ? 'Too cold to scan: turn the heater on (H).'
+    : near && a.needsPower && power < a.needsPower ? `The beacon needs ${a.needsPower}% power: track the Sun (P) to charge.`
+    : a.hold > 0 ? 'Hold still…' : dayP > .8 && a.id !== 'home' ? 'The Sun is setting soon: hurry!' : c.hint;
 }
 
 function buildFlag() {
@@ -596,6 +629,16 @@ async function pollStory() {
   polling = false;
 }
 
+function epilogueCards() {
+  const names = chosen.map((c) => c.name).join(' and ');
+  return [
+    ['Day 29', 'Sunrise', `After 14 Earth days of darkness, sunlight returns to ${site.name}.`],
+    survived
+      ? ['Wake-up check', `${names} woke up!`, `They made it through the night with ${Math.round(power)}% power. Very few real landers have managed that.`]
+      : ['Wake-up check', `${names} stayed asleep`, 'The cold drained the batteries. Most real CLPS landers do not survive the lunar night either.'],
+    ['The real story', 'Blue Ghost 1', "NASA reports Firefly's Blue Ghost 1 kept working through sunset and into the lunar night before its mission ended."],
+  ];
+}
 function finish() {
   phase = 'end';
   $('#toast').classList.remove('is-visible');
@@ -620,12 +663,15 @@ function finish() {
     li.append(a);
     return li;
   }));
-  const rating = rv.hull <= 0 ? 'Rough Rider' : power > 40 && warmth > 30 && rv.hull > 70 ? 'Lunar Day Legend' : warmth < 10 ? 'Survived the cold' : 'Brave Explorer';
+  const doneActs = ACTS.filter(actDone).length;
+  const rating = survived ? (doneActs === ACTS.length && rv.hull > 70 ? 'Lunar Legend' : 'Night Survivor') : doneActs >= 3 ? 'Brave Explorer' : 'Moon Rookie';
+  const visas = [...ACTS.map((a) => ({ n: CHAPTERS[a.id].n, title: CHAPTERS[a.id].title, done: actDone(a) })), { n: 5, title: 'Long Night', done: !!survived }];
+  $('#pp-visas').replaceChildren(...visas.map((v, i) => { const d = document.createElement('div'); d.className = 'visa' + (v.done ? '' : ' missing'); d.style.setProperty('--rot', `${[-8, 5, -3, 7, -6][i]}deg`); d.innerHTML = '<small></small><b></b><span></span>'; d.querySelector('small').textContent = `Chapter ${v.n}`; d.querySelector('b').textContent = v.title; d.querySelector('span').textContent = v.done ? 'Completed' : 'Not reached'; return d; }));
   $('#pp-date').textContent = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
   const code = (x) => String(x).toUpperCase().replace(/[^A-Z0-9]+/g, '<');
   $('#pp-no').textContent = `No. ${code(site.id)}-${String(rv.sent).padStart(2, '0')}${String(found.length).padStart(2, '0')}`.replace(/</g, '-');
   $('#pp-photos').replaceChildren(...chosen.map((p) => { const d = document.createElement('div'); d.className = 'pp-photo'; d.style.setProperty('--c', PET_COLORS[p.id] || '#F97316'); d.innerHTML = '<i class="pet-dot"></i><span></span>'; d.querySelector('span').textContent = p.name; return d; }));
-  const fields = [['Crew', names], ['Landing site', site.name], ['Days on the Moon', '14 Earth days + first night'], ['Highest Sun', `${rv.maxSun.toFixed(0)}° above the horizon`], ['Driven', `${(rv.odo / 1000).toFixed(2)} km`], ['Data sent home', String(rv.sent)], ['Rover hull', `${Math.round(rv.hull)}% (${rv.hits} boulder hit${rv.hits === 1 ? '' : 's'})`], ['Activities', `${ACTS.filter(actDone).length} of ${ACTS.length}: ${ACTS.filter(actDone).map((a) => a.id === 'samples' ? 'samples' : a.id === 'ice' ? 'ice scan' : a.id === 'beacon' ? 'nav beacon' : 'back at base').join(', ') || 'none yet'}`], ['Stories found', String(found.length)], ['Power / warmth at night', `${Math.round(power)}% / ${Math.round(warmth)}%`]];
+  const fields = [['Crew', names], ['Landing site', site.name], ['Days on the Moon', '14 days of sunlight + 14 nights'], ['Night survival', survived ? `Woke up at dawn with ${Math.round(power)}% power` : 'Did not wake up at dawn'], ['Highest Sun', `${rv.maxSun.toFixed(0)}° above the horizon`], ['Driven', `${(rv.odo / 1000).toFixed(2)} km`], ['Data sent home', String(rv.sent)], ['Rover hull', `${Math.round(rv.hull)}% (${rv.hits} boulder hit${rv.hits === 1 ? '' : 's'})`], ['Activities', `${ACTS.filter(actDone).length} of ${ACTS.length}: ${ACTS.filter(actDone).map((a) => a.id === 'samples' ? 'samples' : a.id === 'ice' ? 'ice scan' : a.id === 'beacon' ? 'nav beacon' : 'back at base').join(', ') || 'none yet'}`], ['Stories found', String(found.length)], ['Power / warmth at night', `${Math.round(power)}% / ${Math.round(warmth)}%`]];
   $('#pp-fields').replaceChildren(...fields.flatMap(([k, v]) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; return [dt, dd]; }));
   $('#pp-stamp').textContent = rating;
   $('#pp-mrz').textContent = `P<MOON<${code(names)}<<${code(site.name)}`.padEnd(44, '<').slice(0, 44);
@@ -665,7 +711,7 @@ function update(dt) {
   sun.target.position.copy(rover.position);
   const lit = phase === 'night' ? 0 : Math.max(.4, Math.min(1, sunUp * 1.6));
   sun.intensity = 4.2 * lit;
-  hemi.intensity = phase === 'night' ? .22 : .25 + .35 * lit;
+  hemi.intensity = phase === 'night' || phase === 'epilogue' ? (earthUp ? .3 : .1) : .25 + .35 * lit; // Earthshine lights the night side
   fill.intensity = phase === 'night' ? .5 : .9;
   fill.position.copy(camera.position);
   sunSprite.position.copy(camera.position).addScaledVector(dir, 700);
@@ -729,8 +775,13 @@ function update(dt) {
   // meters and moods
   if (live) {
     if (care.heater && power <= 0) { care.heater = false; renderCare(); }
-    power = Math.max(0, Math.min(100, power + ((care.tracking ? arc * 7.5 : sunUp * 4.5) - .9 - Math.abs(car.speed) * .12 - (care.heater ? 1.8 : 0)) * dt));
-    warmth = Math.max(0, Math.min(100, warmth + (sunUp * 3.2 - 1.9 + (care.heater ? 3 : 0)) * dt));
+    if (phase === 'night') { // no Sun: batteries only. Sleep mode halves the drain.
+      power = Math.max(0, power - ((sleepReady ? .3 : .7) + (care.heater ? (sleepReady ? .2 : .6) : 0) + Math.abs(car.speed) * .12) * dt);
+      warmth = Math.max(0, Math.min(100, warmth + (-.9 + (care.heater && power > 0 ? .95 : 0)) * dt));
+    } else {
+      power = Math.max(0, Math.min(100, power + ((care.tracking ? arc * 7.5 : sunUp * 4.5) - .9 - Math.abs(car.speed) * .12 - (care.heater ? 1.8 : 0)) * dt));
+      warmth = Math.max(0, Math.min(100, warmth + (sunUp * 3.2 - 1.9 + (care.heater ? 3 : 0)) * dt));
+    }
     renderMeters();
   }
   for (const r of petRigs) {
@@ -782,9 +833,20 @@ function update(dt) {
     $('#day').textContent = `Day ${Math.min(14, Math.floor(dayP * 14) + 1)}`;
     $('#track').style.width = `${dayP * 100}%`;
     if (t - lastPoll > .6) { lastPoll = t; pollStory(); }
-    if (dayP >= 1) { phase = 'night'; phaseT = 0; $('#day').textContent = 'Night'; setChapter('Chapter 4 · The long night begins'); log('The Sun has set over the Moon.', 'Day 14'); banner('Night falls', 'Two weeks of darkness begin'); pollStory(); }
-  } else if (phase === 'night' && phaseT > NIGHT_SECS && !toastQueue.length && t > toastUntil) {
-    finish();
+    if (dayP >= 1) {
+      phase = 'night'; phaseT = 0; pollStory();
+      setChapter('Chapter 5 · The Long Night');
+      cutscene('Chapter 5 of 5', 'The Long Night', 'Two weeks of darkness, colder than -170 °C. Keep your pets alive until sunrise.', 4.2);
+    }
+  } else if (phase === 'night') {
+    const nightP = Math.min(1, phaseT / NIGHT_SECS);
+    $('#day').textContent = `Night ${Math.min(14, Math.floor(nightP * 14) + 1)}`;
+    $('#track').style.width = `${nightP * 100}%`;
+    if (nightP >= 1) { phase = 'epilogue'; phaseT = 0; epi = -1; survived = power > 0 && warmth > 0; }
+  } else if (phase === 'epilogue') {
+    const cards = epilogueCards(), i = Math.floor(phaseT / 4.6);
+    if (i !== epi && i < cards.length) { epi = i; cutscene(cards[i][0], cards[i][1], cards[i][2], 4.4); }
+    if (phaseT > cards.length * 4.6) { endCutscene(); finish(); }
   }
   if (t > toastUntil) {
     if (toastQueue.length && phase !== 'end') showToast(toastQueue.shift());
@@ -833,7 +895,7 @@ sceneEl.addEventListener('pointermove', (e) => {
 });
 sceneEl.addEventListener('pointerup', () => { cam.dragging = false; });
 sceneEl.addEventListener('wheel', (e) => { cam.dist = Math.max(4.5, Math.min(18, cam.dist + e.deltaY * .01)); }, { passive: true });
-$('#again').addEventListener('click', () => { car.x = car.z = 0; car.heading = 0; startDay(); });
+$('#again').addEventListener('click', () => { car.x = car.z = 0; car.heading = 0; sleepReady = false; survived = null; lastSend = -1; endCutscene(); startDay(); });
 
 function nearestStorySite(list, lat, lon) {
   const rad = Math.PI / 180;
@@ -912,6 +974,7 @@ async function boot() {
   buildDust();
   buildFlag();
   buildActivities();
+  setupSteps();
   await addPets();
   renderCrew();
   renderMeters();

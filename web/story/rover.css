@@ -322,3 +322,13 @@ body.cinematic .hud { opacity: 0; transition: opacity .5s; }
 }
 
 .toast.subtitle a { display: none; }
+
+/* ---- passport visa stamps ---- */
+.visa-head { margin: 1rem 0 .4rem; font-family: var(--mono); font-size: .62rem; letter-spacing: .2em; text-transform: uppercase; color: #64748B; }
+.pp-visas { display: flex; flex-wrap: wrap; justify-content: center; gap: .7rem; padding-bottom: .4rem; }
+.visa { --c: #F97316; width: 104px; padding: .5rem .4rem; border: 2px solid var(--c); border-radius: 12px; color: var(--c); text-align: center; transform: rotate(var(--rot)); background: rgba(249,115,22,.05); box-shadow: inset 0 0 0 3px rgba(243,244,246,.9), inset 0 0 0 4px var(--c); font-family: var(--mono); }
+.visa:nth-child(2) { --c: #0e7490; } .visa:nth-child(3) { --c: #4f46e5; } .visa:nth-child(4) { --c: #334155; } .visa:nth-child(5) { --c: #b91c1c; }
+.visa small { display: block; font-size: .55rem; letter-spacing: .12em; text-transform: uppercase; opacity: .8; }
+.visa b { display: block; font-size: .78rem; margin: .15rem 0; font-family: "Space Grotesk", Inter, sans-serif; }
+.visa span { font-size: .55rem; letter-spacing: .1em; text-transform: uppercase; }
+.visa.missing { --c: #94A3B8; border-style: dashed; box-shadow: none; opacity: .6; }
