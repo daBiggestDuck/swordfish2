@@ -362,6 +362,7 @@ function sendData() {
   power -= 8;
   rv.sent++;
   lastSend = t;
+  petDo('hop', 1.2, `${who('ln-1', 'retro')} beams the data home`);
   log('Science data sent home to Earth.', `Day ${Math.max(1, Math.ceil(dayP * 14))}`);
   renderMeters();
 }
@@ -458,6 +459,18 @@ function setupSteps() {
   b.extra = [{ label: 'Test the beacon: send a ping home', hint: 'Press F to ping Earth through your new beacon.', test: (a) => lastSend > a.stepAt }];
   by('home').extra = [{ label: 'Sleep mode: stow the solar panel and turn the heater on', hint: 'Panel off (P) and heater on (H). Sleep mode halves the power you use at night.', test: () => !care.tracking && care.heater }];
   for (const a of ACTS) { a.step = 0; a.stepAt = 0; }
+  const lat = Math.abs(site.lat || 0), id = site.id || '';
+  if (id.startsWith('MARE_CRISIUM')) {
+    Object.assign(ice, { name: 'Drill a heat-flow probe into the crater floor', needsHeater: false,
+      story: { title: 'Heat flow measured!', text: 'Your probe measured heat flowing up from inside the Moon. LISTER did this for real at Mare Crisium on Blue Ghost 1.', sourceUrl: NASA_BG1 } });
+    Object.assign(CHAPTERS.ice, { title: 'Heat From Below', text: 'How hot is the inside of the Moon? Drill a probe into the crater floor and find out.', hint: 'Drive into the crater, park and hold still while the drill runs.' });
+  } else if (id.startsWith('REINER_GAMMA')) {
+    Object.assign(ice, { name: 'Map the magnetic swirl', needsHeater: false,
+      story: { title: 'Swirl mapped!', text: "You measured Reiner Gamma's mysterious magnetic field. NASA's IM-3 mission is headed here to study it.", sourceUrl: 'https://science.nasa.gov/lunar-science/clps-deliveries/' } });
+    Object.assign(CHAPTERS.ice, { title: 'The Magnetic Swirl', text: 'The bright swirls here sit on a patch of magnetic field. Nobody knows exactly why.', hint: 'Drive into the marked swirl, park and hold still while you measure.' });
+  } else if (lat < 60) {
+    ice.needsHeater = false;
+  }
 }
 
 // The story: one objective at a time, each its own chapter.
@@ -492,7 +505,15 @@ function startChapter(a) {
   setTimeout(() => card.classList.remove('is-new'), 600);
 }
 
+let petAct = { kind: '', until: 0 };
+const who = (...ids) => (chosen.find((c) => ids.includes(c.id)) || chosen[0]).name;
+/** Make the pets act: 'work' = spinning/jittering at a job, 'hop' = a happy jump. */
+function petDo(kind, secs, line) {
+  petAct = { kind, until: t + secs };
+  if (line) banner(line, '', Math.min(2, secs + .4));
+}
 function completeActivity(a) {
+  petDo('hop', 1.6);
   toastQueue.push({ title: a.story.title, text: a.story.text, sourceUrl: a.story.sourceUrl, short: true });
   log(a.name + ': done', `Day ${Math.max(1, Math.ceil(dayP * 14))}`);
   shake = .15;
@@ -510,9 +531,10 @@ function updateActivities(dt) {
     if (tg.done) continue;
     const inside = Math.hypot(car.x - tg.x, car.z - tg.z) < a.radius;
     if (a.id === 'samples') {
-      if (inside) { tg.done = true; markDone(tg.m); banner(`Sample ${a.targets.filter((x) => x.done).length} of 3`, 'Bagged and stored', 1.2); }
+      if (inside) { tg.done = true; markDone(tg.m); petDo('work', 1.4, `${who('lister', 'eds')} drills sample ${a.targets.filter((x) => x.done).length} of 3`); }
     } else if (inside && still && (!a.needsEarth || earthUp) && (!a.needsHeater || care.heater) && (!a.needsPower || power >= a.needsPower)) {
       a.hold += dt;
+      if (petAct.until < t + .2) petDo('work', .4); // pets busy while scanning or deploying
       if (a.id === 'ice') warmth = Math.max(0, warmth - dt * 1.4); // cold in the crater shadow
       if (a.hold >= a.need) { tg.done = true; markDone(tg.m); }
     } else {
@@ -788,6 +810,18 @@ function update(dt) {
     const mood = phase === 'night' ? (r.id === 'retro' ? 'sleeping' : 'shivering') : warmth < 25 ? 'shivering' : power < 15 ? 'sleeping' : 'happy';
     if (mood !== r.mood) { r.mood = mood; r.setMood(mood); renderCrew(); }
     r.animate(t);
+    if (r.baseY === undefined) { r.baseY = r.holder.position.y; r.baseRot = r.holder.rotation.y; }
+    const acting = petAct.until > t, i = petRigs.indexOf(r);
+    if (acting && petAct.kind === 'work') {
+      r.holder.rotation.y += dt * 5 * (i ? -1 : 1);
+      r.holder.position.y = r.baseY + Math.abs(Math.sin(t * 22 + i)) * .03;
+    } else if (acting && petAct.kind === 'hop') {
+      r.holder.position.y = r.baseY + Math.abs(Math.sin(t * 9 + i * 1.3)) * .22;
+      r.holder.rotation.y += (r.baseRot - r.holder.rotation.y) * Math.min(1, dt * 6);
+    } else {
+      r.holder.position.y += (r.baseY - r.holder.position.y) * Math.min(1, dt * 8);
+      r.holder.rotation.y += (r.baseRot - r.holder.rotation.y) * Math.min(1, dt * 4);
+    }
   }
 
   // camera
@@ -825,7 +859,14 @@ function update(dt) {
 
   updateActivities(dt);
   mapT += dt;
-  if (mapT > .15) { mapT = 0; drawMinimap(); renderObjective(); }
+  if (mapT > .15) {
+    mapT = 0; drawMinimap(); renderObjective();
+    const M_PER_DEG = 30330; // metres per degree of latitude on the Moon
+    const la = (site.lat || 0) - car.z / M_PER_DEG, lo = (site.lon || 0) + car.x / (M_PER_DEG * Math.max(.05, Math.cos(la * Math.PI / 180)));
+    const hd = ((90 - car.heading * 57.3) % 360 + 360) % 360;
+    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    $('#pos').innerHTML = `<b>${Math.abs(la).toFixed(4)}°${la >= 0 ? 'N' : 'S'} ${Math.abs(lo).toFixed(4)}°${lo >= 0 ? 'E' : 'W'}</b><span>${Math.round(Math.hypot(car.x - FLAG.x, car.z - FLAG.z))} m from flag · heading ${dirs[Math.round(hd / 45) % 8]}</span>`;
+  }
   if (cineUntil && t > cineUntil) { cineUntil = 0; endCutscene(); }
 
   // story flow
